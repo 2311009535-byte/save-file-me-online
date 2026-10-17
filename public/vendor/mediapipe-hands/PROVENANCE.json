@@ -1,0 +1,22 @@
+{
+  "package": "@mediapipe/hands",
+  "version": "0.4.1675469240",
+  "resolved": "https://registry.npmjs.org/@mediapipe/hands/-/hands-0.4.1675469240.tgz",
+  "npm_integrity": "sha512-GxoZvL1mmhJxFxjuyj7vnC++JIuInGznHBin5c7ZSq/RbcnGyfEcJrkM/bMu5K1Mz/2Ko+vEX6/+wewmEHPrHg==",
+  "sha256": {
+    "hands_solution_simd_wasm_bin.js": "7720172e0775636e64955fb1091958c8294e01aa100c3272b59b2a543c028cb5",
+    "hand_landmark_lite.tflite": "d7fde8ac11f8ce03f8663775bfc323f4fc9f2a38062b4f4efa142874ef5b2a48",
+    "hands_solution_wasm_bin.wasm": "4e70eaf8063e0e9ac10e682d9d6b55c08d0788f0a8d49925e2e484636526e157",
+    "hands_solution_packed_assets_loader.js": "d05c073a62a0c8d2d21c18bc8f158424ece0078ea00a636e9527083b10ca1e17",
+    "hand_landmark_full.tflite": "8c026882c9ec059ce0f8e75266bee5a9a23c341a40e0000df755374d3d1b9b68",
+    "index.d.ts": "92cde9643cc6f13776335a9f9e7a93f122bfbec8e905031cde5475f3d95cd2de",
+    "hands_solution_wasm_bin.js": "2e1faa9965a87f496316e85731c41bde1d9b07dd448f6cd30f5c2262bcd35e29",
+    "hands_solution_simd_wasm_bin.wasm": "78ef7eb86ebc6424ac06b13f89b9a1fc01ff35e07520e37de98887cf88c06653",
+    "hands_solution_simd_wasm_bin.data": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "README.md": "9dad28188ae54ea420e3d29c23360b040a0dfb88954b99a3e456b8a8c93cf2a1",
+    "package.json": "b965dd1e8ab1f354c08a2525f01a87c4cb957f51478069e447ff183965c0c9e3",
+    "hands.js": "a68b21c9553d614384f7f459622e46e02e3c9cfdf7392915a2fa1d615e338473",
+    "hands_solution_packed_assets.data": "bdce7b66bfc5b39ba86a47775c98e0b186fe73f8308c2279f852af4c89ffdf42",
+    "hands.binarypb": "ab76c4215fca99cc2db1b5885cb8398d210e59ebe685245f72e692b4b58421e4"
+  }
+}

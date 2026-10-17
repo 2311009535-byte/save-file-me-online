@@ -1,0 +1,19 @@
+const {chromium}=require('playwright');const fs=require('node:fs');const {execFileSync}=require('node:child_process');const assert=require('node:assert/strict');
+(async()=>{
+ const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/chromium',args:['--no-sandbox']});const p=await browser.newPage({viewport:{width:1280,height:800}}),errors=[];p.on('pageerror',e=>errors.push(e.message));
+ await p.route('**/js/retry-actions.js',route=>route.fulfill({contentType:'text/javascript',body:fs.readFileSync('public/js/retry-actions.js','utf8').replaceAll('enabled:false','enabled:true')}));
+ const temp=fs.mkdtempSync('/tmp/retry-action-test-'),clip=temp+'/fixture.mp4';execFileSync('ffmpeg',['-y','-f','lavfi','-i','color=c=0x292929:s=320x180:r=24','-t','3','-c:v','libx264','-pix_fmt','yuv420p','-movflags','+faststart',clip,'-loglevel','error']);const fixture=fs.readFileSync(clip);fs.rmSync(temp,{recursive:true});await p.route('**/assets/retry/videos/*-attack.mp4',route=>route.fulfill({contentType:'video/mp4',body:fixture}));
+ await p.goto(process.env.TEST_BASE_URL||'http://127.0.0.1:3002',{waitUntil:'domcontentloaded'});
+ const seed=async(joined=false)=>{await p.evaluate(joined=>{localStorage.setItem('save-file-me:v1',JSON.stringify({completed:2,scene:'chapter3'}));localStorage.setItem('save-file-me:retry:v1',JSON.stringify({failures:joined?3:0,joined,view:'battle'}));},joined);await p.reload();await p.waitForSelector('#retry-attack');};
+ const stop=async(file)=>{await p.waitForFunction(file=>(()=>{const v=document.querySelector('.retry-action-video');return v?.src.endsWith(file)&&!v.paused&&v.currentTime>0;})(),file);await p.locator('.retry-action-video').evaluate(v=>v.pause());};
+ const resume=()=>p.locator('.retry-action-video').evaluate(v=>{v.playbackRate=4;return v.play();});
+ const saved=()=>p.evaluate(()=>JSON.parse(localStorage.getItem('save-file-me:retry:v1')));
+ await seed();await p.locator('#retry-attack').click();await stop('player-attack.mp4');await p.waitForTimeout(2200);
+ assert.equal(await p.locator('#stage').getAttribute('data-retry-group'),'playerAttack');assert.equal(await p.locator('#stage').getAttribute('data-retry-boss-hp'),'1');assert.equal((await saved()).failures,0);assert(await p.locator('#retry-heal').isDisabled());
+ await resume();await stop('boss-attack.mp4');assert.equal(await p.locator('#stage').getAttribute('data-retry-boss-hp'),'.65');await p.waitForTimeout(2200);assert.equal(await p.locator('#stage').getAttribute('data-retry-player-hp'),'1');assert.equal((await saved()).failures,0);
+ await resume();await p.waitForSelector('#retry-again');assert.equal(await p.locator('#stage').getAttribute('data-retry-player-hp'),'0');assert.equal((await saved()).failures,1);
+ await seed(true);await p.locator('#retry-attack').click();await stop('duo-attack.mp4');await p.waitForTimeout(3700);assert.equal((await saved()).won,false);assert.equal(await p.locator('#stage').getAttribute('data-retry-boss-hp'),'1');assert.equal(await p.evaluate(()=>JSON.parse(localStorage.getItem('save-file-me:v1')).completed),2);
+ await resume();await p.waitForSelector('#retry-continue');assert.equal((await saved()).won,true);assert.equal(await p.locator('#stage').getAttribute('data-retry-boss-hp'),'0');assert.equal(await p.evaluate(()=>JSON.parse(localStorage.getItem('save-file-me:v1')).completed),3);
+ await seed();await p.locator('#retry-attack').click();await stop('player-attack.mp4');await p.reload();await p.waitForSelector('#retry-attack');assert.equal((await saved()).failures,0);assert.equal((await saved()).won,false);assert.equal(await p.locator('.retry-action-video').count(),0);
+ assert.deepEqual(errors,[]);await browser.close();console.log('PASS real ended callbacks for all 3 clips; paused clips never advance HP/round/win after old estimated durations; card lock; refresh cancels without settlement');
+})().catch(e=>{console.error(e);process.exit(1)});

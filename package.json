@@ -1,0 +1,19 @@
+{
+  "name": "save-file-me",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:browser": "node tests/browser.cjs",
+    "test:wonder": "node tests/wonder.cjs",
+    "test:wonder-reset": "node tests/wonder-reset.cjs",
+    "test:wonder-animation": "node tests/wonder-animation.cjs",
+    "test:escape": "node tests/escape.cjs",
+    "test:retry": "node tests/retry.cjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

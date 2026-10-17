@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {normalize,enter,complete,exit} from '../public/js/state.js';
+test('顺序解锁、提前返回、四章通关与结尾',()=>{let s=normalize(null);assert.equal(enter(s,2),s);assert.equal(exit(s),s);for(let n=1;n<=4;n++){s=enter(s,n);assert.equal(s.scene,`chapter${n}`);const returned={...s,scene:'prologue'};assert.equal(returned.completed,n-1);assert.equal(complete(returned,n),returned);s=complete(s,n);assert.equal(s.completed,n);assert.equal(s.scene,'prologue');assert.deepEqual(normalize(JSON.parse(JSON.stringify(s))),s);}assert.equal(exit(s).scene,'final');});
+test('存档校验与重玩不会倒退进度',()=>{assert.equal(normalize({completed:0,scene:'chapter4'}).scene,'prologue');assert.equal(normalize({completed:0,scene:'final'}).scene,'prologue');assert.equal(normalize({completed:99}).completed,4);assert.equal(normalize({completed:2.5}).completed,0);assert.equal(complete(enter(normalize({completed:4}),1),1).completed,4);});

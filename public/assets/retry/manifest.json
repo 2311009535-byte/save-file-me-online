@@ -1,0 +1,54 @@
+{
+  "chapter": "Retry & Connection",
+  "loading": {
+    "asset": null,
+    "implementation": "code collage loading screen; supplied batches contain 3_1 through 3_18 only"
+  },
+  "soloBattle": "3_1.png",
+  "soloAttack": "3_2.png",
+  "bossWindup": "3_3.png",
+  "bossAttack": "3_4.png",
+  "zeroHP": "3_5.png",
+  "partnerDiscoveredAfterThirdLoss": "3_6.png",
+  "heavyStrikeWarning": "3_7.JPG",
+  "partnerInvite": "3_8.png",
+  "joinedBattle": "3_9.JPG",
+  "cooperativeAction": "3_10.png",
+  "bossDefeated": "3_11.png",
+  "victory": "3_12.png",
+  "realDeskBlankSwitch": "3_13.jpg",
+  "realDeskVictorySwitch": "3_14.png",
+  "diary": [
+    "3_15.png",
+    "3_16.PNG",
+    "3_17.PNG",
+    "3_18.PNG"
+  ],
+  "missing": [
+    "dedicated Chapter 03 loading art",
+    "solo DEFEND and HEAL action art",
+    "normal failure settlement art (first and second losses)",
+    "victory-to-Switch video"
+  ],
+  "knownIssues": [
+    "3_12.png says attempt 03; runtime local text patches show 04 in victory and Switch. Original files still need source correction."
+  ],
+  "heavyStrikeWarningRule": "3_7.JPG once after first defeat RETRY; warningSeen persisted before playback",
+  "diaryExit": "3_18.PNG right drawing; BACK returns to Switch; no extra SAVE ROOM button",
+  "player2SourceNote": "User approved original white cursor animation and blue PLAYER2 extracted from 0_4.png at original native coordinates, shape and size.",
+  "battleAnimationSlots": {
+    "playerAttack": {
+      "src": "/assets/retry/videos/player-attack.mp4",
+      "enabled": false
+    },
+    "bossAttack": {
+      "src": "/assets/retry/videos/boss-attack.mp4",
+      "enabled": false
+    },
+    "duoAttack": {
+      "src": "/assets/retry/videos/duo-attack.mp4",
+      "enabled": false
+    }
+  },
+  "battleAnimationCompletion": "Only media ended / demo Web Animation.finished; HP and round settlement remain outside playback adapter."
+}

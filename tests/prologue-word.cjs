@@ -1,0 +1,12 @@
+const {chromium}=require('playwright');const assert=require('node:assert/strict');
+(async()=>{const b=await chromium.launch({headless:true,executablePath:'/usr/bin/chromium',args:['--no-sandbox']});const p=await b.newPage({viewport:{width:1280,height:720}});await p.clock.install();await p.clock.pauseAt(new Date());await p.goto('http://127.0.0.1:3000');assert.equal(await p.locator('.prologue-word-glitch').count(),0);await p.keyboard.press('Shift+KeyD');await p.locator('[data-simulate="1"]').click();await p.keyboard.press('Escape');await p.waitForSelector('.prologue-word-glitch');const word=p.locator('.prologue-word-glitch');let edge=0,burst=0,captured=false,edgeCaptured=false,lastStart=null;const intervals=[];
+for(let i=0;i<400;i++){
+ await p.clock.runFor(25);const phase=await word.getAttribute('data-phase');assert.notEqual(phase,'clear');
+ const start=Number(await word.getAttribute('data-last-burst'));if(start&&start!==lastStart){if(lastStart!==null)intervals.push(start-lastStart);lastStart=start;const duration=Number(await word.getAttribute('data-burst-duration'));assert(duration>=100&&duration<=200);}
+ if(phase==='edge'){edge++;if(!edgeCaptured){await p.screenshot({path:'/tmp/prologue-word-edge-default.png'});edgeCaptured=true;}}else{burst++;if(!captured){await p.screenshot({path:'/tmp/prologue-word-burst-default.png'});captured=true;}}
+}
+assert(burst>0);assert(edge>burst*2);assert(intervals.length>=8);assert(intervals.every(ms=>ms>=499&&ms<=1040));
+assert.equal(await p.locator('.prologue-window-glitch').count(),1);
+await p.reload();await p.waitForSelector('.prologue-word-glitch');await p.setViewportSize({width:390,height:844});const aligned=await word.evaluate(c=>{const r=c.getBoundingClientRect(),s=document.getElementById('stage').getBoundingClientRect();return [(r.left-s.left)/s.width,r.width/s.width];});assert(Math.abs(aligned[0]-209/1536)<.001);assert(Math.abs(aligned[1]-74/1536)<.001);
+await p.keyboard.press('Shift+KeyD');await p.locator('[data-jump="2"]').click();assert.equal(await word.count(),0);await p.keyboard.press('Escape');await p.locator('#back').click();await p.waitForSelector('.prologue-word-glitch');await p.evaluate(()=>window.dispatchEvent(new PageTransitionEvent('pagehide')));assert.equal(await word.count(),0);
+console.log(`PASS: source word only; ${edge} dynamic-edge/${burst} glitch samples; 0.5–1s intervals/0.1–0.2s duration at default 1280x720; window retained; reload/mobile/leave cleanup`);await b.close();})().catch(e=>{console.error(e);process.exit(1)});

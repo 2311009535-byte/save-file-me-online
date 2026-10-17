@@ -1,0 +1,28 @@
+import {createForestWorld} from './escape-world.js';
+let engineJob;
+function script(src){return new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=()=>{s.remove();reject(Error('Animation engine unavailable'));};document.head.append(s);});}
+function engine(){if(!engineJob)engineJob=(async()=>{if(!window.gsap)await script('/vendor/gsap/gsap.min.js');if(!window.ScrollTrigger)await script('/vendor/gsap/ScrollTrigger.min.js');window.gsap.registerPlugin(window.ScrollTrigger);return {gsap:window.gsap,ScrollTrigger:window.ScrollTrigger};})().catch(e=>{engineJob=null;throw e;});return engineJob;}
+function image(src){return new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=src;});}
+
+const W=1672,H=941,clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+export function mountEscapeParallax({host,input,complete}){
+ let alive=true,ready=false,timeline,trigger,observer,world,completed=false,lastProgress=0;
+ if(!document.getElementById('escape-parallax-style')){const l=document.createElement('link');l.id='escape-parallax-style';l.rel='stylesheet';l.href='/parallax.css';document.head.append(l);}
+ const root=document.createElement('section');root.className='escape-parallax';root.setAttribute('aria-label','A walk through the sunset forest');
+ root.innerHTML='<div class="journey-scroll" tabindex="0" aria-label="Scroll to move forward; scroll up to move back"><div class="journey-track"><div class="journey-view"><canvas aria-label="Walk along the path, across the bridge and past the cottage"></canvas><button class="journey-door" hidden aria-label="Open the door and return to the save room"><span>ENTER</span></button><div class="journey-hud"><p class="journey-help" role="status">SCROLL TO MOVE FORWARD</p><div class="journey-progress" role="progressbar" aria-label="Journey progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div></div></div></div></div>';
+ host.append(root);
+ const scroller=root.querySelector('.journey-scroll'),track=root.querySelector('.journey-track'),canvas=root.querySelector('canvas'),door=root.querySelector('.journey-door'),help=root.querySelector('.journey-help'),meter=root.querySelector('.journey-progress'),fill=meter.firstElementChild,c=canvas.getContext('2d',{alpha:false}),model={progress:0};
+ function draw(p){if(!alive||!world)return;lastProgress=p;const state=world.render(c,p,canvas.width,canvas.height),atDoor=p>=.985;
+  door.hidden=!atDoor;door.disabled=!atDoor;const r=state.door;Object.assign(door.style,{left:(r.x-12)/W*100+'%',top:(r.y-12)/H*100+'%',width:(r.width+24)/W*100+'%',height:(r.height+24)/H*100+'%'});
+  help.textContent=atDoor?'CLICK THE GATE TO RETURN':p<.17?'SCROLL TO RISE ABOVE THE PLAYER':state.bridge==='crossing'?'FOLLOW THE BRIDGE ACROSS THE WATER':!state.housePassed?'FOLLOW THE PATH PAST THE COTTAGE':'FOLLOW THE PATH · SCROLL UP TO LOOK BACK';
+  fill.style.width=p*100+'%';meter.setAttribute('aria-valuenow',String(Math.round(p*100)));Object.assign(root.dataset,{progress:p.toFixed(4),phase:atDoor?'door':p<.17?'flyover':'journey',house:state.housePassed?'passed':'approaching',bridge:state.bridge,cameraZ:state.camera.z.toFixed(4)});
+ }
+ function resize(){const h=Math.max(1,host.clientHeight||innerHeight);root.style.setProperty('--journey-height',h+'px');canvas.width=Math.min(2560,Math.round((host.clientWidth||innerWidth)*Math.min(devicePixelRatio||1,1.5)));canvas.height=Math.round(canvas.width*H/W);track.style.height=h*8+'px';if(ready)draw(model.progress);trigger?.refresh();}
+ const onInput=e=>{if(!alive||!ready)return;const d=e.detail;if(d.kind==='wheel'){const multiplier=d.deltaMode===1?24:d.deltaMode===2?scroller.clientHeight:1;scroller.scrollTop+=clamp(Number(d.deltaY)||0,-1000,1000)*multiplier;}};
+ input?.addEventListener('input',onInput);
+ const key=e=>{if(!ready||document.querySelector('#dev-panel:not([hidden])'))return;let amount;if(['ArrowDown','PageDown','Space'].includes(e.code))amount=scroller.clientHeight*.35;if(['ArrowUp','PageUp'].includes(e.code))amount=-scroller.clientHeight*.35;if(e.code==='Home')amount=-scroller.scrollHeight;if(e.code==='End')amount=scroller.scrollHeight;if(amount!==undefined){e.preventDefault();scroller.scrollTop+=amount;}};scroller.addEventListener('keydown',key);
+ door.onclick=()=>{if(!alive||completed||!ready||lastProgress<.985)return;completed=true;door.disabled=true;complete();};
+ resize();Promise.all([engine(),image('/assets/escape/parallax/opening-background.png'),image('/assets/escape/parallax/forest-back.png'),image('/assets/escape/parallax/player.png'),image('/assets/escape/parallax/forest-left.png'),image('/assets/escape/parallax/forest-right.png'),image('/assets/escape/parallax/house.png')]).then(([lib,opening,back,hero,left,right,house])=>{if(!alive)return;world=createForestWorld({opening,back,hero,left,right,house});ready=true;timeline=lib.gsap.timeline({paused:true}).to(model,{progress:1,duration:1,ease:'none',onUpdate:()=>draw(model.progress)});trigger=lib.ScrollTrigger.create({scroller,start:0,end:()=>Math.max(1,scroller.scrollHeight-scroller.clientHeight),animation:timeline,scrub:.45,invalidateOnRefresh:true});observer=new ResizeObserver(resize);observer.observe(host);draw(0);root.dataset.ready='true';}).catch(()=>{if(alive){world?.dispose();world=null;help.textContent='SCENE COULD NOT LOAD. CHECK WEBGL SUPPORT AND RELOAD.';root.dataset.error='scene';}});
+ return ()=>{if(!alive)return;alive=false;ready=false;observer?.disconnect();trigger?.kill();timeline?.kill();world?.dispose();input?.removeEventListener('input',onInput);scroller.removeEventListener('keydown',key);root.remove();};
+}
+export const escapeParallaxAdapter={mount:mountEscapeParallax};

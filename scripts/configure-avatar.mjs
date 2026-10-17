@@ -1,0 +1,16 @@
+import {mkdirSync,writeFileSync,chmodSync,existsSync,readFileSync} from 'node:fs';
+import {homedir} from 'node:os';
+import path from 'node:path';
+import {randomBytes} from 'node:crypto';
+import {createInterface} from 'node:readline/promises';
+const file=process.env.AVATAR_CONFIG_FILE||path.join(homedir(),'.config','save-file-me','avatar.json'),dir=path.dirname(file);
+if(!path.isAbsolute(file)||path.resolve(file).startsWith(path.resolve('public')+path.sep))throw Error('Settings must be outside the public folder.');
+if(!process.stdin.isTTY)throw Error('Run this setup directly in Terminal.');
+function secret(){return new Promise((resolve,reject)=>{process.stdout.write('Paste your NEW Ark API key here (hidden), then press Enter: ');let value='';process.stdin.setRawMode(true);process.stdin.resume();const done=()=>{process.stdin.off('data',read);process.stdin.setRawMode(false);process.stdin.pause();};const read=b=>{for(const ch of b.toString()){if(ch==='\u0003'){done();reject(Error('Cancelled; no settings changed.'));return;}if(ch==='\r'||ch==='\n'){done();process.stdout.write('\n');resolve(value.trim());return;}if(ch==='\u007f'||ch==='\b')value=value.slice(0,-1);else if(ch>=' '&&ch<='~')value+=ch;}};process.stdin.on('data',read);});}
+let previous={};if(existsSync(file)){try{previous=JSON.parse(readFileSync(file,'utf8'));}catch{throw Error('Existing avatar settings are invalid; no files changed.');}}
+const key=await secret();if(key.length<16||/[\s"'<>]/.test(key)||key==='YOUR_API_KEY')throw Error('Invalid key. Settings were not changed.');
+const rl=createInterface({input:process.stdin,output:process.stdout});let answer;
+try{console.log('First test: at most ONE provider request in total, including failures. No automatic retry.');console.log('Cost reservations use CNY. This is not the provider bill or a provider hard spending limit.');answer=await rl.question('Enter a conservative maximum CNY cost for ONE 2K image, checked against current Ark pricing: ');const cost=Number(answer);if(!Number.isFinite(cost)||cost<=0||cost>100||Math.abs(cost*1000-Math.round(cost*1000))>.000001)throw Error('Enter a valid CNY amount with up to 3 decimal places.');answer=await rl.question('Have you checked current pricing and account billing/auto top-up settings? Type YES to enable one paid test, or anything else to cancel: ');if(answer.trim()!=='YES')throw Error('Cancelled. No settings changed.');
+ mkdirSync(dir,{recursive:true,mode:0o700});const config={AVATAR_PROVIDER:'seedream',AVATAR_MODEL:'doubao-seedream-5-0-pro-260628',AVATAR_API_KEY:key,AVATAR_GENERATION_ENABLED:'yes',AVATAR_SESSION_SECRET:previous.AVATAR_SESSION_SECRET||randomBytes(32).toString('hex'),AVATAR_LEDGER_PATH:previous.AVATAR_LEDGER_PATH||path.join(dir,'avatar-ledger.json'),AVATAR_TOTAL_LIMIT:1,AVATAR_PLAYER_DAILY_LIMIT:1,AVATAR_DAILY_LIMIT:1,AVATAR_COST_CEILING_MILLIS:Math.round(cost*1000),AVATAR_DAILY_BUDGET_MILLIS:Math.round(cost*1000),AVATAR_PROVIDER_BUDGET_CONFIRMED:'yes'};
+ writeFileSync(file,JSON.stringify(config,null,2),{mode:0o600});chmodSync(file,0o600);console.log('SETUP COMPLETE. Key saved outside the game/public folder. Restart npm start.');console.log('No image request was sent by this setup. Existing quota history was preserved.');
+}finally{rl.close();}

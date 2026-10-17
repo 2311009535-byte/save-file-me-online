@@ -1,0 +1,31 @@
+[build]
+  command = "npm test"
+  publish = "public"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# This development branch must never become a production deployment accidentally.
+# The existing production branch remains untouched. Branch deploys use [build].
+[context.production]
+  ignore = "exit 0"
+
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/style.css"
+  [headers.values]
+    Cache-Control = "no-cache"

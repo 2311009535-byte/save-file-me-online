@@ -1,0 +1,172 @@
+[
+  {
+    "original": "room clean.PNG",
+    "file": "room-clean.png",
+    "size": [
+      3840,
+      2160
+    ],
+    "alpha_bbox": [
+      0,
+      0,
+      3840,
+      2160
+    ]
+  },
+  {
+    "original": "room.JPG",
+    "file": "room.jpg",
+    "size": [
+      3840,
+      2160
+    ],
+    "alpha_bbox": null
+  },
+  {
+    "original": "iphone.JPG",
+    "file": "phone-reference.jpg",
+    "size": [
+      3854,
+      2160
+    ],
+    "alpha_bbox": null
+  },
+  {
+    "original": "桌上试卷.png",
+    "file": "exam.png",
+    "size": [
+      1675,
+      939
+    ],
+    "alpha_bbox": null
+  },
+  {
+    "original": "涂抹试卷.png",
+    "file": "exam-crossed.png",
+    "size": [
+      1675,
+      939
+    ],
+    "alpha_bbox": [
+      0,
+      0,
+      1675,
+      939
+    ]
+  },
+  {
+    "original": "电脑游戏.png",
+    "file": "game.png",
+    "size": [
+      1672,
+      941
+    ],
+    "alpha_bbox": null
+  },
+  {
+    "original": "进入游戏前.png",
+    "file": "computer.png",
+    "size": [
+      1676,
+      939
+    ],
+    "alpha_bbox": null
+  },
+  {
+    "original": "clean iPhone.JPG",
+    "file": "phone-clean.jpg",
+    "size": [
+      3852,
+      2160
+    ],
+    "alpha_bbox": null
+  },
+  {
+    "original": "teacher 通知.png",
+    "file": "message-teacher.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "alpha_bbox": [
+      777,
+      448,
+      1158,
+      621
+    ]
+  },
+  {
+    "original": "散落试卷1.png",
+    "file": "papers-1.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "alpha_bbox": [
+      1097,
+      520,
+      1343,
+      818
+    ]
+  },
+  {
+    "original": "手机单独.png",
+    "file": "phone.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "alpha_bbox": [
+      554,
+      359,
+      775,
+      563
+    ]
+  },
+  {
+    "original": "散落试卷2.png",
+    "file": "papers-2.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "alpha_bbox": [
+      711,
+      729,
+      892,
+      923
+    ]
+  },
+  {
+    "original": "class 通知.png",
+    "file": "message-class.png",
+    "size": [
+      1920,
+      1080
+    ],
+    "alpha_bbox": [
+      787,
+      284,
+      1158,
+      458
+    ]
+  },
+  {
+    "original": "wechat.zip/wechat/wechant.png",
+    "file": "wechat.png",
+    "size": [
+      1676,
+      939
+    ],
+    "alpha_bbox": null
+  },
+  {
+    "original": "2_0.zip/2_0/2_0.png",
+    "file": "2_0.png",
+    "size": [
+      1672,
+      941
+    ],
+    "alpha_bbox": null
+  }
+]

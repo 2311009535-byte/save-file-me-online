@@ -1,0 +1,8 @@
+.escape-parallax{position:absolute;inset:0;overflow:hidden;background:#29213f;color:#fff7e7;z-index:1;font-family:'Courier New',monospace}
+.journey-scroll{position:absolute;inset:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;touch-action:pan-y;outline-offset:-4px}
+.journey-scroll::-webkit-scrollbar{display:none}.journey-track{position:relative}.journey-view{position:sticky;top:0;height:var(--journey-height);width:100%;overflow:hidden;background:#29213f}
+.journey-view>canvas{width:100%;height:100%;display:block;object-fit:fill;pointer-events:none}
+.journey-hud{position:absolute;left:12%;right:12%;bottom:5%;text-align:center;pointer-events:none;text-shadow:0 2px 5px #000}
+.journey-help{font-size:clamp(13px,1.3vw,23px);letter-spacing:.08em;line-height:1.6;margin:0 0 12px}.journey-progress{width:160px;height:3px;margin:auto;background:#fff4;overflow:hidden}.journey-progress>i{display:block;height:100%;background:#ffe8b6;width:0}
+.journey-door{position:absolute;border:0;background:transparent;cursor:pointer;padding:0;color:#fff2bc;font:18px monospace;outline-offset:4px}
+.journey-door span{position:absolute;left:50%;bottom:-2em;transform:translateX(-50%);text-shadow:0 2px 4px #000}.journey-door:hover,.journey-door:focus-visible{outline:2px solid #ffedb2;box-shadow:0 0 35px #ffe4a155}
