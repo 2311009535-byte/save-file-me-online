@@ -4,7 +4,9 @@ import {paperOverlap,canReceivePaper,receiveZone} from '../public/js/escape-drop
 test('Paper overlap accepts shoulders and back, rejects desk and slight edge contact',()=>{
  assert(canReceivePaper({x:.4325,y:.34,w:.051,h:.078}));
  assert(canReceivePaper({x:.49,y:.41,w:.051,h:.078}));
- assert(!canReceivePaper({x:.56,y:.34,w:.051,h:.078}));
+ assert(canReceivePaper({x:.56,y:.34,w:.051,h:.078}));
+ assert(!canReceivePaper({x:.60,y:.34,w:.051,h:.078}));
+ assert(!canReceivePaper({x:.59,y:.34,w:.051,h:.078}));
  assert(!canReceivePaper({x:.59,y:.26,w:.051,h:.078}));
  assert.equal(paperOverlap({x:.8,y:.7,w:.05,h:.08}),0);
  assert(Math.abs(paperOverlap({x:.5,y:.35,w:.01,h:.01})-1)<1e-10);

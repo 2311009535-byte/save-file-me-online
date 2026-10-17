@@ -1,3 +1,3 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {levels,createRunner,jump,step} from '../public/js/platform.js';
 test('真实物理可通关五场景，禁止空中重复跳跃',()=>{for(let level=0;level<5;level++){const r=createRunner(level);let outcome;for(let i=0;i<1800;i++){const next=levels[level].find(([a,b])=>r.x+80>=a&&r.x+80<b);if(r.grounded&&(!next||next[2]<r.y-15)){assert(jump(r));assert.equal(jump(r),false);}outcome=step(r,1/60);if(outcome==='win'||outcome==='next')break;}assert.equal(outcome,level===4?'win':'next');assert.equal(r.deaths,0);}});
-test('落入间隙重置当前场景而非第一场景',()=>{const r=createRunner(2);r.x=740;r.y=980;r.vy=400;r.grounded=false;assert.equal(step(r,.05),'retry');assert.equal(r.level,2);assert.equal(r.x,100);assert.equal(r.deaths,1);});
+test('落入间隙回到安全位置并保留当前场景',()=>{const r=createRunner(2);r.x=740;r.y=980;r.vy=400;r.grounded=false;assert.equal(step(r,.05),'blocked');assert.equal(r.level,2);assert.equal(r.x,100);assert.equal(r.deaths,0);});
