@@ -53,7 +53,7 @@ function render(){
  document.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>{const c=Number(b.dataset.jump);commit({...state,completed:Math.max(state.completed,c-1),scene:`chapter${c}`});});
  document.querySelectorAll('[data-simulate]').forEach(b=>b.onclick=()=>commit({completed:Number(b.dataset.simulate),scene:'prologue',ended:false}));$('dev-exit').onclick=()=>commit(exit(state));
  if(state.scene==='prologue'){
- warmImages(state.completed===0?['1_0.png','1_1.png','1_1.5.png','1_5.png','1_6.png'].map(f=>'/assets/wonder/'+f):state.completed===1?['2_0.png','room-clean.png','phone-item.png','phone-clean.jpg','exam.png','computer.png','wechat.png'].map(f=>'/assets/escape/'+f):[]);
+ warmImages(state.completed===0?['1_0.png','1_1.png','window-enter-last-frame.png','1_5.png','1_6.png'].map(f=>'/assets/wonder/'+f):state.completed===1?['2_0.png','room-clean.png','phone-item.png','phone-clean.jpg','exam.png','computer.png','wechat.png'].map(f=>'/assets/escape/'+f):[]);
  imageScene(`prologue/0_${state.completed}.${state.completed===0||state.completed===4?'png':'jpg'}`,`序章 0_${state.completed}`);
  if(state.completed<4)disposeAssembly=mountAssembly($('visual'),{completed:state.completed});
  disposeCursors=mountPrologueUI($('visual'));

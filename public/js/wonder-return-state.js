@@ -3,15 +3,15 @@ const TRACKS={"window":[[0,0.98012421,-0.00215739,-0.86231388,-0.00124228,0.9645
 const identity=[1,0,0,0,1,0,0,0,1];
 function camera(view,time){const rows=TRACKS[view];let i=0;while(i<rows.length-2&&time>rows[i+1][0])i++;const a=rows[i],b=rows[i+1],t=Math.max(0,Math.min(1,(time-a[0])/(b[0]-a[0])));const h=a.slice(1).map((v,j)=>v+(b[j+1]-v)*t),enter=Math.min(1,time/.22);return h.map((v,j)=>identity[j]+(v-identity[j])*enter);}
 export function createWonderReturnEffect({view,visual,meteor=null,changed=false}){
- const image=visual.querySelector('.scene-image'),hold=document.createElement('canvas');hold.width=1670;hold.height=942;hold.className='wonder-return-hold';hold.getContext('2d').drawImage(image,0,0,1670,942);
+ const image=visual.querySelector('.scene-image'),hold=document.createElement('canvas'),nativeWidth=image.naturalWidth||image.width||1670,nativeHeight=image.naturalHeight||image.height||942;hold.width=nativeWidth;hold.height=nativeHeight;hold.className='wonder-return-hold';hold.getContext('2d').drawImage(image,0,0,nativeWidth,nativeHeight);
  Object.assign(hold.style,{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none'});
  let patch=null;
  if(view==='box'&&changed){patch=document.createElement('canvas');patch.width=1670;patch.height=942;patch.className='wonder-return-cyan';const c=patch.getContext('2d');c.drawImage(image,0,0,1670,942);const mask=document.createElement('canvas');mask.width=1670;mask.height=942;const m=mask.getContext('2d');m.filter='blur(8px)';m.fillStyle='#fff';m.fillRect(1015,110,340,310);c.globalCompositeOperation='destination-in';c.drawImage(mask,0,0);Object.assign(patch.style,{position:'absolute',inset:0,width:'100%',height:'100%'});}
  return(video,overlay)=>{
   overlay.dataset.returnState=view==='window'&&meteor?'meteor':changed?'cyan':'original';overlay.append(hold);
-  const root=document.createElement('div'),plane=document.createElement('div');Object.assign(root.style,{position:'absolute',left:0,top:0,width:'1670px',height:'942px',transformOrigin:'0 0',pointerEvents:'none'});Object.assign(plane.style,{position:'absolute',inset:0,transformOrigin:'0 0'});root.append(plane);overlay.append(root);if(patch)plane.append(patch);if(meteor)plane.append(meteor);
+  const root=document.createElement('div'),plane=document.createElement('div');Object.assign(root.style,{position:'absolute',left:0,top:0,width:nativeWidth+'px',height:nativeHeight+'px',transformOrigin:'0 0',pointerEvents:'none'});Object.assign(plane.style,{position:'absolute',inset:0,transformOrigin:'0 0'});root.append(plane);overlay.append(root);if(patch)plane.append(patch);if(meteor)plane.append(meteor);
   let raf,disposed=false;
-  function tick(){if(disposed)return;const time=video.currentTime||0,h=camera(view,time);root.style.transform='scale('+overlay.clientWidth/1670+','+overlay.clientHeight/942+')';plane.style.transform='matrix3d('+[h[0],h[3],0,h[6],h[1],h[4],0,h[7],0,0,1,0,h[2],h[5],0,h[8]].join(',')+')';hold.style.opacity=String(Math.max(0,1-time/.22));overlay.dataset.stateTime=time.toFixed(3);raf=requestAnimationFrame(tick);}
+  function tick(){if(disposed)return;const time=video.currentTime||0,h=camera(view,time),sx=nativeWidth/1670,sy=nativeHeight/942;h[1]*=sx/sy;h[3]*=sy/sx;h[2]*=sx;h[5]*=sy;h[6]/=sx;h[7]/=sy;root.style.transform='scale('+overlay.clientWidth/nativeWidth+','+overlay.clientHeight/nativeHeight+')';plane.style.transform='matrix3d('+[h[0],h[3],0,h[6],h[1],h[4],0,h[7],0,0,1,0,h[2],h[5],0,h[8]].join(',')+')';hold.style.opacity=String(Math.max(0,1-time/.22));overlay.dataset.stateTime=time.toFixed(3);raf=requestAnimationFrame(tick);}
   tick();return()=>{disposed=true;cancelAnimationFrame(raf);root.remove();hold.remove();};
  };
 }

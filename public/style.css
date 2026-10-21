@@ -340,3 +340,5 @@
 .opening-transcript{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 /* Contain room illumination below the existing camera/video transitions. */
 .wonder-scene #visual{isolation:isolate}
+/* Keep the decoded video end frame and interactive window at one exposure. */
+.wonder-scene #visual.wonder-window-dim{filter:brightness(.65)}
