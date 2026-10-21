@@ -327,8 +327,11 @@
 .opening{position:fixed;inset:0;z-index:100;background:#000;color:#dbe1d9;overflow:hidden;font-family:monospace}
 .opening-frame{position:absolute;width:1536px;height:1024px;transform-origin:0 0}
 .opening-frame canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.opening-line{position:absolute;left:168px;top:440px;width:1200px;margin:0;text-align:center;font:32px/1.55 monospace;letter-spacing:.2px;white-space:pre-wrap}
-.opening-line.is-typing:after{content:'_';opacity:.7}
+.opening-document{position:absolute;left:210px;top:280px;width:1116px}
+.opening-line{position:relative;min-height:66px;margin:0;text-align:left;font:28px/1.55 monospace;letter-spacing:0;white-space:pre-wrap}
+.opening-line.is-typing:after{content:'|';opacity:.75;animation:opening-caret 1s steps(1,end) infinite}
+@keyframes opening-caret{50%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.opening-line.is-typing:after{animation:none}}
 .opening-title{position:absolute;left:768px;top:460px;font:46px/1.2 monospace;white-space:nowrap;opacity:0}
 .opening-skip{position:absolute;right:max(24px,env(safe-area-inset-right));bottom:max(84px,env(safe-area-inset-bottom));border:1px solid #677066;background:#000;color:#cbd2c8;padding:9px 16px;font:12px monospace;letter-spacing:2px;cursor:pointer}
 .opening-skip:hover,.opening-skip:focus-visible{border-color:#dae3d8;outline:1px solid #dae3d8;outline-offset:3px}
