@@ -11,7 +11,12 @@ function color(data,x,y,ch){const gx=Math.floor(x/STEP),gy=Math.floor(y/STEP),tx
 export function cleanCompletedContours(visual,source,done){const key=Object.keys(PATHS).filter(id=>done[id]).join(',');if(!key)return;const base=visual.querySelector('.scene-image');if(!base)return;let entry=cache.get(source);
  if(entry?.key!==key){const canvas=document.createElement('canvas');canvas.width=1669;canvas.height=942;const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(source,0,0,1669,942);const image=ctx.getImageData(0,0,1669,942);
   for(const[id,points]of Object.entries(PATHS)){if(!done[id])continue;const data=field(id),x1=Math.max(0,Math.min(...points.map(p=>p[0]))-40),x2=Math.min(1668,Math.max(...points.map(p=>p[0]))+40),y1=Math.max(0,Math.min(...points.map(p=>p[1]))-40),y2=Math.min(941,Math.max(...points.map(p=>p[1]))+40);
-   for(let y=y1;y<=y2;y++)for(let x=x1;x<=x2;x++){const{d,inside}=locationOn(points,x,y);if(d>(inside?14:40))continue;const alpha=inside?Math.min(1,(14-d)/6):Math.min(1,(40-d)/12),i=(y*1669+x)*4;for(let ch=0;ch<3;ch++)image.data[i+ch]=Math.round(image.data[i+ch]*(1-alpha)+color(data,x,y,ch)*alpha);}
+   for(let y=y1;y<=y2;y++)for(let x=x1;x<=x2;x++){const{d,inside}=locationOn(points,x,y);if(d>(inside?14:40))continue;const i=(y*1669+x)*4;
+    // Window fabric is real artwork, not a glow mask. Replace only the pale
+    // highlight pixels close to the contour; preserve every other source pixel.
+    const r=image.data[i],g=image.data[i+1],b=image.data[i+2];
+    if(id==='window'&&(d>7||Math.min(r,g,b)<155||Math.max(r,g,b)-Math.min(r,g,b)>75))continue;
+    const alpha=id==='window'?1:(inside?Math.min(1,(14-d)/6):Math.min(1,(40-d)/12));for(let ch=0;ch<3;ch++)image.data[i+ch]=Math.round(image.data[i+ch]*(1-alpha)+color(data,x,y,ch)*alpha);}
   }
   if(done.box){const data=field('box');for(let y=862;y<894;y++)for(let x=1536;x<1572;x++){const i=(y*1669+x)*4;for(let ch=0;ch<3;ch++)image.data[i+ch]=Math.round(color(data,x,y,ch));}}
   ctx.putImageData(image,0,0);canvas.className='wonder-clean-room';canvas.dataset.completed=key;Object.assign(canvas.style,{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none'});entry={key,canvas};cache.set(source,entry);

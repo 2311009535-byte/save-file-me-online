@@ -10,7 +10,7 @@ export function mountRoomLighting(visual,done,previous=null){
   ctx.globalCompositeOperation='destination-out';
   function hole(x,y,rx,ry,strength){ctx.save();ctx.translate(x*1669,y*942);ctx.scale(rx*1669,ry*942);const g=ctx.createRadialGradient(0,0,0,0,0,1);g.addColorStop(0,`rgba(0,0,0,${strength})`);g.addColorStop(.35,`rgba(0,0,0,${strength*.98})`);g.addColorStop(.75,`rgba(0,0,0,${strength*.35})`);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(-1,-1,2,2);ctx.restore();}
   // Small permanent pools of window light and desk-lamp light precede exploration.
-  hole(.12,.37,.30,.48,.28);hole(.20,.63,.30,.25,.16);hole(.69,.49,.23,.26,.42);
+  hole(.12,.37,.30,.48,.46);hole(.20,.63,.30,.25,.28);hole(.69,.49,.23,.26,.62);
   for(const id of ids){if(done[id])hole(...regions[id],previous?.[id]||!changed?1:progress);}
   canvas.dataset.ambient='window,desk-lamp';
   ctx.globalCompositeOperation='source-over';canvas.dataset.lit=ids.filter(id=>done[id]).join(',');canvas.dataset.progress=progress.toFixed(3);canvas.dataset.fullyLit=String(all&&progress===1);
