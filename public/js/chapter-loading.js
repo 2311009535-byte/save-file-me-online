@@ -1,4 +1,4 @@
-import {createWonderLoadingMotion} from './wonder-loading-motion.js';
+import {createWonderLoadingMotion,paintWonderProgress} from './wonder-loading-motion.js';
 import {prepareImage} from './image-cache.js';
 // Native source pixels remain intact outside the progress strip.
 export function createChapterLoading(host){
@@ -21,6 +21,7 @@ export function createChapterLoading(host){
      for(let t=0;t<w;t+=75)c.drawImage(art,970,552,75,25,590+t,540,75,48);
      c.save();c.beginPath();c.rect(590,538,w*p,53);c.clip();for(let t=0;t<w;t+=180)c.drawImage(art,610,551,180,25,590+t,548,180,33);c.restore();c.restore();
      if(p<1){const edge=x+w*p;c.save();c.translate(edge,561);c.rotate(-.22);c.shadowColor='#0007';c.shadowBlur=7;const g=c.createLinearGradient(-12,0,22,0);g.addColorStop(0,'#9a8674');g.addColorStop(.45,'#f4e7d5');g.addColorStop(1,'#c8b39c');c.fillStyle=g;c.beginPath();c.moveTo(-12,-22);c.quadraticCurveTo(18,-32,22,-13);c.lineTo(22,24);c.quadraticCurveTo(3,13,-12,26);c.closePath();c.fill();c.restore();}
+    }else if(chapter===1){paintWonderProgress(c,p);
     }else{
      c.fillStyle=chapter===4?'#faf7ef':'#090b18';c.fillRect(x,y,w,20);
      if(p>0){c.save();c.beginPath();c.rect(x,y,w*p,20);c.clip();if(chapter===4){for(let t=0;t<w;t+=100)c.drawImage(art,650,551,100,18,x+t,y,100,20);}else{const g=c.createLinearGradient(x,0,x+w,0);g.addColorStop(0,'#e9b3a7');g.addColorStop(1,'#ab6d92');c.fillStyle=g;c.fillRect(x,y,w,20);}c.restore();}
@@ -32,7 +33,7 @@ export function createChapterLoading(host){
     try{
      art=await prepareImage(chapter===1?'/assets/wonder/1_0.png':`/assets/loading/chapter${chapter}.png`);if(stopped)return;
      wonderMotion=chapter===1?createWonderLoadingMotion(art):null;
-     const min=chapter===3?2300:1800;
+     const min=chapter===1?3400:chapter===3?2300:1800;
      const tick=now=>{if(stopped)return;if(last&&!document.hidden)elapsed+=Math.min(80,now-last);last=now;const p=Math.min(loaded/Math.max(1,urls.length),elapsed/min);render(p);if(p===1){complete+=16;if(complete>=180){finish(true);return;}}raf=requestAnimationFrame(tick);};raf=requestAnimationFrame(tick);
      await Promise.all(urls.map(async src=>{await prepareImage(src);loaded++;}));if(!urls.length)loaded=1;
     }catch{cancelAnimationFrame(raf);if(stopped)return;const retry=document.createElement('button');retry.textContent='LOAD FAILED — RETRY';Object.assign(retry.style,{position:'absolute',top:'69%',padding:'12px',font:'18px monospace',cursor:'pointer'});retry.onclick=attempt;layer.append(retry);}

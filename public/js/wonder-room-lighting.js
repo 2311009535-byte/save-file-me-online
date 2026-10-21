@@ -6,7 +6,7 @@ export function mountRoomLighting(visual,done,previous=null){
  const changed=previous&&ids.some(id=>Boolean(previous[id])!==Boolean(done[id])),duration=changed&&!reduced?1100:0;
  let raf=0,alive=true,start=null;
  function paint(progress){
-  ctx.clearRect(0,0,1669,942);ctx.globalCompositeOperation='source-over';ctx.fillStyle=`rgba(2,5,14,${.76*(all?1-progress:1)})`;ctx.fillRect(0,0,1669,942);
+  ctx.clearRect(0,0,1669,942);ctx.globalCompositeOperation='source-over';ctx.fillStyle=`rgba(2,5,14,${.56*(all?1-progress:1)})`;ctx.fillRect(0,0,1669,942);
   ctx.globalCompositeOperation='destination-out';
   for(const id of ids){if(!done[id])continue;const strength=previous?.[id]||!changed?1:progress,[x,y,rx,ry]=regions[id];ctx.save();ctx.translate(x*1669,y*942);ctx.scale(rx*1669,ry*942);const g=ctx.createRadialGradient(0,0,0,0,0,1);g.addColorStop(0,`rgba(0,0,0,${strength})`);g.addColorStop(.35,`rgba(0,0,0,${strength*.98})`);g.addColorStop(.75,`rgba(0,0,0,${strength*.35})`);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(-1,-1,2,2);ctx.restore();}
   ctx.globalCompositeOperation='source-over';canvas.dataset.lit=ids.filter(id=>done[id]).join(',');canvas.dataset.progress=progress.toFixed(3);canvas.dataset.fullyLit=String(all&&progress===1);
