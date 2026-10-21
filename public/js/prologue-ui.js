@@ -6,9 +6,9 @@ export function mountPrologueUI(visual){
  canvas.className='prologue-ui-motion';canvas.setAttribute('aria-hidden','true');
  Object.assign(canvas.style,{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none'});visual.append(canvas);
  const ctx=canvas.getContext('2d'),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
- let alive=true,timer=0,floorPatch=null;
+ let alive=true,timer=0,floorPatch=null,labelPatch=null;
  const restored=image.getAttribute('src').includes('0_4.');
- const lines=[...(!restored?[{x:188,y:80,w:116,h:27,columns:12,offset:0}]:[]),{x:183,y:887,w:90,h:31,columns:8,offset:2800},{x:162,y:924,w:120,h:31,columns:10,offset:5600}];
+ const lines=[...(!restored?[{x:188,y:80,w:116,h:27,columns:12,offset:0}]:[]),{x:183,y:887,w:90,h:31,columns:8,offset:2800},{x:162,y:924,w:120,h:31,columns:10,offset:5600},{x:1320,y:28,w:145,h:28,columns:13,offset:1300},{x:1346,y:924,w:145,h:31,columns:12,offset:7900},{x:1350,y:963,w:140,h:31,columns:12,offset:9700}];
  async function cursor(){
   try{
    const im=await prepareImage('/assets/prologue/0_0.png');if(!alive)return;
@@ -23,6 +23,7 @@ export function mountPrologueUI(visual){
  function tick(){
   if(!alive)return;timer=setTimeout(tick,80);ctx.clearRect(0,0,1536,1024);
   if(floorPatch)ctx.drawImage(floorPatch,549,754);
+  if(labelPatch)ctx.drawImage(labelPatch,535,715);
   if(reduced||document.hidden||!image.complete||!image.naturalWidth)return;
   const now=performance.now();
   for(const line of lines){
@@ -41,12 +42,19 @@ export function mountPrologueUI(visual){
    if(count)ctx.drawImage(image,304,80,count*10,27,304,80,count*10,27);
    canvas.dataset.loadingDots=String(count);
   }
+  const step=Math.floor(now/650),bits=Array.from({length:6},(_,i)=>((Math.floor(step/6)+i*3+(step%6>i?1:0))%2));
+  ctx.fillStyle='#000';ctx.fillRect(1346,887,70,31);
+  for(let i=0;i<bits.length;i++)ctx.drawImage(image,bits[i]?1358:1346,887,11,31,1346+i*11.5,887,11,31);
+  canvas.dataset.signalBits=bits.join('');canvas.dataset.systemMotion='type';
   canvas.dataset.uiStyle='erase-and-type';
  }
  if(image.getAttribute('src').includes('0_4.'))image.decode().then(()=>{
   if(!alive)return;const sample=document.createElement('canvas');sample.width=1536;sample.height=1024;const c=sample.getContext('2d');c.drawImage(image,0,0);
   const pixels=c.getImageData(549,754,48,64),floor=c.getImageData(505,754,48,64);
   for(let i=0;i<pixels.data.length;i+=4){const [r,g,b]=pixels.data.subarray(i,i+3);if(Math.min(r,g,b)>115&&Math.max(r,g,b)-Math.min(r,g,b)<65){pixels.data[i]=floor.data[i];pixels.data[i+1]=floor.data[i+1];pixels.data[i+2]=floor.data[i+2];}else pixels.data[i+3]=0;}
+  const label=c.getImageData(535,715,85,34),background=c.getImageData(450,715,85,34);
+  for(let i=0;i<label.data.length;i+=4){const [r,g,b]=label.data.subarray(i,i+3);if(Math.min(r,g,b)>85&&Math.max(r,g,b)-Math.min(r,g,b)<75){label.data[i]=background.data[i];label.data[i+1]=background.data[i+1];label.data[i+2]=background.data[i+2];}else label.data[i+3]=0;}
+  labelPatch=document.createElement('canvas');labelPatch.width=85;labelPatch.height=34;labelPatch.getContext('2d').putImageData(label,0,0);
   floorPatch=document.createElement('canvas');floorPatch.width=48;floorPatch.height=64;floorPatch.getContext('2d').putImageData(pixels,0,0);
  }).catch(()=>{});
  cursor();tick();

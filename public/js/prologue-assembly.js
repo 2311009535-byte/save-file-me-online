@@ -55,7 +55,7 @@ export function mountAssembly(visual,{completed=0}={}){
  }
  function frame(now){if(disposed)return;raf=requestAnimationFrame(frame);if(!source||document.hidden){last=now;return;}const began=performance.now(),dt=Math.min(last?(now-last)/1000:0,.04);last=now;
  if(active)hold=Math.min(1,(now-holdStarted)/1500);
- ctx.clearRect(0,0,1536,1024);ctx.save();ctx.beginPath();ctx.rect(40,216,1455,642);ctx.clip();ctx.fillStyle='#000';ctx.fillRect(40,216,1455,642);ctx.drawImage(source,580,631,89,36,580,631,89,36);
+ ctx.clearRect(0,0,1536,1024);ctx.save();ctx.beginPath();ctx.rect(40,216,1455,642);ctx.clip();ctx.fillStyle='#000';ctx.fillRect(40,216,1455,642);
  for(const group of groups){const c=group.c,isActive=active?.id===c.id;
   if(isActive&&hold>=1&&c.id===eligible){done.add(c.id);persist();active=null;hold=0;}
   const target=done.has(c.id)?1:isActive?hold:0;
