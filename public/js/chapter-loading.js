@@ -1,3 +1,4 @@
+import {createWonderLoadingMotion} from './wonder-loading-motion.js';
 import {prepareImage} from './image-cache.js';
 // Native source pixels remain intact outside the progress strip.
 export function createChapterLoading(host){
@@ -9,10 +10,10 @@ export function createChapterLoading(host){
    const layer=document.createElement('div');layer.className='chapter-loading-art';layer.dataset.chapter=chapter;
    Object.assign(layer.style,{position:'absolute',inset:'0',zIndex:'6',background:chapter===4?'#f7f4ed':'#090b16',display:'grid',placeItems:'center'});
    const canvas=document.createElement('canvas');canvas.width=1672;canvas.height=941;Object.assign(canvas.style,{width:'100%',height:'100%',objectFit:'contain'});canvas.setAttribute('role','progressbar');canvas.setAttribute('aria-label','Loading chapter');canvas.setAttribute('aria-valuemin','0');canvas.setAttribute('aria-valuemax','100');layer.append(canvas);host.append(layer);
-   const c=canvas.getContext('2d');let art;
+   const c=canvas.getContext('2d');let art,wonderMotion=null;
    const finish=ok=>{if(stopped)return;stopped=true;cancelAnimationFrame(raf);layer.remove();cancel=null;resolve(ok);};cancel=()=>finish(false);
    function render(p){
-    c.drawImage(art,0,0,1672,941);const w=chapter===3?488:chapter===4?398:370,x=chapter===3?590:chapter===4?637:652,y=chapter===3?547:chapter===4?548:548;
+    c.drawImage(art,0,0,1672,941);if(wonderMotion)layer.dataset.archiveOpen=String(wonderMotion(c,p,elapsed));const w=chapter===3?488:chapter===4?398:370,x=chapter===3?590:chapter===4?637:652,y=chapter===3?547:chapter===4?548:548;
     if(chapter===3){
      // Remove the baked roll, then rebuild a connected torn strip and curling edge.
      c.drawImage(art,0,700,520,90,574,510,520,90);
@@ -30,6 +31,7 @@ export function createChapterLoading(host){
     loaded=0;elapsed=0;last=0;complete=0;layer.querySelector('button')?.remove();
     try{
      art=await prepareImage(chapter===1?'/assets/wonder/1_0.png':`/assets/loading/chapter${chapter}.png`);if(stopped)return;
+     wonderMotion=chapter===1?createWonderLoadingMotion(art):null;
      const min=chapter===3?2300:1800;
      const tick=now=>{if(stopped)return;if(last&&!document.hidden)elapsed+=Math.min(80,now-last);last=now;const p=Math.min(loaded/Math.max(1,urls.length),elapsed/min);render(p);if(p===1){complete+=16;if(complete>=180){finish(true);return;}}raf=requestAnimationFrame(tick);};raf=requestAnimationFrame(tick);
      await Promise.all(urls.map(async src=>{await prepareImage(src);loaded++;}));if(!urls.length)loaded=1;

@@ -1,3 +1,4 @@
+import {mountRoomLighting} from './wonder-room-lighting.js';
 import {hideRoomMeteor} from './wonder-room-sky.js';
 import {gameAudio} from './game-audio.js';
 import {createWonderReturnEffect} from './wonder-return-state.js';
@@ -18,12 +19,13 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  if(['computer','game','win'].includes(data.view)&&!ids.every(id=>data.done[id]))data.view='room';
  let alive=true,raf=0,runner=null,last=0,meteorShown=false,swordChanged=false,busy=false,motionToken=0,drawVersion=0;
  const animations=new Set();let transitionOverlay=null,monitorPowered=ids.every(id=>data.done[id]),jumpHeld=false;
+ let disposeRoomLight=null,shownRoom=null;
  const videos=createVideoTransitions();
  const $=id=>document.getElementById(id),intro=createChapterIntro($('stage')),hints=createChapterHints($('stage'));
  const loader=createChapterLoading($('stage'));
  const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(data));}catch{}};
  function jumpWithSound(){const was=runner?.grounded;jump(runner);}
- function clear(){cancelAnimationFrame(raf);$('hotspots').replaceChildren();}
+ function clear(){disposeRoomLight?.();disposeRoomLight=null;cancelAnimationFrame(raf);$('hotspots').replaceChildren();}
  function mark(id){data.done[id]=true;persist();}
  function glow(id){$(id)?.classList.add('wonder-target');}
  function cancelMotion(){loader.dispose();intro.cancel();hints.hide();videos.cancel();stopMeteor();motionToken++;animations.forEach(a=>a.cancel());animations.clear();transitionOverlay?.remove();transitionOverlay=null;$('visual').style.transform='';$('visual').style.transformOrigin='';busy=false;delete $('stage').dataset.motion;}
@@ -50,7 +52,7 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  const q=profiles[view],ratio=q.room[2]/q.detail[2],zoom=1/ratio;
  const roomPose=pose(q.detail[0]-q.room[0]*zoom,q.detail[1]-q.room[1]*zoom,zoom,q.turn);
  const detailPose=pose(q.room[0]-q.detail[0]*ratio,q.room[1]-q.detail[1]*ratio,ratio,-q.turn);
- const old=$('visual').cloneNode(true);old.removeAttribute('id');old.classList.add('push-overlay');old.style.transformOrigin='0 0';old.style.zIndex='1';transitionOverlay=old;
+ const old=$('visual').cloneNode(true);old.querySelectorAll('canvas').forEach((copy,i)=>copy.getContext('2d').drawImage($('visual').querySelectorAll('canvas')[i],0,0));old.removeAttribute('id');old.classList.add('push-overlay');old.style.transformOrigin='0 0';old.style.zIndex='1';transitionOverlay=old;
  data.view=back?'room':view;if(view==='window')meteorShown=false;if(view==='box')swordChanged=false;draw();$('stage').append(old);
  const incoming=$('visual');incoming.style.transformOrigin='0 0';
  const duration=1250,easing='cubic-bezier(.45,0,.2,1)';
@@ -86,7 +88,9 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  const ready=ids.every(id=>data.done[id]);imageScene('wonder/1_1.png','Wonder 房间',1669,942);
  addContourLights($('visual'),data.done);
  hideRoomMeteor($('visual'),data.done.window);
- if(ready){const monitor=document.createElement('img');monitor.className='computer-light';monitor.src='/assets/wonder/1_13.png';monitor.alt='已亮起的电脑';$('visual').append(monitor);if(!monitorPowered){monitorPowered=true;gameAudio.effect('boot',{chapter:1,delay:$('stage').dataset.motion?(videos.layer()?.16:1.25):0});monitor.classList.add('is-powering-on');const power=monitor.animate([{opacity:0},{opacity:1,offset:.12},{opacity:.1,offset:.22},{opacity:1,offset:.38},{opacity:.15,offset:.48},{opacity:1,offset:.66},{opacity:.55,offset:.76},{opacity:1}],{duration:500,delay:$('stage').dataset.motion?(videos.layer()?160:1250):0,easing:'steps(1,end)',fill:'both'});animations.add(power);power.finished.then(()=>{if(!alive||!monitor.isConnected)return;monitor.classList.remove('is-powering-on');const button=$('wonder-computer');if(button)button.disabled=false;}).catch(()=>{}).finally(()=>{animations.delete(power);power.cancel();});}}
+ const light=mountRoomLighting($('visual'),data.done,shownRoom);disposeRoomLight=light;shownRoom={...data.done};
+ const powerDelay=Math.max(light.duration,$('stage').dataset.motion?(videos.layer()?160:1250):0);
+ if(ready){const monitor=document.createElement('img');monitor.className='computer-light';monitor.src='/assets/wonder/1_13.png';monitor.alt='已亮起的电脑';$('visual').append(monitor);if(!monitorPowered){monitorPowered=true;gameAudio.effect('boot',{chapter:1,delay:powerDelay/1000});monitor.classList.add('is-powering-on');const power=monitor.animate([{opacity:0},{opacity:1,offset:.12},{opacity:.1,offset:.22},{opacity:1,offset:.38},{opacity:.15,offset:.48},{opacity:1,offset:.66},{opacity:.55,offset:.76},{opacity:1}],{duration:500,delay:powerDelay,easing:'steps(1,end)',fill:'both'});animations.add(power);power.finished.then(()=>{if(!alive||!monitor.isConnected)return;monitor.classList.remove('is-powering-on');const button=$('wonder-computer');if(button)button.disabled=false;}).catch(()=>{}).finally(()=>{animations.delete(power);power.cancel();});}}
  const boxes={window:[4,12,16,45],box:[86,64,14,33],map:[35,18,20,23],note:[62,34,4,8]};
  ids.forEach(id=>{hotspot('wonder-'+id,boxes[id],{window:'窗户',box:'箱子',map:'地图',note:'便签'}[id],false,()=>push(id,'wonder-'+id));shapeHotspot($('wonder-'+id),id);if(data.done[id]){$('wonder-'+id).dataset.completed='true';$('wonder-'+id).style.filter='none';}if(!data.done[id])glow('wonder-'+id);if(['box','map','note'].includes(id)){const target=$('wonder-'+id);const hint=()=>{if(!busy&&!data.done[id])hints.show(id);};target.onpointerenter=hint;target.onfocus=hint;target.onpointerleave=()=>hints.hide();target.onblur=()=>hints.hide();}});
  hotspot('wonder-computer',[54,42,9,13],ready?'电脑 · 进入游戏':'电脑 · 先探索四件物品',!ready,()=>push('computer','wonder-computer'));if(ready)glow('wonder-computer');if($('visual').querySelector('.is-powering-on'))$('wonder-computer').disabled=true;

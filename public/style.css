@@ -338,3 +338,5 @@
 @media(prefers-reduced-motion:reduce){.opening-text.is-typing:after{animation:none}}
 .opening-title{position:absolute;left:244px;top:740px;color:#eff3eb;font:24px/36px monospace;white-space:nowrap;opacity:0}
 .opening-transcript{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+/* Contain room illumination below the existing camera/video transitions. */
+.wonder-scene #visual{isolation:isolate}

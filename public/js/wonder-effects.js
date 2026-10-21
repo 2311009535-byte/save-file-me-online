@@ -20,7 +20,7 @@ export function addContourLights(visual,done){
  const buffer=document.createElement('canvas');buffer.width=1669;buffer.height=942;const ctx=buffer.getContext('2d',{willReadFrequently:true});ctx.drawImage(source,0,0);const pixels=ctx.getImageData(0,0,1669,942);
  Object.entries(contours).forEach(([id,points],index)=>{
  if(done[id]||visual.querySelector('.contour-light[data-object="'+id+'"]'))return;
- const layer=document.createElement('canvas');layer.width=1669;layer.height=942;layer.className='contour-light';layer.dataset.object=id;layer.style.animationDelay=`-${index*.55}s`;
+ const layer=document.createElement('canvas');layer.width=1669;layer.height=942;layer.className='contour-light';layer.dataset.object=id;layer.style.zIndex='3';layer.style.animationDelay=`-${index*.55}s`;
  const out=layer.getContext('2d').createImageData(1669,942);
  const minX=Math.max(0,Math.min(...points.map(p=>p[0]))-18),maxX=Math.min(1668,Math.max(...points.map(p=>p[0]))+18),minY=Math.max(0,Math.min(...points.map(p=>p[1]))-18),maxY=Math.min(941,Math.max(...points.map(p=>p[1]))+18);
  for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++){
@@ -28,7 +28,7 @@ export function addContourLights(visual,done){
  // Isolate only existing pale contour pixels, never the object fill or background.
  if(Math.min(r,g,b)<155||Math.max(r,g,b)-Math.min(r,g,b)>75)continue;
  const d=Math.min(...points.map((a,n)=>distance(x,y,a,points[(n+1)%points.length])));if(d>18)continue;
- out.data[i]=0;out.data[i+1]=0;out.data[i+2]=0;out.data[i+3]=Math.round(Math.min(1,(Math.min(r,g,b)-155)/70)*245);
+ out.data[i]=r;out.data[i+1]=g;out.data[i+2]=b;out.data[i+3]=Math.round(Math.min(1,(Math.min(r,g,b)-155)/70)*245);
  }
  layer.getContext('2d').putImageData(out,0,0);visual.append(layer);
  });
