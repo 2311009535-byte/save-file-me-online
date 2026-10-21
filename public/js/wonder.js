@@ -1,3 +1,7 @@
+import {mountWindowBackMask} from './wonder-window-ui-mask.js';
+import {createWonderReflections} from './wonder-reflections.js';
+import {mountMapGlass} from './wonder-map-glass.js';
+import {mountNoteBreeze} from './wonder-note-breeze.js';
 import {boxTransitionTone,BOX_BRIGHTNESS} from './wonder-box-tone.js';
 import {mountClosedBox} from './wonder-box-lid.js';
 import {windowTransitionTone} from './wonder-window-tone.js';
@@ -22,22 +26,23 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  let alive=true,raf=0,runner=null,last=0,meteorShown=false,busy=false,motionToken=0,drawVersion=0;
  data.boxOpened=data?.boxOpened===true||data.done.box||data.view==='box';
  const animations=new Set();let transitionOverlay=null,monitorPowered=ids.every(id=>data.done[id]),jumpHeld=false;
- let disposeRoomLight=null,shownRoom=null,boxLid=null;
+ let disposeRoomLight=null,shownRoom=null,boxLid=null,disposeDetail=null;
  const videos=createVideoTransitions();
  const $=id=>document.getElementById(id),intro=createChapterIntro($('stage')),hints=createChapterHints($('stage'));
  const loader=createChapterLoading($('stage'));
+ const reflections=createWonderReflections($('stage'),{canRead:id=>alive&&data.view===id&&!busy&&!intro.active&&!$('stage').dataset.motion,onReturn:id=>{if(!alive||data.view!==id||busy)return;if(id==='map'||id==='note')mark(id);transition(id,true);}});
  const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(data));}catch{}};
  function jumpWithSound(){const was=runner?.grounded;jump(runner);}
- function clear(){boxLid?.dispose();boxLid=null;disposeRoomLight?.();disposeRoomLight=null;cancelAnimationFrame(raf);$('hotspots').replaceChildren();}
- function mark(id){data.done[id]=true;persist();}
+ function clear(){reflections.cancel();disposeDetail?.();disposeDetail=null;boxLid?.dispose();boxLid=null;disposeRoomLight?.();disposeRoomLight=null;cancelAnimationFrame(raf);$('hotspots').replaceChildren();}
+ function mark(id){data.done[id]=true;persist();if(id==='window'&&data.view==='window')reflections.start('window');}
  function glow(id){$(id)?.classList.add('wonder-target');}
- function cancelMotion(){loader.dispose();intro.cancel();hints.hide();videos.cancel();stopMeteor();motionToken++;animations.forEach(a=>a.cancel());animations.clear();transitionOverlay?.remove();transitionOverlay=null;$('visual').style.transform='';$('visual').style.transformOrigin='';busy=false;delete $('stage').dataset.motion;}
+ function cancelMotion(){reflections.cancel();loader.dispose();intro.cancel();hints.hide();videos.cancel();stopMeteor();motionToken++;animations.forEach(a=>a.cancel());animations.clear();transitionOverlay?.remove();transitionOverlay=null;$('visual').style.transform='';$('visual').style.transformOrigin='';busy=false;delete $('stage').dataset.motion;}
  async function animate(element,frames,options,token){const a=element.animate(frames,options);animations.add(a);try{await a.finished;return alive&&token===motionToken;}catch{return false;}finally{a.cancel();animations.delete(a);}}
  const targetImages={window:'window-enter-supplied-last.png',box:'box-enter-supplied-last.png',map:'1_3.png',note:'1_7.jpg',computer:'1_15.png'};
  const profiles={window:{room:[.117,.35,.112],detail:[.5,.42,.60],turn:3},box:{room:[.932,.807,.134],detail:[.61,.54,.63],turn:-3},map:{room:[.45,.302,.198],detail:[.5,.5,.88],turn:0},note:{room:[.642,.383,.034],detail:[.64,.48,.36],turn:0},computer:{room:[.585,.485,.09],detail:[.48,.38,.45],turn:0}};
  function pose(x,y,scale,turn=0){return `translate(${x*100}%,${y*100}%) perspective(1800px) rotateY(${turn}deg) scale(${scale})`;}
  async function transition(view,back=false){
- if(busy||!alive)return;hints.hide();if(!back||view!=='window')stopMeteor();busy=true;const token=++motionToken;$('stage').dataset.motion=back?'return':'push';if(!back){$('back').textContent='BACK';$('back').setAttribute('aria-label','BACK');}
+ if(busy||!alive)return;reflections.cancel();hints.hide();$('back').hidden=ids.includes(view);if(!back||view!=='window')stopMeteor();busy=true;const token=++motionToken;$('stage').dataset.motion=back?'return':'push';if(!back){$('back').textContent='BACK';$('back').setAttribute('aria-label','BACK');}
  if(view==='window'||view==='box'){
  const destination=back?'room':view;
  const previewSrc='/assets/wonder/'+(back?'1_1.png':targetImages[view]);
@@ -78,7 +83,7 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  }
  async function loading(){
  busy=true;$('back').textContent='SAVE ROOM';$('back').setAttribute('aria-label','SAVE ROOM');const token=++motionToken;$('stage').classList.add('wonder-scene');$('stage').dataset.motion='loading';$('stage').dataset.wonderView='loading';imageScene('wonder/1_0.png','Wonder 加载页面',1672,941);$('hotspots').replaceChildren();$('back').onclick=()=>{cancelMotion();onExit();};
- const names=['1_1.png','extra.png','room-closed-box.png','box-enter-supplied-last.png','window-enter-supplied-last.png','1_5.png','1_6.png','1_3.png','1_4.png','1_7.jpg','1_13.png','1_15.png','1_8.png','1_9.png','1_10.png','1_11.png','1_12.png','character.png'];
+ const names=['1_1.png','extra.png','room-closed-box-user.png','box-enter-supplied-last.png','window-enter-supplied-last.png','1_5.png','1_6.png','1_3.png','1_4.png','1_7.jpg','1_13.png','1_15.png','1_8.png','1_9.png','1_10.png','1_11.png','1_12.png','character.png'];
  if(!await loader.play(1,names.map(f=>'/assets/wonder/'+f))||!alive||token!==motionToken)return;
  if(!await intro.play(1,()=>draw())||!alive||token!==motionToken)return;busy=false;delete $('stage').dataset.motion;
  }
@@ -89,7 +94,7 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  $('visual').style.filter=data.view==='box'?`brightness(${BOX_BRIGHTNESS})`:'';
  const version=++drawVersion;hints.hide();
  clear();$('wonder-progress').textContent='第一章探索：'+ids.map(id=>({window:'窗户',box:'纸箱',map:'地图',note:'便签'}[id]+(data.done[id]?' ✓':' 未完成'))).join(' / ');$('stage').classList.add('wonder-scene');$('stage').dataset.wonderView=data.view;$('back').textContent=data.view==='room'?'SAVE ROOM':'BACK';
- $('back').setAttribute('aria-label',$('back').textContent);$('back').onclick=()=>{if(busy){cancelMotion();go('room');return;}if(data.view==='room')onExit();else{if(data.view==='map'||data.view==='note')mark(data.view);if(profiles[data.view])transition(data.view,true);else go('room');}};
+ $('back').hidden=ids.includes(data.view);$('back').setAttribute('aria-label',$('back').textContent);$('back').onclick=()=>{if(busy){cancelMotion();go('room');return;}if(data.view==='room')onExit();else{if(data.view==='map'||data.view==='note')mark(data.view);if(profiles[data.view])transition(data.view,true);else go('room');}};
  if(data.view==='room'){
  const ready=ids.every(id=>data.done[id]);imageScene('wonder/1_1.png','Wonder 房间',1669,942);
  addContourLights($('visual'),data.done,{closedBox:!data.boxOpened});
@@ -104,18 +109,21 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  }else if(data.view==='window'){
  stopMeteor();
  imageScene('wonder/window-enter-supplied-last.png','窗户特写 · 视频最后一帧',1910,1084);
- if(!data.done.window)hints.show('window');
+ disposeDetail=mountWindowBackMask($('visual'),$('visual').querySelector('.scene-image'));
+ hints.show('window');
  hotspot('wonder-meteor',[18,12,64,73],'点击窗户，寻找流星',false,()=>{if(busy)return;windowActivated=true;hints.hide();meteor();});if(!data.done.window)glow('wonder-meteor');
  }else if(data.view==='box'){
  imageScene('wonder/box-enter-supplied-last.png','打开的纸箱 · 箱内物品',1916,1082);
- mark('box');if(shownRoom)shownRoom={...shownRoom,box:true};
+ mark('box');if(shownRoom)shownRoom={...shownRoom,box:true};reflections.start('box');
  }else if(data.view==='map'){
- if(!data.done.map)hints.show('map');
+ hints.show('map');
  imageScene('wonder/1_4.png','下层游戏地图',1669,942);
  const top=document.createElement('img');top.className='map-real';top.src='/assets/wonder/1_3.png';top.alt='上层现实地图';$('visual').append(top);
- const reveal=e=>{if(e.type==='pointerdown')hints.hide();const {x,y}=scenePoint(e.clientX,e.clientY);top.style.maskImage=`radial-gradient(circle 110px at ${x*100}% ${y*100}%, transparent 98%, black 100%)`;};
- $('visual').onpointermove=reveal;$('visual').onpointerdown=reveal;
- }else if(data.view==='note')imageScene('wonder/1_7.jpg','便签特写',825,466);
+ disposeDetail=mountMapGlass($('visual'),top,{scenePoint,onReveal:()=>{hints.hide();reflections.start('map');}});
+ }else if(data.view==='note'){
+ imageScene('wonder/1_7.jpg','便利贴 · 探索学校后山',825,466);
+ disposeDetail=mountNoteBreeze($('visual'));reflections.start('note');
+ }
  else if(data.view==='computer'){
  imageScene('wonder/1_15.png','电脑特写',1672,941);hotspot('wonder-play',[32,28,29,9],'点击屏幕进入平台游戏',false,()=>go('game'));$('wonder-play').classList.add('wonder-enter-game');$('wonder-play').textContent='ENTER GAME';
  }else if(data.view==='game'){
@@ -134,5 +142,5 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  if(data.view!=='map'){$('visual').onpointermove=null;$('visual').onpointerdown=null;}
  }
  const key=e=>{if(!intro.active&&data.view==='game'&&e.code==='Space'&&$('dev-panel').hidden){e.preventDefault();jumpHeld=true;if(!e.repeat)jumpWithSound();}};const keyup=e=>{if(e.code==='Space')jumpHeld=false;};const blur=()=>jumpHeld=false;window.addEventListener('keyup',keyup);window.addEventListener('blur',blur);window.addEventListener('keydown',key);window.addEventListener('beforeunload',cancelMotion);window.addEventListener('pagehide',cancelMotion);persist();if(showLoading)loading();else draw();
- return ()=>{alive=false;intro.dispose();hints.dispose();cancelMotion();videos.dispose();clear();window.removeEventListener('keydown',key);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);window.removeEventListener('beforeunload',cancelMotion);window.removeEventListener('pagehide',cancelMotion);$('visual').onpointermove=null;$('visual').onpointerdown=null;$('visual').classList.remove('wonder-window-dim');$('visual').style.filter='';$('stage').classList.remove('wonder-scene');delete $('stage').dataset.wonderView;delete $('stage').dataset.level;};
+ return ()=>{alive=false;reflections.dispose();$('back').hidden=false;intro.dispose();hints.dispose();cancelMotion();videos.dispose();clear();window.removeEventListener('keydown',key);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);window.removeEventListener('beforeunload',cancelMotion);window.removeEventListener('pagehide',cancelMotion);$('visual').onpointermove=null;$('visual').onpointerdown=null;$('visual').classList.remove('wonder-window-dim');$('visual').style.filter='';$('stage').classList.remove('wonder-scene');delete $('stage').dataset.wonderView;delete $('stage').dataset.level;};
 }
