@@ -1,6 +1,6 @@
 const {chromium}=require('playwright'),assert=require('node:assert/strict');
 (async()=>{const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/chromium',args:['--no-sandbox']});try{
- const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(process.env.TEST_BASE_URL||'http://127.0.0.1:3005');await page.waitForFunction(()=>document.querySelector('.prologue-assembly')?.dataset.frame);
+ const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.addInitScript(()=>sessionStorage.setItem('save-file-me:opening:v1','seen'));await page.goto(process.env.TEST_BASE_URL||'http://127.0.0.1:3005');await page.waitForFunction(()=>document.querySelector('.prologue-assembly')?.dataset.frame);
  const move=async(x,y)=>{const r=await page.locator('#stage').boundingBox();await page.mouse.move(r.x+r.width*x/1536,r.y+r.height*y/1024);};
  for(const [id,box]of [['computer',[774,320,395,364]],['bed',[102,557,342,285]],['door',[1231,691,145,153]]]){
   await move(box[0]+box[2]/2,box[1]+box[3]/2);await page.waitForTimeout(1750);assert.equal(await page.locator('.prologue-assembly').getAttribute('data-'+id+'-progress'),'1.000');

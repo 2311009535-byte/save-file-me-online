@@ -1,3 +1,4 @@
+import {mountOpening,shouldShowOpening} from './opening.js';
 import {gameAudio} from './game-audio.js';
 import {mountFinal} from './final.js';
 import {mountFinalPrelude} from './final-timeline.js';
@@ -13,7 +14,7 @@ import {STORAGE_KEY,normalize,canEnter,enter,complete,exit} from './state.js';
 import {chapters} from './chapters.js';
 import {input} from './input.js';
 import {mountCreation} from './creation.js';
-let disposeAvatar=null,disposeFinal=null;
+let disposeAvatar=null,disposeFinal=null,disposeOpening=null;
 import {mountWonder,resetWonder} from './wonder.js';
 import {mountEscape,resetEscape} from './escape.js';
 import {mountPrologueGlitch} from './prologue-glitch.js';
@@ -35,6 +36,7 @@ export function scenePoint(clientX,clientY){const r=$('stage').getBoundingClient
 function imageScene(src,label,w=1536,h=1024){width=w;height=h;if(src instanceof HTMLCanvasElement){src.className='scene-image escape-native-phone';$('visual').replaceChildren(src);resize();return;}const im=sceneImage('/assets/'+src);im.className='scene-image';im.alt=label;$('visual').replaceChildren(im);const fit=()=>{if(!im.isConnected||$('visual').firstElementChild!==im)return;width=im.naturalWidth;height=im.naturalHeight;resize();};im.onload=fit;if(im.complete&&im.naturalWidth)fit();else resize();}
 function hotspot(id,rect,label,disabled,callback){const b=document.createElement('button');b.id=id;b.className='hotspot';b.disabled=disabled;b.setAttribute('aria-label',label);b.title=label;const [x,y,w,h]=rect;Object.assign(b.style,{left:x+'%',top:y+'%',width:w+'%',height:h+'%'});const hint=document.createElement('span');hint.className='hint';hint.textContent=label;b.append(hint);b.onclick=callback;$('hotspots').append(b);}
 function render(){
+ disposeOpening?.();disposeOpening=null;
  disposeFinal?.();disposeFinal=null;disposeAvatar?.();disposeAvatar=null;
  const showWonderLoading=lastRenderedScene!=='chapter1';lastRenderedScene=state.scene;
  disposeBedFrame?.();disposeBedFrame=null;disposeObjects?.();disposeObjects=null;disposeCursors?.();disposeCursors=null;disposeRetryWord?.();disposeRetryWord=null;disposeRetry?.();disposeRetry=null;disposeSelection?.();disposeSelection=null;disposeAssembly?.();disposeAssembly=null;disposeLamp?.();disposeLamp=null;disposeEscapeWord?.();disposeEscapeWord=null;disposeEscape?.();disposeEscape=null;disposeWonder?.();disposeWonder=null;disposeGlitch?.();disposeGlitch=null;disposeWordGlitch?.();disposeWordGlitch=null;
@@ -92,7 +94,8 @@ $('reset').onclick=()=>{if(confirm('重置全部进度并返回初始房间？')
 const files=['1_1.png','1_1.5.png','1_2.png','1_3.png','1_4.png','1_5.png','1_6.png','1_7.jpg','1_15.png','1_8.png','1_9.png','1_10.png','1_11.png','1_12.png'];$('asset-options').innerHTML=files.map(f=>`<button data-asset="${f}">${f}</button>`).join('');document.querySelectorAll('[data-asset]').forEach(b=>b.onclick=()=>imageScene(`wonder/${b.dataset.asset}`,'Wonder 素材',1670,942));
 $('camera-start').onclick=async()=>{if(state.scene==='chapter4'){document.getElementById('hand-start')?.click();$('camera-status').textContent='手势状态见第四章实时诊断面板';return;}const button=$('camera-start');button.disabled=true;try{await input.startCamera($('camera-video'));if(state.scene!=='chapter4'){input.stopCamera();return;}$('camera-video').hidden=false;$('camera-status').textContent='摄像头预览开启';}catch(e){input.stopCamera();$('camera-status').textContent='无法开启：'+e.message;}finally{button.disabled=false;}};
 $('camera-stop').onclick=()=>{document.getElementById('hand-stop')?.click();input.stopCamera();$('camera-video').hidden=true;$('camera-status').textContent='摄像头已关闭';};
-window.addEventListener('resize',resize);window.addEventListener('pagehide',()=>{disposeFinal?.();disposeFinal=null;input.stopCamera();disposeBedFrame?.();disposeBedFrame=null;disposeObjects?.();disposeObjects=null;disposeCursors?.();disposeCursors=null;disposeRetryWord?.();disposeRetryWord=null;disposeRetry?.();disposeRetry=null;disposeSelection?.();disposeSelection=null;disposeAssembly?.();disposeAssembly=null;disposeLamp?.();disposeLamp=null;disposeEscapeWord?.();disposeEscapeWord=null;disposeGlitch?.();disposeGlitch=null;disposeWordGlitch?.();disposeWordGlitch=null;});window.addEventListener('pageshow',e=>{if(e.persisted)render();});window.addEventListener('storage',e=>{if(e.key===STORAGE_KEY){try{state=normalize(JSON.parse(e.newValue));render();}catch{}}});save();render();
+window.addEventListener('resize',resize);window.addEventListener('pagehide',()=>{disposeOpening?.();disposeOpening=null;disposeFinal?.();disposeFinal=null;input.stopCamera();disposeBedFrame?.();disposeBedFrame=null;disposeObjects?.();disposeObjects=null;disposeCursors?.();disposeCursors=null;disposeRetryWord?.();disposeRetryWord=null;disposeRetry?.();disposeRetry=null;disposeSelection?.();disposeSelection=null;disposeAssembly?.();disposeAssembly=null;disposeLamp?.();disposeLamp=null;disposeEscapeWord?.();disposeEscapeWord=null;disposeGlitch?.();disposeGlitch=null;disposeWordGlitch?.();disposeWordGlitch=null;});window.addEventListener('pageshow',e=>{if(e.persisted)render();});window.addEventListener('storage',e=>{if(e.key===STORAGE_KEY){try{state=normalize(JSON.parse(e.newValue));render();}catch{}}});save();render();
+if(shouldShowOpening(state))disposeOpening=mountOpening({stage:$('stage'),onFinish:()=>{disposeOpening=null;}});
 
 // Chapter 04 test controls remain available from the prologue.
 document.querySelectorAll('[data-creation-test]').forEach(button=>button.onclick=()=>{
