@@ -14,9 +14,9 @@ export function shapeHotspot(element,id){
 function distance(x,y,a,b){const dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/(dx*dx+dy*dy)));return Math.hypot(x-a[0]-t*dx,y-a[1]-t*dy);}
 export function addContourLights(visual,done){
  const base=visual.querySelector('.scene-image');
- prepareImage('/assets/wonder/1_1.png').then(source=>{
+ Promise.all([prepareImage('/assets/wonder/1_1.png'),Object.values(done).some(Boolean)?prepareImage('/assets/wonder/extra.png'):null]).then(([source,cleanSource])=>{
  if(!base.isConnected||visual.querySelector('.scene-image')!==base)return;
- cleanCompletedContours(visual,source,done,contours);
+ cleanCompletedContours(visual,source,done,cleanSource);
  const buffer=document.createElement('canvas');buffer.width=1669;buffer.height=942;const ctx=buffer.getContext('2d',{willReadFrequently:true});ctx.drawImage(source,0,0);const pixels=ctx.getImageData(0,0,1669,942);
  Object.entries(contours).forEach(([id,points],index)=>{
  if(done[id]||visual.querySelector('.contour-light[data-object="'+id+'"]'))return;

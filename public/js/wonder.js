@@ -76,7 +76,7 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  }
  async function loading(){
  busy=true;$('back').textContent='SAVE ROOM';$('back').setAttribute('aria-label','SAVE ROOM');const token=++motionToken;$('stage').classList.add('wonder-scene');$('stage').dataset.motion='loading';$('stage').dataset.wonderView='loading';imageScene('wonder/1_0.png','Wonder 加载页面',1672,941);$('hotspots').replaceChildren();$('back').onclick=()=>{cancelMotion();onExit();};
- const names=['1_1.png','window-enter-supplied-last.png','1_5.png','1_6.png','1_3.png','1_4.png','1_7.jpg','1_13.png','1_15.png','1_8.png','1_9.png','1_10.png','1_11.png','1_12.png','character.png'];
+ const names=['1_1.png','extra.png','window-enter-supplied-last.png','1_5.png','1_6.png','1_3.png','1_4.png','1_7.jpg','1_13.png','1_15.png','1_8.png','1_9.png','1_10.png','1_11.png','1_12.png','character.png'];
  if(!await loader.play(1,names.map(f=>'/assets/wonder/'+f))||!alive||token!==motionToken)return;
  if(!await intro.play(1,()=>draw())||!alive||token!==motionToken)return;busy=false;delete $('stage').dataset.motion;
  }
