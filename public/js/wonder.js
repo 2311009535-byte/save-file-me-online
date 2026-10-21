@@ -1,3 +1,4 @@
+import {mountClosedBox} from './wonder-box-lid.js';
 import {windowTransitionTone} from './wonder-window-tone.js';
 import {mountRoomLighting} from './wonder-room-lighting.js';
 import {hideRoomMeteor} from './wonder-room-sky.js';
@@ -16,20 +17,21 @@ const ids=['window','box','map','note'];
 export function resetWonder(){try{localStorage.removeItem(KEY);}catch{}}
 export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,finish,onExit}){
  let data;try{data=JSON.parse(localStorage.getItem(KEY));}catch{}
- data={done:Object.fromEntries(ids.map(id=>[id,data?.done?.[id]===true])),view:ids.includes(data?.view)||['room','computer','game','win'].includes(data?.view)?data.view:'room',level:Number.isInteger(data?.level)?Math.min(4,Math.max(0,data.level)):0};
+ data={boxOpened:data?.boxOpened===true,done:Object.fromEntries(ids.map(id=>[id,data?.done?.[id]===true])),view:ids.includes(data?.view)||['room','computer','game','win'].includes(data?.view)?data.view:'room',level:Number.isInteger(data?.level)?Math.min(4,Math.max(0,data.level)):0};
  if(['computer','game','win'].includes(data.view)&&!ids.every(id=>data.done[id]))data.view='room';
  let alive=true,raf=0,runner=null,last=0,meteorShown=false,swordChanged=false,busy=false,motionToken=0,drawVersion=0;
+ data.boxOpened=data?.boxOpened===true||data.done.box||data.view==='box';
  const animations=new Set();let transitionOverlay=null,monitorPowered=ids.every(id=>data.done[id]),jumpHeld=false;
- let disposeRoomLight=null,shownRoom=null;
+ let disposeRoomLight=null,shownRoom=null,boxLid=null;
  const videos=createVideoTransitions();
  const $=id=>document.getElementById(id),intro=createChapterIntro($('stage')),hints=createChapterHints($('stage'));
  const loader=createChapterLoading($('stage'));
  const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(data));}catch{}};
  function jumpWithSound(){const was=runner?.grounded;jump(runner);}
- function clear(){disposeRoomLight?.();disposeRoomLight=null;cancelAnimationFrame(raf);$('hotspots').replaceChildren();}
+ function clear(){boxLid?.dispose();boxLid=null;disposeRoomLight?.();disposeRoomLight=null;cancelAnimationFrame(raf);$('hotspots').replaceChildren();}
  function mark(id){data.done[id]=true;persist();}
  function glow(id){$(id)?.classList.add('wonder-target');}
- function cancelMotion(){loader.dispose();intro.cancel();hints.hide();videos.cancel();stopMeteor();motionToken++;animations.forEach(a=>a.cancel());animations.clear();transitionOverlay?.remove();transitionOverlay=null;$('visual').style.transform='';$('visual').style.transformOrigin='';busy=false;delete $('stage').dataset.motion;}
+ function cancelMotion(){boxLid?.cancel();loader.dispose();intro.cancel();hints.hide();videos.cancel();stopMeteor();motionToken++;animations.forEach(a=>a.cancel());animations.clear();transitionOverlay?.remove();transitionOverlay=null;$('visual').style.transform='';$('visual').style.transformOrigin='';busy=false;delete $('stage').dataset.motion;}
  async function animate(element,frames,options,token){const a=element.animate(frames,options);animations.add(a);try{await a.finished;return alive&&token===motionToken;}catch{return false;}finally{a.cancel();animations.delete(a);}}
  const targetImages={window:'window-enter-supplied-last.png',box:'1_5.png',map:'1_3.png',note:'1_7.jpg',computer:'1_15.png'};
  const profiles={window:{room:[.117,.35,.112],detail:[.5,.42,.60],turn:3},box:{room:[.932,.807,.134],detail:[.61,.54,.63],turn:-3},map:{room:[.45,.302,.198],detail:[.5,.5,.88],turn:0},note:{room:[.642,.383,.034],detail:[.64,.48,.36],turn:0},computer:{room:[.585,.485,.09],detail:[.48,.38,.45],turn:0}};
@@ -40,6 +42,11 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  const destination=back?'room':view;
  const previewSrc='/assets/wonder/'+(back?'1_1.png':targetImages[view]);
  try{await prepareImage(previewSrc);}catch{cancelMotion();return;}if(!alive||token!==motionToken)return;
+ if(view==='box'&&!back&&!data.boxOpened){
+  const opened=await boxLid?.open(()=>alive&&token===motionToken);
+  if(!alive||token!==motionToken||!opened){if(alive&&token===motionToken)cancelMotion();return;}
+  data.boxOpened=true;persist();
+ }
  // No intermediate still-image playback. Missing clips use a direct, honest fallback.
  const returnEffect=back&&view==='window'?createWindowReturnHold({visual:$('visual'),meteor:meteorLayer}):null;
  const effect=view==='window'?windowTransitionTone({back,roomBrightness:ids.every(id=>data.done[id])?1:(back ? .58 : .56),returnEffect}):null;
@@ -76,7 +83,7 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  }
  async function loading(){
  busy=true;$('back').textContent='SAVE ROOM';$('back').setAttribute('aria-label','SAVE ROOM');const token=++motionToken;$('stage').classList.add('wonder-scene');$('stage').dataset.motion='loading';$('stage').dataset.wonderView='loading';imageScene('wonder/1_0.png','Wonder 加载页面',1672,941);$('hotspots').replaceChildren();$('back').onclick=()=>{cancelMotion();onExit();};
- const names=['1_1.png','extra.png','window-enter-supplied-last.png','1_5.png','1_6.png','1_3.png','1_4.png','1_7.jpg','1_13.png','1_15.png','1_8.png','1_9.png','1_10.png','1_11.png','1_12.png','character.png'];
+ const names=['1_1.png','extra.png','room-closed-box.png','window-enter-supplied-last.png','1_5.png','1_6.png','1_3.png','1_4.png','1_7.jpg','1_13.png','1_15.png','1_8.png','1_9.png','1_10.png','1_11.png','1_12.png','character.png'];
  if(!await loader.play(1,names.map(f=>'/assets/wonder/'+f))||!alive||token!==motionToken)return;
  if(!await intro.play(1,()=>draw())||!alive||token!==motionToken)return;busy=false;delete $('stage').dataset.motion;
  }
@@ -89,7 +96,8 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  $('back').setAttribute('aria-label',$('back').textContent);$('back').onclick=()=>{if(busy){cancelMotion();go('room');return;}if(data.view==='room')onExit();else{if(data.view==='map'||data.view==='note')mark(data.view);if(profiles[data.view])transition(data.view,true);else go('room');}};
  if(data.view==='room'){
  const ready=ids.every(id=>data.done[id]);imageScene('wonder/1_1.png','Wonder 房间',1669,942);
- addContourLights($('visual'),data.done);
+ addContourLights($('visual'),data.done,{closedBox:!data.boxOpened});
+ if(!data.boxOpened)boxLid=mountClosedBox($('visual'));
  hideRoomMeteor($('visual'),data.done.window);
  const light=mountRoomLighting($('visual'),data.done,shownRoom);disposeRoomLight=light;shownRoom={...data.done};
  const powerDelay=Math.max(light.duration,$('stage').dataset.motion?(videos.layer()?160:1250):0);

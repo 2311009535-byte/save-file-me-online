@@ -12,14 +12,14 @@ export function shapeHotspot(element,id){
  Object.assign(element.style,{left:`${x/1669*100}%`,top:`${y/942*100}%`,width:`${w/1669*100}%`,height:`${h/942*100}%`,clipPath:`polygon(${points.map(p=>`${(p[0]-x)/w*100}% ${(p[1]-y)/h*100}%`).join(',')})`});
 }
 function distance(x,y,a,b){const dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/(dx*dx+dy*dy)));return Math.hypot(x-a[0]-t*dx,y-a[1]-t*dy);}
-export function addContourLights(visual,done){
+export function addContourLights(visual,done,{closedBox=false}={}){
  const base=visual.querySelector('.scene-image');
  Promise.all([prepareImage('/assets/wonder/1_1.png'),Object.values(done).some(Boolean)?prepareImage('/assets/wonder/extra.png'):null]).then(([source,cleanSource])=>{
  if(!base.isConnected||visual.querySelector('.scene-image')!==base)return;
  cleanCompletedContours(visual,source,done,cleanSource);
  const buffer=document.createElement('canvas');buffer.width=1669;buffer.height=942;const ctx=buffer.getContext('2d',{willReadFrequently:true});ctx.drawImage(source,0,0);const pixels=ctx.getImageData(0,0,1669,942);
  Object.entries(contours).forEach(([id,points],index)=>{
- if(done[id]||visual.querySelector('.contour-light[data-object="'+id+'"]'))return;
+ if((id==='box'&&closedBox)||done[id]||visual.querySelector('.contour-light[data-object="'+id+'"]'))return;
  const layer=document.createElement('canvas');layer.width=1669;layer.height=942;layer.className='contour-light';layer.dataset.object=id;layer.style.zIndex='3';layer.style.animationDelay=`-${index*.55}s`;
  const out=layer.getContext('2d').createImageData(1669,942);
  const minX=Math.max(0,Math.min(...points.map(p=>p[0]))-18),maxX=Math.min(1668,Math.max(...points.map(p=>p[0]))+18),minY=Math.max(0,Math.min(...points.map(p=>p[1]))-18),maxY=Math.min(941,Math.max(...points.map(p=>p[1]))+18);
