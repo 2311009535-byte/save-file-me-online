@@ -1,7 +1,7 @@
 // Enable each clip only after the user supplies and approves its final frame.
 export const videoTransitions={
  window:{enter:{src:'/assets/wonder/videos/window-enter-supplied.mp4',available:true},return:{src:'/assets/wonder/videos/window-return-supplied.mp4',available:true}},
- box:{enter:{src:'/assets/wonder/videos/box_enter.mp4',available:true},return:{src:'/assets/wonder/videos/box_return.mp4',available:true}}
+ box:{enter:{src:'/assets/wonder/videos/box-enter-supplied.mp4',available:true},return:{src:'/assets/wonder/videos/box_return.mp4',available:true}}
 };
 export function createVideoTransitions(transitions=videoTransitions,overlayClass='wonder-video-overlay'){
  const prepared=new Map();let active=null,overlay=null,abort=null,disposed=false,disposeEffect=null;
