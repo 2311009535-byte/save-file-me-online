@@ -4,6 +4,8 @@ export function mountRoomLighting(visual,done,previous=null){
  Object.assign(canvas.style,{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',zIndex:2});visual.append(canvas);
  const glow=document.createElement('canvas');glow.width=1669;glow.height=942;glow.className='wonder-room-light-spill';glow.setAttribute('aria-hidden','true');
  Object.assign(glow.style,{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',zIndex:2,mixBlendMode:'screen'});visual.append(glow);
+ const lamp=document.createElement('canvas');lamp.width=1669;lamp.height=942;lamp.className='wonder-lamp-breathing';lamp.setAttribute('aria-hidden','true');Object.assign(lamp.style,{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',zIndex:2,mixBlendMode:'screen',transformOrigin:'69% 50%',willChange:'opacity,transform'});visual.append(lamp);
+ const lampLight=lamp.getContext('2d');
  const light=glow.getContext('2d');
  const ctx=canvas.getContext('2d'),ids=Object.keys(regions),all=ids.every(id=>done[id]),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
  const changed=previous&&ids.some(id=>Boolean(previous[id])!==Boolean(done[id])),duration=changed&&!reduced?1100:0;
@@ -30,10 +32,11 @@ export function mountRoomLighting(visual,done,previous=null){
   // Emitted light is separate from shadow removal: bright cores and colored
   // spill can exceed the unlit source exposure without blurring its pixels.
   light.clearRect(0,0,1669,942);light.globalAlpha=all?1-progress:1;
-  function spill(x,y,rx,ry,rgb,alpha){light.save();light.translate(x*1669,y*942);light.scale(rx*1669,ry*942);const g=light.createRadialGradient(0,0,0,0,0,1);g.addColorStop(0,`rgba(${rgb},${alpha})`);g.addColorStop(.25,`rgba(${rgb},${alpha*.65})`);g.addColorStop(1,`rgba(${rgb},0)`);light.fillStyle=g;light.fillRect(-1,-1,2,2);light.restore();}
+  function spill(x,y,rx,ry,rgb,alpha,target=light){target.save();target.translate(x*1669,y*942);target.scale(rx*1669,ry*942);const g=target.createRadialGradient(0,0,0,0,0,1);g.addColorStop(0,`rgba(${rgb},${alpha})`);g.addColorStop(.25,`rgba(${rgb},${alpha*.65})`);g.addColorStop(1,`rgba(${rgb},0)`);target.fillStyle=g;target.fillRect(-1,-1,2,2);target.restore();}
   spill(.69,.43,.030,.038,'255,224,143',.95);
-  spill(.69,.50,.14,.17,'255,172,67',.46);
-  spill(.65,.55,.13,.045,'255,192,91',.35);
+  lampLight.clearRect(0,0,1669,942);lampLight.globalAlpha=all ? .16+.84*(1-progress) : 1;
+  spill(.69,.50,.14,.17,'255,172,67',.46,lampLight);
+  spill(.65,.55,.13,.045,'255,192,91',.35,lampLight);
   spill(.51,.065,.016,.025,'255,231,159',.9);
   spill(.51,.055,.10,.10,'255,173,65',.22);
   spill(.12,.37,.16,.34,'104,143,255',.035);
@@ -41,7 +44,13 @@ export function mountRoomLighting(visual,done,previous=null){
   glow.dataset.exposure='bright-cores-local-spill';
   ctx.globalCompositeOperation='source-over';canvas.dataset.lit=ids.filter(id=>done[id]).join(',');canvas.dataset.progress=progress.toFixed(3);canvas.dataset.fullyLit=String(all&&progress===1);
  }
- function tick(now){if(!alive||!canvas.isConnected)return;if(start===null)start=now;const t=Math.min(1,(now-start)/duration);paint(t*t*(3-2*t));if(t<1)raf=requestAnimationFrame(tick);}
- paint(duration?0:1);if(duration)raf=requestAnimationFrame(tick);
- const dispose=()=>{alive=false;cancelAnimationFrame(raf);canvas.remove();glow.remove();};dispose.duration=duration;return dispose;
+ let paintedProgress=duration?0:1,lastLight=-Infinity;
+ function tick(now){
+  if(!alive||!canvas.isConnected)return;if(start===null)start=now;
+  if(duration&&paintedProgress<1){const t=Math.min(1,(now-start)/duration);paintedProgress=t;paint(t*t*(3-2*t));}
+  if(!document.hidden&&now-lastLight>=32){const wave=Math.sin(now/1600)*.045+Math.sin(now/4100+.4)*.015,power=reduced?1:.94+wave,scale=reduced?1:1+Math.sin(now/2200)*.012;lamp.style.opacity=String(power);lamp.style.transform=`scale(${scale})`;lamp.dataset.power=power.toFixed(4);lamp.dataset.motion=reduced?'static':'breathing';lastLight=now;}
+  if(!reduced||paintedProgress<1)raf=requestAnimationFrame(tick);
+ }
+ paint(duration?0:1);tick(performance.now());
+ const dispose=()=>{alive=false;cancelAnimationFrame(raf);canvas.remove();glow.remove();lamp.remove();};dispose.duration=duration;return dispose;
 }

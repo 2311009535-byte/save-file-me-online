@@ -97,7 +97,8 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  $('back').hidden=ids.includes(data.view);$('back').setAttribute('aria-label',$('back').textContent);$('back').onclick=()=>{if(busy){cancelMotion();go('room');return;}if(data.view==='room')onExit();else{if(data.view==='map'||data.view==='note')mark(data.view);if(profiles[data.view])transition(data.view,true);else go('room');}};
  if(data.view==='room'){
  const ready=ids.every(id=>data.done[id]);imageScene('wonder/1_1.png','Wonder 房间',1669,942);
- addContourLights($('visual'),data.done,{closedBox:!data.boxOpened});
+ addContourLights($('visual'),data.done,{closedBox:!data.boxOpened,movingNote:true});
+ disposeDetail=mountNoteBreeze($('visual'),{room:true,completed:data.done.note});
  if(!data.boxOpened)boxLid=mountClosedBox($('visual'));
  hideRoomMeteor($('visual'),data.done.window);
  const light=mountRoomLighting($('visual'),data.done,shownRoom);disposeRoomLight=light;shownRoom={...data.done};
