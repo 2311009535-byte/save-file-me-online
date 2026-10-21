@@ -2,7 +2,7 @@ import {windowTransitionTone} from './wonder-window-tone.js';
 import {mountRoomLighting} from './wonder-room-lighting.js';
 import {hideRoomMeteor} from './wonder-room-sky.js';
 import {gameAudio} from './game-audio.js';
-import {createWonderReturnEffect} from './wonder-return-state.js';
+import {createWindowReturnHold} from './wonder-return-state.js';
 import {createChapterLoading} from './chapter-loading.js';
 import {createChapterIntro} from './chapter-intro.js';
 import {createChapterHints} from './chapter-hints.js';
@@ -31,7 +31,7 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  function glow(id){$(id)?.classList.add('wonder-target');}
  function cancelMotion(){loader.dispose();intro.cancel();hints.hide();videos.cancel();stopMeteor();motionToken++;animations.forEach(a=>a.cancel());animations.clear();transitionOverlay?.remove();transitionOverlay=null;$('visual').style.transform='';$('visual').style.transformOrigin='';busy=false;delete $('stage').dataset.motion;}
  async function animate(element,frames,options,token){const a=element.animate(frames,options);animations.add(a);try{await a.finished;return alive&&token===motionToken;}catch{return false;}finally{a.cancel();animations.delete(a);}}
- const targetImages={window:'window-enter-last-frame.png',box:'1_5.png',map:'1_3.png',note:'1_7.jpg',computer:'1_15.png'};
+ const targetImages={window:'window-enter-supplied-last.png',box:'1_5.png',map:'1_3.png',note:'1_7.jpg',computer:'1_15.png'};
  const profiles={window:{room:[.117,.35,.112],detail:[.5,.42,.60],turn:3},box:{room:[.932,.807,.134],detail:[.61,.54,.63],turn:-3},map:{room:[.45,.302,.198],detail:[.5,.5,.88],turn:0},note:{room:[.642,.383,.034],detail:[.64,.48,.36],turn:0},computer:{room:[.585,.485,.09],detail:[.48,.38,.45],turn:0}};
  function pose(x,y,scale,turn=0){return `translate(${x*100}%,${y*100}%) perspective(1800px) rotateY(${turn}deg) scale(${scale})`;}
  async function transition(view,back=false){
@@ -41,7 +41,7 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  const previewSrc='/assets/wonder/'+(back?'1_1.png':targetImages[view]);
  try{await prepareImage(previewSrc);}catch{cancelMotion();return;}if(!alive||token!==motionToken)return;
  // No intermediate still-image playback. Missing clips use a direct, honest fallback.
- const returnEffect=back&&view==='window'?createWonderReturnEffect({view,visual:$('visual'),meteor:meteorLayer}):null;
+ const returnEffect=back&&view==='window'?createWindowReturnHold({visual:$('visual'),meteor:meteorLayer}):null;
  const effect=view==='window'?windowTransitionTone({back,roomBrightness:ids.every(id=>data.done[id])?1:(back ? .58 : .56),returnEffect}):null;
  const result=await videos.play(view,back,$('stage'),{effect});
  if(!alive||token!==motionToken||result==='cancelled')return;
@@ -76,7 +76,7 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  }
  async function loading(){
  busy=true;$('back').textContent='SAVE ROOM';$('back').setAttribute('aria-label','SAVE ROOM');const token=++motionToken;$('stage').classList.add('wonder-scene');$('stage').dataset.motion='loading';$('stage').dataset.wonderView='loading';imageScene('wonder/1_0.png','Wonder 加载页面',1672,941);$('hotspots').replaceChildren();$('back').onclick=()=>{cancelMotion();onExit();};
- const names=['1_1.png','window-enter-last-frame.png','1_5.png','1_6.png','1_3.png','1_4.png','1_7.jpg','1_13.png','1_15.png','1_8.png','1_9.png','1_10.png','1_11.png','1_12.png','character.png'];
+ const names=['1_1.png','window-enter-supplied-last.png','1_5.png','1_6.png','1_3.png','1_4.png','1_7.jpg','1_13.png','1_15.png','1_8.png','1_9.png','1_10.png','1_11.png','1_12.png','character.png'];
  if(!await loader.play(1,names.map(f=>'/assets/wonder/'+f))||!alive||token!==motionToken)return;
  if(!await intro.play(1,()=>draw())||!alive||token!==motionToken)return;busy=false;delete $('stage').dataset.motion;
  }
@@ -99,7 +99,7 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  hotspot('wonder-computer',[54,42,9,13],ready?'电脑 · 进入游戏':'电脑 · 先探索四件物品',!ready,()=>push('computer','wonder-computer'));if(ready)glow('wonder-computer');if($('visual').querySelector('.is-powering-on'))$('wonder-computer').disabled=true;
  }else if(data.view==='window'){
  stopMeteor();
- imageScene('wonder/window-enter-last-frame.png','窗户特写 · 视频最后一帧',1920,1080);
+ imageScene('wonder/window-enter-supplied-last.png','窗户特写 · 视频最后一帧',1910,1084);
  if(!data.done.window)hints.show('window');
  hotspot('wonder-meteor',[18,12,64,73],'点击窗户，寻找流星',false,()=>{if(busy)return;windowActivated=true;hints.hide();meteor();});if(!data.done.window)glow('wonder-meteor');
  }else if(data.view==='box'){

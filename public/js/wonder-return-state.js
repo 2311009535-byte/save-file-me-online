@@ -15,3 +15,21 @@ export function createWonderReturnEffect({view,visual,meteor=null,changed=false}
   tick();return()=>{disposed=true;cancelAnimationFrame(raf);root.remove();hold.remove();};
  };
 }
+
+// New supplied reverse footage has different camera motion. Hold only the
+// matching first frame briefly; never apply the old film's camera registration.
+export function createWindowReturnHold({visual,meteor=null}){
+ const image=visual.querySelector('.scene-image');
+ return(video,overlay)=>{
+  const root=document.createElement('div'),hold=document.createElement('canvas');
+  hold.width=image.naturalWidth;hold.height=image.naturalHeight;
+  hold.getContext('2d').drawImage(image,0,0);
+  Object.assign(root.style,{position:'absolute',inset:0,pointerEvents:'none'});
+  Object.assign(hold.style,{position:'absolute',inset:0,width:'100%',height:'100%'});
+  root.append(hold);if(meteor)root.append(meteor);overlay.append(root);
+  overlay.dataset.returnState=meteor?'meteor':'original';
+  let raf=0,alive=true;
+  function tick(){if(!alive)return;const t=video.currentTime||0;root.style.opacity=String(Math.max(0,1-t/.18));if(t<.18)raf=requestAnimationFrame(tick);}
+  tick();return()=>{alive=false;cancelAnimationFrame(raf);root.remove();};
+ };
+}
