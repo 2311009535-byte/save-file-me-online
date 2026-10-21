@@ -13,7 +13,7 @@ export function mountRoomLighting(visual,done,previous=null){
   ctx.globalCompositeOperation='destination-out';
   function hole(x,y,rx,ry,strength){ctx.save();ctx.translate(x*1669,y*942);ctx.scale(rx*1669,ry*942);const g=ctx.createRadialGradient(0,0,0,0,0,1);g.addColorStop(0,`rgba(0,0,0,${strength})`);g.addColorStop(.35,`rgba(0,0,0,${strength*.98})`);g.addColorStop(.75,`rgba(0,0,0,${strength*.35})`);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(-1,-1,2,2);ctx.restore();}
   // Small permanent pools of window light and desk-lamp light precede exploration.
-  hole(.12,.37,.25,.46,.88);hole(.20,.63,.29,.23,.48);
+  hole(.12,.37,.25,.46,.60);hole(.20,.63,.29,.23,.25);
   hole(.69,.49,.19,.22,1);hole(.69,.43,.045,.065,1);
   hole(.51,.065,.085,.10,1);
   for(const id of ids){if(done[id])hole(...regions[id],previous?.[id]||!changed?1:progress);}
@@ -22,13 +22,13 @@ export function mountRoomLighting(visual,done,previous=null){
   // spill can exceed the unlit source exposure without blurring its pixels.
   light.clearRect(0,0,1669,942);light.globalAlpha=all?1-progress:1;
   function spill(x,y,rx,ry,rgb,alpha){light.save();light.translate(x*1669,y*942);light.scale(rx*1669,ry*942);const g=light.createRadialGradient(0,0,0,0,0,1);g.addColorStop(0,`rgba(${rgb},${alpha})`);g.addColorStop(.25,`rgba(${rgb},${alpha*.65})`);g.addColorStop(1,`rgba(${rgb},0)`);light.fillStyle=g;light.fillRect(-1,-1,2,2);light.restore();}
-  spill(.69,.43,.026,.034,'255,224,143',.85);
-  spill(.69,.50,.14,.17,'255,172,67',.32);
-  spill(.65,.55,.13,.045,'255,192,91',.23);
+  spill(.69,.43,.030,.038,'255,224,143',.95);
+  spill(.69,.50,.14,.17,'255,172,67',.46);
+  spill(.65,.55,.13,.045,'255,192,91',.35);
   spill(.51,.065,.016,.025,'255,231,159',.9);
   spill(.51,.055,.10,.10,'255,173,65',.22);
-  spill(.12,.37,.16,.34,'104,143,255',.18);
-  spill(.20,.63,.24,.14,'102,142,255',.14);
+  spill(.12,.37,.16,.34,'104,143,255',.08);
+  spill(.20,.63,.24,.14,'102,142,255',.05);
   glow.dataset.exposure='bright-cores-local-spill';
   ctx.globalCompositeOperation='source-over';canvas.dataset.lit=ids.filter(id=>done[id]).join(',');canvas.dataset.progress=progress.toFixed(3);canvas.dataset.fullyLit=String(all&&progress===1);
  }
