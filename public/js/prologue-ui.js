@@ -1,12 +1,14 @@
 import {prepareImage} from './image-cache.js';
-// Keep the original UI pixels. Only a few brief scan slices move at a time.
+// Type and erase the original UI pixels so typography stays faithful to the art.
 export function mountPrologueUI(visual){
  const stage=visual.parentElement,image=visual.querySelector('.scene-image');
  const canvas=document.createElement('canvas');canvas.width=1536;canvas.height=1024;
  canvas.className='prologue-ui-motion';canvas.setAttribute('aria-hidden','true');
  Object.assign(canvas.style,{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none'});visual.append(canvas);
  const ctx=canvas.getContext('2d'),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
- let alive=true,timer=0,next=0,until=0,bursts=0,floorPatch=null;
+ let alive=true,timer=0,floorPatch=null;
+ const restored=image.getAttribute('src').includes('0_4.');
+ const lines=[...(!restored?[{x:188,y:80,w:116,h:27,columns:12,offset:0}]:[]),{x:183,y:887,w:90,h:31,columns:8,offset:2800},{x:162,y:924,w:120,h:31,columns:10,offset:5600}];
  async function cursor(){
   try{
    const im=await prepareImage('/assets/prologue/0_0.png');if(!alive)return;
@@ -22,17 +24,24 @@ export function mountPrologueUI(visual){
   if(!alive)return;timer=setTimeout(tick,80);ctx.clearRect(0,0,1536,1024);
   if(floorPatch)ctx.drawImage(floorPatch,549,754);
   if(reduced||document.hidden||!image.complete||!image.naturalWidth)return;
-  const now=performance.now();if(now>=next){until=now+160;next=now+2200+Math.random()*2000;bursts++;}
-  if(now>until)return;
-  for(let i=0;i<4;i++){
-   const y=i%2?900+Math.floor(Math.random()*95):26+Math.floor(Math.random()*155);
-   const x=i%3===0?1280:40+Math.floor(Math.random()*350),w=i%3===0?210:160;
-   ctx.fillStyle='#000';ctx.fillRect(x-3,y-1,w+6,5);
-   ctx.globalAlpha=.75;ctx.drawImage(image,x,y,w,3,x+(i%2?2:-2),y,w,3);ctx.globalAlpha=1;
+  const now=performance.now();
+  for(const line of lines){
+   const phase=(now+line.offset)%10500;let fraction=1;
+   if(phase>=4600&&phase<5500)fraction=1-(phase-4600)/900;
+   else if(phase>=5500&&phase<5900)fraction=0;
+   else if(phase>=5900&&phase<7600)fraction=(phase-5900)/1700;
+   const columns=Math.round(fraction*line.columns),width=Math.round(line.w*columns/line.columns);
+   ctx.fillStyle='#000';ctx.fillRect(line.x,line.y,line.w,line.h);
+   if(width)ctx.drawImage(image,line.x,line.y,width,line.h,line.x,line.y,width,line.h);
+   if(fraction<1&&Math.floor(now/450)%2===0){ctx.fillStyle='#cbd2cb';ctx.fillRect(line.x+width,line.y+9,2,14);}
+   canvas.dataset['typed'+line.y]=String(columns);
   }
-  ctx.font='10px monospace';ctx.fillStyle='#a7c5b080';
-  ctx.fillText(['01_//','[::]','_0?1'][bursts%3],1310,990);
-  canvas.dataset.bursts=String(bursts);
+  if(!restored){
+   const count=Math.floor(now/450)%4;ctx.fillStyle='#000';ctx.fillRect(304,80,30,27);
+   if(count)ctx.drawImage(image,304,80,count*10,27,304,80,count*10,27);
+   canvas.dataset.loadingDots=String(count);
+  }
+  canvas.dataset.uiStyle='erase-and-type';
  }
  if(image.getAttribute('src').includes('0_4.'))image.decode().then(()=>{
   if(!alive)return;const sample=document.createElement('canvas');sample.width=1536;sample.height=1024;const c=sample.getContext('2d');c.drawImage(image,0,0);

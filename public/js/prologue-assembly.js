@@ -61,10 +61,10 @@ export function mountAssembly(visual,{completed=0}={}){
   const target=done.has(c.id)?1:isActive?hold:0;
   // Independent fading masks retain unfinished fragments while the cursor moves.
   group.progress+=(target-group.progress)*(1-Math.exp(-dt*(target>group.progress?14:9)));
-  if(done.has(c.id))group.progress=1;stage.style.setProperty('--assembly-'+c.id,String(group.progress));canvas.dataset[c.id+'Progress']=group.progress.toFixed(3);
+  if(done.has(c.id)||(isActive&&hold>=1))group.progress=1;stage.style.setProperty('--assembly-'+c.id,String(group.progress));canvas.dataset[c.id+'Progress']=group.progress.toFixed(3);
   const bucket=Math.floor(group.progress*48);
   if(bucket!==group.bucket){group.bucket=bucket;const gc=group.context;gc.clearRect(0,0,group.layer.width,group.layer.height);for(const f of group.tiles)if(f.order<=bucket/48)gc.drawImage(source,f.x,f.y,f.w,f.h,f.x-c.box[0],f.y-c.box[1],f.w,f.h);}
-  ctx.globalAlpha=1;if(done.has(c.id))ctx.drawImage(source,...c.box,...c.box);else ctx.drawImage(group.layer,c.box[0],c.box[1]);
+  ctx.globalAlpha=1;if(group.progress>=.999)ctx.drawImage(source,...c.box,...c.box);else ctx.drawImage(group.layer,c.box[0],c.box[1]);
   // Object names stay hidden; accessible button labels remain in the DOM.
   const k=1-Math.exp(-dt*7),t=reduced?0:now*.001;
   for(const p of group.particles){const gather=group.progress,driftX=Math.sin(t*.55+p.phase)*9,driftY=Math.cos(t*.47+p.phase)*12;
@@ -82,7 +82,7 @@ export function mountAssembly(visual,{completed=0}={}){
  }
  prepareImage(visual.querySelector('.scene-image').getAttribute('src')).then(im=>{if(disposed)return;source=im;const sample=document.createElement('canvas');sample.width=1536;sample.height=1024;const sc=sample.getContext('2d',{willReadFrequently:true});sc.drawImage(im,0,0);sc.fillStyle='#000';for(const c of components)sc.fillRect(...c.label);if(completed===3){sc.fillRect(880,263,210,28);sc.fillRect(1285,263,165,25);}source=sample;const data=sc.getImageData(0,0,1536,1024).data;
  sceneComponents.forEach((c,index)=>{const [x,y,w,h]=c.box,goals=[],tiles=[],cols=Math.ceil(w/6),occupied=new Uint8Array(cols*Math.ceil(h/6));
-  for(let py=y;py<y+h;py+=2)for(let px=x;px<x+w;px+=2)if(data[(py*1536+px)*4]>110){goals.push({x:px,y:py});occupied[Math.floor((py-y)/6)*cols+Math.floor((px-x)/6)]=1;}
+  for(let py=y;py<y+h;py++)for(let px=x;px<x+w;px++){const i=(py*1536+px)*4,light=Math.max(data[i],data[i+1],data[i+2]);if(light>12)occupied[Math.floor((py-y)/6)*cols+Math.floor((px-x)/6)]=1;if(light>110&&px%2===0&&py%2===0)goals.push({x:px,y:py});}
   for(let py=0;py<h;py+=6)for(let px=0;px<w;px+=6)if(occupied[Math.floor(py/6)*cols+Math.floor(px/6)])tiles.push({x:x+px,y:y+py,w:Math.min(6,w-px),h:Math.min(6,h-py),order:random(index*2000+py*cols+px)});
   const layer=document.createElement('canvas');layer.width=w;layer.height=h;
   const particles=Array.from({length:110},(_,i)=>{const goal=goals[Math.floor(random(index*301+i+50)*goals.length)]||{x:x+w/2,y:y+h/2},phase=random(i+index*110)*Math.PI*2,spread=24+random(i+400)*60,homeX=Math.max(44,Math.min(1485,goal.x+Math.cos(phase)*spread)),homeY=Math.max(224,Math.min(850,goal.y+Math.sin(phase)*spread));return{x:homeX,y:homeY,homeX,homeY,goalX:goal.x,goalY:goal.y,phase,g:i%6,a:i%4};});
