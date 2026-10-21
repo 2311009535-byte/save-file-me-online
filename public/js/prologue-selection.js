@@ -33,7 +33,7 @@ export function mountWindowSelection(visual){
   if(document.hidden)return;
   const assembly=stage.querySelector('.prologue-assembly'),enabled=[];let hovered='';
   for(const ring of rings){
-   const button=ring.name==='door'?(stage.querySelector('#entry-4')?.hidden?stage.querySelector('#exit'):stage.querySelector('#entry-4')):stage.querySelector(ring.id),visible=!assembly||(ring.name==='window'?assembly.dataset.assembled?.split(',').filter(Boolean).length===6:assembly.dataset.assembled?.split(',').includes(ring.name));
+   const button=ring.name==='door'?(stage.querySelector('#entry-4')?.hidden?stage.querySelector('#exit'):stage.querySelector('#entry-4')):stage.querySelector(ring.id),visible=!assembly||assembly.dataset.assembled?.split(',').includes(ring.name);
    if(!button||button.disabled||button.hidden||!visible){ring.mix=0;canvas.dataset[ring.name+'Count']='0';continue;}
    const selected=button.matches(':hover')||button.matches(':focus-visible');ring.mix+=(Number(selected)-ring.mix)*(1-Math.exp(-dt*9));
    if(selected){hovered=ring.name;canvas.dataset.selected='true';}

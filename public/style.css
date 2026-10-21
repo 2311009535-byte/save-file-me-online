@@ -317,3 +317,9 @@
 
 /* Opaque backing also covers the transparent margins of the generated PNG. */
 .creation-scene .creation-portrait:has(>img),.creation-scene .creation-portrait>img{background:#f6f2e9 url('/assets/creation/4_1.JPG') 98.2624% 92.7326% / 767.6% 490.9091% no-repeat!important;background-blend-mode:darken}
+
+/* Use the original PLAYER pointer as the actual mouse, only in the save room. */
+.prologue-scene,.prologue-scene *{cursor:var(--prologue-player-cursor,default)!important}
+
+.prologue-scene:has(.prologue-assembly) .prologue-object-glitch[data-object="bed"],.prologue-scene:has(.prologue-assembly) .prologue-bed-frame-glitch{opacity:var(--assembly-bed,0)}
+.prologue-scene:has(.prologue-assembly) .prologue-object-glitch[data-object="shelf"]{opacity:var(--assembly-shelf,0)}

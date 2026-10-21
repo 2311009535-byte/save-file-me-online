@@ -3,7 +3,7 @@ import {mountFinal} from './final.js';
 import {mountFinalPrelude} from './final-timeline.js';
 import {mountBedFrameGlitch} from './prologue-bed-frame.js';
 import {mountObjectGlitches} from './prologue-object-glitch.js';
-import {mountPrologueCursors} from './prologue-cursors.js';
+import {mountPrologueUI} from './prologue-ui.js';
 import {mountRetry,resetRetry} from './retry.js';
 import {mountWindowSelection} from './prologue-selection.js';
 import {mountAssembly,resetAssembly} from './prologue-assembly.js';
@@ -53,9 +53,10 @@ function render(){
  if(state.scene==='prologue'){
  warmImages(state.completed===0?['1_0.png','1_1.png','1_1.5.png','1_5.png','1_6.png'].map(f=>'/assets/wonder/'+f):state.completed===1?['2_0.png','room-clean.png','phone-item.png','phone-clean.jpg','exam.png','computer.png','wechat.png'].map(f=>'/assets/escape/'+f):[]);
  imageScene(`prologue/0_${state.completed}.${state.completed===0||state.completed===4?'png':'jpg'}`,`序章 0_${state.completed}`);
- if(state.completed===0)disposeAssembly=mountAssembly($('visual'));
+ if(state.completed<4)disposeAssembly=mountAssembly($('visual'),{completed:state.completed});
+ disposeCursors=mountPrologueUI($('visual'));
  if(state.completed>=1&&state.completed<=3)disposeGlitch=mountPrologueGlitch($('visual'));
- if(state.completed===3){disposeObjects=mountObjectGlitches($('visual'));disposeBedFrame=mountBedFrameGlitch($('visual'));disposeRetryWord=mountRetryWordGlitch($('visual'));disposeCursors=mountPrologueCursors($('visual'));}
+ if(state.completed===3){disposeObjects=mountObjectGlitches($('visual'));disposeBedFrame=mountBedFrameGlitch($('visual'));disposeRetryWord=mountRetryWordGlitch($('visual'));}
  if(state.completed===1)disposeWordGlitch=mountWonderWordGlitch($('visual'));
  if(state.completed===2||state.completed===3){disposeLamp=mountLampGlitch($('visual'));disposeEscapeWord=mountEscapeWordGlitch($('visual'));}
  // Match original room objects. Restored room (0_4) has a different composition.
