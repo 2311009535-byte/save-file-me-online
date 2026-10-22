@@ -1,3 +1,4 @@
+import {createWonderGameFlow} from './wonder-game-flow.js';
 import {mountWindowBackMask} from './wonder-window-ui-mask.js';
 import {createWonderReflections} from './wonder-reflections.js';
 import {mountMapGlass} from './wonder-map-glass.js';
@@ -20,7 +21,7 @@ import {createVideoTransitions} from './wonder-videos.js';
 const KEY='save-file-me:wonder:v1';
 const ids=['window','box','map','note'];
 export function resetWonder(){try{localStorage.removeItem(KEY);}catch{}}
-export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,finish,onExit}){
+export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,finish,onExit,prepareFinish=()=>Promise.resolve()}){
  let data;try{data=JSON.parse(localStorage.getItem(KEY));}catch{}
  data={boxOpened:data?.boxOpened===true,done:Object.fromEntries(ids.map(id=>[id,data?.done?.[id]===true])),view:ids.includes(data?.view)||['room','computer','game','win'].includes(data?.view)?data.view:'room',level:Number.isInteger(data?.level)?Math.min(4,Math.max(0,data.level)):0};
  if(['computer','game','win'].includes(data.view)&&!ids.every(id=>data.done[id]))data.view='room';
@@ -31,13 +32,14 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  const videos=createVideoTransitions();
  const $=id=>document.getElementById(id),intro=createChapterIntro($('stage')),hints=createChapterHints($('stage'));
  const loader=createChapterLoading($('stage'));
+ const gameFlow=createWonderGameFlow($('stage'),$('visual'),()=>alive&&!busy&&!intro.active&&!$('stage').dataset.motion);
  const reflections=createWonderReflections($('stage'),{canRead:id=>alive&&data.view===id&&!busy&&!intro.active&&!$('stage').dataset.motion,onReturn:id=>{if(!alive||data.view!==id||busy)return;if(id==='map'||id==='note')mark(id);transition(id,true);}});
  const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(data));}catch{}};
  function jumpWithSound(){const was=runner?.grounded;jump(runner);}
- function clear(){reflections.cancel();disposeDetail?.();disposeDetail=null;boxLid?.dispose();boxLid=null;disposeRoomLight?.();disposeRoomLight=null;cancelAnimationFrame(raf);$('hotspots').replaceChildren();}
+ function clear(){gameFlow.clearEntry();reflections.cancel();disposeDetail?.();disposeDetail=null;boxLid?.dispose();boxLid=null;disposeRoomLight?.();disposeRoomLight=null;cancelAnimationFrame(raf);$('hotspots').replaceChildren();}
  function mark(id){data.done[id]=true;persist();if(id==='window'&&data.view==='window')reflections.start('window');}
  function glow(id){$(id)?.classList.add('wonder-target');}
- function cancelMotion(){reflections.cancel();loader.dispose();intro.cancel();hints.hide();videos.cancel();stopMeteor();motionToken++;animations.forEach(a=>a.cancel());animations.clear();transitionOverlay?.remove();transitionOverlay=null;$('visual').style.transform='';$('visual').style.transformOrigin='';busy=false;delete $('stage').dataset.motion;}
+ function cancelMotion(){gameFlow.cancel();reflections.cancel();loader.dispose();intro.cancel();hints.hide();videos.cancel();stopMeteor();motionToken++;animations.forEach(a=>a.cancel());animations.clear();transitionOverlay?.remove();transitionOverlay=null;$('visual').style.transform='';$('visual').style.transformOrigin='';busy=false;delete $('stage').dataset.motion;}
  async function animate(element,frames,options,token){const a=element.animate(frames,options);animations.add(a);try{await a.finished;return alive&&token===motionToken;}catch{return false;}finally{a.cancel();animations.delete(a);}}
  const targetImages={window:'window-enter-supplied-last.png',box:'box-enter-supplied-last.png',map:'1_3.png',note:'1_7.jpg',computer:'1_15.png'};
  const profiles={window:{room:[.117,.35,.112],detail:[.5,.42,.60],turn:3},box:{room:[.932,.807,.134],detail:[.61,.54,.63],turn:-3},map:{room:[.45,.302,.198],detail:[.5,.5,.88],turn:0},note:{room:[.642,.383,.034],detail:[.64,.48,.36],turn:0},computer:{room:[.585,.485,.09],detail:[.48,.38,.45],turn:0}};
@@ -89,6 +91,21 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  if(!await intro.play(1,()=>draw())||!alive||token!==motionToken)return;busy=false;delete $('stage').dataset.motion;
  }
  function go(view){if(busy)return;stopMeteor();if(view==='window')meteorShown=false;data.view=view;persist();draw();}
+ async function enterGame(){
+ if(busy||!alive||data.view!=='computer'||$('wonder-play')?.disabled)return;
+ busy=true;const token=motionToken;$('stage').dataset.motion='game-enter';$('wonder-play').disabled=true;
+ try{await Promise.all([prepareImage(`/assets/wonder/1_${8+data.level}.png`),prepareImage('/assets/wonder/character.png')]);}catch{if(alive&&token===motionToken){busy=false;delete $('stage').dataset.motion;$('wonder-play').disabled=false;}return;}
+ if(!alive||token!==motionToken)return;
+ await gameFlow.white(()=>{data.view='game';persist();draw();});
+ if(!alive||token!==motionToken)return;busy=false;last=0;delete $('stage').dataset.motion;
+ }
+ async function finishGame(){
+ busy=true;$('back').hidden=true;$('stage').dataset.motion='game-exit';
+ const token=motionToken;try{await prepareFinish();}catch{if(alive&&token===motionToken){busy=false;delete $('stage').dataset.motion;$('back').hidden=false;}return;}
+ if(!alive||token!==motionToken)return;const finished=await gameFlow.complete(()=>{data.view='room';data.level=0;persist();finish();});
+ if(!finished&&alive&&token===motionToken){busy=false;delete $('stage').dataset.motion;$('back').hidden=false;}
+ }
+
  function draw(){
  gameAudio.setWonderGame(data.view==='game'||data.view==='win');
  $('visual').classList.toggle('wonder-window-dim',data.view==='window');
@@ -128,7 +145,7 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  disposeDetail=mountNoteBreeze($('visual'));reflections.start('note');
  }
  else if(data.view==='computer'){
- imageScene('wonder/1_15.png','电脑特写',1672,941);hotspot('wonder-play',[32,28,29,9],'点击屏幕进入平台游戏',false,()=>go('game'));$('wonder-play').classList.add('wonder-enter-game');$('wonder-play').textContent='ENTER GAME';
+ imageScene('wonder/1_15.png','电脑特写',1672,941);hotspot('wonder-play',[32,28,29,9],'点击屏幕进入平台游戏',true,enterGame);$('wonder-play').classList.add('wonder-enter-game');$('wonder-play').textContent='ENTER GAME';gameFlow.revealEntry($('wonder-play'),$('visual').querySelector('.scene-image'));
  }else if(data.view==='game'){
  imageScene(`wonder/1_${8+data.level}.png`,'平台游戏场景 '+(data.level+1),1672,941);
  runner=createRunner(data.level);$('stage').dataset.level=String(data.level);
@@ -137,13 +154,15 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  const status=document.createElement('div');status.id='runner-status';status.className='runner-status';$('visual').append(status);
  last=0;const tick=time=>{if(!alive||data.view!=='game')return;const dt=last?Math.min((time-last)/1000,.035):0;last=time;
  if(!document.hidden&&!$('dev-panel').hidden){raf=requestAnimationFrame(tick);return;}
- if(jumpHeld&&runner.grounded&&!intro.active)jumpWithSound();const outcome=document.hidden||intro.active?'running':step(runner,dt);sprite.style.left=(runner.x-30)+'px';sprite.style.top=(runner.y-75)+'px';sprite.dataset.x=runner.x;sprite.dataset.y=runner.y;sprite.dataset.grounded=runner.grounded;status.textContent=`${data.level+1} / 5 · HOLD SPACE / TAP TO JUMP`;
+ if(jumpHeld&&runner.grounded&&!intro.active&&!busy)jumpWithSound();const outcome=document.hidden||intro.active||busy?'running':step(runner,dt);sprite.style.left=(runner.x-30)+'px';sprite.style.top=(runner.y-75)+'px';sprite.dataset.x=runner.x;sprite.dataset.y=runner.y;sprite.dataset.grounded=runner.grounded;status.textContent=`${data.level+1} / 5 · HOLD SPACE / TAP TO JUMP`;
  if(outcome==='next'){data.level++;persist();draw();return;}if(outcome==='win'){go('win');return;}raf=requestAnimationFrame(tick);};raf=requestAnimationFrame(tick);
  }else{
- imageScene('wonder/1_12.png','Wonder 通关',1672,941);const win=document.createElement('div');win.className='wonder-win';win.innerHTML='<h1>WONDER · 通关</h1><p>好奇，让窗外的世界有了形状。</p><button id="wonder-finish">SAVE ROOM</button>';$('visual').append(win);$('wonder-finish').onclick=()=>{data.view='room';data.level=0;persist();finish();};
+ imageScene('wonder/1_12.png','Wonder · 到达出口',1672,941);
+ const sprite=document.createElement('img');sprite.src='/assets/wonder/character.png';sprite.alt='到达小门的小人';sprite.className='wonder-player';sprite.style.left='1505px';sprite.style.top='577px';$('visual').append(sprite);
+ finishGame();
  }
  if(data.view!=='map'){$('visual').onpointermove=null;$('visual').onpointerdown=null;}
  }
- const key=e=>{if(!intro.active&&data.view==='game'&&e.code==='Space'&&$('dev-panel').hidden){e.preventDefault();jumpHeld=true;if(!e.repeat)jumpWithSound();}};const keyup=e=>{if(e.code==='Space')jumpHeld=false;};const blur=()=>jumpHeld=false;window.addEventListener('keyup',keyup);window.addEventListener('blur',blur);window.addEventListener('keydown',key);window.addEventListener('beforeunload',cancelMotion);window.addEventListener('pagehide',cancelMotion);persist();if(showLoading)loading();else draw();
+ const key=e=>{if(!busy&&!intro.active&&data.view==='game'&&e.code==='Space'&&$('dev-panel').hidden){e.preventDefault();jumpHeld=true;if(!e.repeat)jumpWithSound();}};const keyup=e=>{if(e.code==='Space')jumpHeld=false;};const blur=()=>jumpHeld=false;window.addEventListener('keyup',keyup);window.addEventListener('blur',blur);window.addEventListener('keydown',key);window.addEventListener('beforeunload',cancelMotion);window.addEventListener('pagehide',cancelMotion);persist();if(showLoading)loading();else draw();
  return ()=>{alive=false;reflections.dispose();$('back').hidden=false;intro.dispose();hints.dispose();cancelMotion();videos.dispose();clear();window.removeEventListener('keydown',key);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);window.removeEventListener('beforeunload',cancelMotion);window.removeEventListener('pagehide',cancelMotion);$('visual').onpointermove=null;$('visual').onpointerdown=null;$('visual').classList.remove('wonder-window-dim');$('visual').style.filter='';$('stage').classList.remove('wonder-scene');delete $('stage').dataset.wonderView;delete $('stage').dataset.level;};
 }

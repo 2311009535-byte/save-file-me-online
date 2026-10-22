@@ -8,7 +8,7 @@ import {mountPrologueUI} from './prologue-ui.js';
 import {mountRetry,resetRetry} from './retry.js';
 import {mountWindowSelection} from './prologue-selection.js';
 import {mountAssembly,resetAssembly} from './prologue-assembly.js';
-import {sceneImage,warmImages} from './image-cache.js';
+import {sceneImage,warmImages,prepareImage} from './image-cache.js';
 import {mountLampGlitch} from './prologue-lamp-glitch.js';
 import {STORAGE_KEY,normalize,canEnter,enter,complete,exit} from './state.js';
 import {chapters} from './chapters.js';
@@ -72,7 +72,7 @@ function render(){
  if(restored)disposeFinal=mountFinalPrelude($('visual'));
  disposeSelection=mountWindowSelection($('visual'));
  }else if(n){
- if(n===1){disposeWonder=mountWonder({showLoading:showWonderLoading,imageScene,hotspot,scenePoint,finish:()=>finishChapter(1),onExit:()=>commit({...state,scene:'prologue'})});return;}
+ if(n===1){disposeWonder=mountWonder({showLoading:showWonderLoading,imageScene,hotspot,scenePoint,prepareFinish:()=>{const n=Math.max(state.completed,1);return prepareImage(`/assets/prologue/0_${n}.${n===4?'png':'jpg'}`);},finish:()=>finishChapter(1),onExit:()=>commit({...state,scene:'prologue'})});return;}
  if(n===3){disposeRetry=mountRetry({imageScene,hotspot,onVictory:()=>{state={...state,completed:Math.max(state.completed,3)};save();$('dev-state').textContent='场景：chapter3 · 完成：'+state.completed+'/4';},onExit:()=>commit({...state,scene:'prologue'})});return;}
  if(n===2){disposeEscape=mountEscape({imageScene,hotspot,scenePoint,finish:()=>finishChapter(2),onExit:()=>commit({...state,scene:'prologue'})});return;}
  const c=chapters[n-1];if(c.image)imageScene(c.image,'Wonder 房间',1670,942);
