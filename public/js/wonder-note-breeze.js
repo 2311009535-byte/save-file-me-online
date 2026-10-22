@@ -1,7 +1,7 @@
 import {prepareImage} from './image-cache.js';
 const configs={
  detail:{width:825,height:466,src:'/assets/wonder/1_7.jpg',paper:[[283,149],[523,126],[549,380],[308,409]],tape:[386,108,50,55],anchor:140,amplitude:8,curl:4,wall:[560,190,12,210]},
- room:{width:1669,height:942,src:'/assets/wonder/extra.png',paper:[[1046,338],[1095,338],[1095,392],[1046,392]],tape:[1061,325,17,22],anchor:338,amplitude:3.8,curl:1.8,wall:[1104,336,12,62]}
+ room:{width:1669,height:942,src:'/assets/wonder/1_1.png',paper:[[1046,338],[1095,338],[1095,392],[1046,392]],tape:[1061,325,17,22],anchor:338,amplitude:3.8,curl:1.8,wall:[1104,336,12,62]}
 };
 export function mountNoteBreeze(visual,{room=false,completed=false,configuration=null}={}){
  const config=configuration||(room?configs.room:configs.detail),{width,height,paper,tape,anchor,amplitude,curl}=config;
@@ -24,16 +24,16 @@ export function mountNoteBreeze(visual,{room=false,completed=false,configuration
    const sway=reduced?0:Math.sin(now/(config.period||1150)+(config.phase||0))*.78+Math.sin(now/(config.slowPeriod||2700)+(config.phase||0))*.22,corner=reduced?0:(.5+.5*Math.sin(now/(config.curlPeriod||1500)+.7+(config.phase||0)));
    function move(x,y){const t=Math.max(0,Math.min(1,(y+y0-anchor)/(y0+h-anchor)));return[x+pad+sway*amplitude*Math.pow(t,1.45),y+pad-corner*curl*Math.pow(t,3)*(x/w)];}
    ctx.clearRect(...patch);
-   // First restore the sharp surrounding wall so the original paper and its
-   // old white hint cannot remain behind as a second, stationary image.
-   if(room)ctx.drawImage(image,...patch,...patch);
-   ctx.save();ctx.beginPath();const cx=x0+w/2,cy=y0+h/2;paper.forEach((p,i)=>{const x=p[0]+(p[0]>cx?4:-4),y=p[1]+(p[1]>cy?7:-3);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.closePath();ctx.clip();ctx.drawImage(image,...config.wall,x0-6,y0-5,w+12,h+15);ctx.restore();
+   // Keep the surrounding wall and native interaction halo in the base image.
+   // Only hide the original paper footprint: copying a rectangular patch from
+   // the alternate room artwork changes the wall's texture and exposure.
+   ctx.save();ctx.beginPath();const cx=x0+w/2,cy=y0+h/2;paper.forEach((p,i)=>{const x=room?p[0]:p[0]+(p[0]>cx?4:-4),y=room?p[1]:p[1]+(p[1]>cy?7:-3);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.closePath();ctx.clip();ctx.drawImage(image,...config.wall,x0-6,y0-5,w+12,h+15);ctx.restore();
    wc.clearRect(0,0,warped.width,warped.height);
    for(let row=0;row<8;row++){const ya=h*row/8,yb=h*(row+1)/8,src=[[0,ya],[w,ya],[w,yb],[0,yb]],dst=src.map(([x,y])=>move(x,y));triangle([src[0],src[1],src[2]],[dst[0],dst[1],dst[2]]);triangle([src[0],src[2],src[3]],[dst[0],dst[2],dst[3]]);}
    ctx.save();ctx.shadowColor='rgba(0,0,0,.4)';ctx.shadowBlur=room?2:4;ctx.shadowOffsetX=1+Math.abs(sway)*(room?1:2);ctx.shadowOffsetY=room?3:5;ctx.drawImage(warped,x0-pad,y0-pad);ctx.restore();
    // Tape stays fixed to the wall while only the paper below it flexes.
    ctx.drawImage(image,...tape,...tape);
-   if(hint){const hc=hint.getContext('2d');hc.clearRect(...patch);hc.strokeStyle=`rgba(255,243,216,${.38+.17*Math.sin(now/1100)})`;hc.lineWidth=1.6;hc.shadowColor='#fff0cc';hc.shadowBlur=3;hc.beginPath();paper.forEach((p,i)=>{const q=move(p[0]-x0,p[1]-y0),x=q[0]+x0-pad,y=q[1]+y0-pad;i?hc.lineTo(x,y):hc.moveTo(x,y);});hc.closePath();hc.stroke();}
+   if(hint){const hc=hint.getContext('2d');hc.clearRect(...patch);hc.strokeStyle=`rgba(255,246,222,${reduced?.85:.80+.15*Math.sin(now/1100)})`;hc.lineWidth=2.2;hc.shadowColor='#fff0cc';hc.shadowBlur=9;hc.beginPath();paper.forEach((p,i)=>{const q=move(p[0]-x0,p[1]-y0),x=q[0]+x0-pad,y=q[1]+y0-pad;i?hc.lineTo(x,y):hc.moveTo(x,y);});hc.closePath();hc.stroke();}
    const bottom=move(w,h);layer.dataset.angle=(sway*amplitude/h).toFixed(5);layer.dataset.displacement=(sway*amplitude).toFixed(3);layer.dataset.cornerLift=(corner*curl).toFixed(3);layer.dataset.anchor=String(anchor);layer.dataset.bottom=bottom.map(v=>v.toFixed(2)).join(',');
   }
   function tick(now){if(!alive||!layer.isConnected)return;if(!document.hidden&&now-lastPaint>=32){paint(now);lastPaint=now;}raf=requestAnimationFrame(tick);}
