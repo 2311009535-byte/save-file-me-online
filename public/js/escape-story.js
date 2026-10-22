@@ -1,4 +1,5 @@
 export const escapeStory={
+ examGuide:'The test paper we just got back is still on my desk…',
  exam:'I got a terrible score. I don’t know how to face it.',
  phoneGuide:'My phone lit up again. What now?',
  phone:'More messages. I really don’t want to read them right now.',

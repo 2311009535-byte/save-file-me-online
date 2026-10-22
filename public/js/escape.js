@@ -34,7 +34,7 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
   onReturn:view=>{if(alive&&!busy&&data.view===view)transition(view,true);}
  });
  function syncStory(){
-  const key=data.view==='room'?(ready()?'computerGuide':floorUnlocked()?'papersGuide':data.exam?'phoneGuide':null):['exam','phone','game'].includes(data.view)?data.view:null;
+  const key=data.view==='room'?(ready()?'computerGuide':floorUnlocked()?'papersGuide':data.exam?'phoneGuide':'examGuide'):['exam','phone','game'].includes(data.view)?data.view:null;
   story.show(key);
  }
 
