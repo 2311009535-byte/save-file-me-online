@@ -1,3 +1,4 @@
+import {mountEscapeLoadingMotion} from './escape-loading-motion.js';
 import {createEscapeStory} from './escape-story.js';
 import {gameAudio} from './game-audio.js';
 import {escapeParallaxAdapter} from './escape-parallax.js';
@@ -25,7 +26,7 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
  const floorUnlocked=()=>data.exam&&data.messages.every(Boolean);
  const ready=()=>data.messages.every(Boolean)&&data.papers.every(Boolean)&&data.exam;
  if((data.view==='phone'&&!data.exam)||(['computer','game'].includes(data.view)&&!ready()))data.view='room';
- let alive=true,busy=true,drag=null,loadToken=0,timer=0,motionToken=0,overlay=null,gameController=null,examInk=null,hintTimer=0,phoneGesture=false,hintLastActivity=0,dragHintTimer=0,loadingFrame=0,roomDragStarted=false,disposePhoneList=null,drawEpoch=0;const motions=new Set();const openMessages=[false,false];
+ let alive=true,busy=true,drag=null,loadToken=0,timer=0,motionToken=0,overlay=null,gameController=null,examInk=null,hintTimer=0,phoneGesture=false,hintLastActivity=0,dragHintTimer=0,loadingFrame=0,loadingMotion=null,roomDragStarted=false,disposePhoneList=null,drawEpoch=0;const motions=new Set();const openMessages=[false,false];
  const videos=createVideoTransitions({phone:{enter:{src:'/assets/escape/videos/phone_enter.mp4',available:true},return:{available:false}},exam:{enter:{src:'/assets/escape/videos/exam_enter.mp4',available:true},return:{available:false}},computer:{enter:{src:'/assets/escape/videos/computer_enter.mp4',available:true},return:{available:false}}},'escape-video-overlay');
  const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(data));}catch{}};
  const story=createEscapeStory($('stage'),{
@@ -155,7 +156,6 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
    if(data.messages.every(Boolean))disposePhoneList=mountPhoneList(screen);
    else{data.messages.forEach((done,i)=>{if(!done)messageRow(screen,i);});schedulePhoneHints();}
   }else if(data.view==='exam'){
-   if(!data.exam)hints.show('exam');
    imageScene('escape/exam.png','58 分试卷',1675,939);$('visual').style.filter=`brightness(${1-roomDarkness(data.papers.filter(Boolean).length,floorItems.length)})`;
    examInk=mountExamInk({host:$('visual'),completed:data.exam,onState:drawing=>{if(drawing)hints.hide();if(drawing)$('stage').dataset.escapeInk='drawing';else delete $('stage').dataset.escapeInk;},onComplete:()=>{if(!alive||data.view!=='exam')return;data.exam=true;persist();updateProgress();}});
    hotspot('escape-cross-exam',[12,3,82,89],'划掉分数',data.exam,()=>{if(busy||data.exam)return;$('escape-cross-exam').disabled=true;examInk?.play();});
@@ -171,26 +171,27 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
   syncStory();
  }
  const wheel=e=>{if(data.view!=='game'||busy||!$('dev-panel').hidden)return;e.preventDefault();gameController?.handleInput({kind:'wheel',point:scenePoint(e.clientX,e.clientY),deltaY:e.deltaY,deltaMode:e.deltaMode,direction:e.deltaY>0?'forward':e.deltaY<0?'backward':'none'});};
- const hide=()=>{story.dispose();intro.dispose();hints.hide();disposePhoneList?.();disposePhoneList=null;stopDragTutorial();stopPhoneHints();examInk?.dispose();examInk=null;gameController?.dispose();gameController=null;cancelDrag();cancelMotion();cancelAnimationFrame(loadingFrame);loadingFrame=0;clearTimeout(timer);};window.addEventListener('pagehide',hide);$('stage').addEventListener('wheel',wheel,{passive:false});
+ const hide=()=>{story.dispose();intro.dispose();hints.hide();disposePhoneList?.();disposePhoneList=null;stopDragTutorial();stopPhoneHints();examInk?.dispose();examInk=null;gameController?.dispose();gameController=null;cancelDrag();cancelMotion();cancelAnimationFrame(loadingFrame);loadingFrame=0;loadingMotion?.dispose();loadingMotion=null;clearTimeout(timer);};window.addEventListener('pagehide',hide);$('stage').addEventListener('wheel',wheel,{passive:false});
  async function loading(){
+  loadingMotion?.dispose();loadingMotion=null;
   const token=++loadToken;$('stage').classList.add('escape-scene');$('stage').dataset.escapeView='loading';$('hotspots').replaceChildren();
   let cover;
-  if(escapeLoadingAsset.available){imageScene('escape/'+escapeLoadingAsset.src,'Escape 加载页面',1672,941);cover=add('div','escape-baked-loading-track');cover.innerHTML='<div id="escape-load-fill"></div>';}
+  if(escapeLoadingAsset.available){imageScene('escape/'+escapeLoadingAsset.src,'Escape 加载页面',1672,941);cover=add('div','escape-baked-loading-track');cover.innerHTML='<div id="escape-load-fill"></div>';loadingMotion=mountEscapeLoadingMotion($('visual'),'/assets/escape/'+escapeLoadingAsset.src);}
   else{imageScene('escape/room-clean.png','Escape 加载页',3840,2160);cover=add('div','escape-loading');cover.innerHTML='<h1>ESCAPE</h1><div class="escape-track"><div id="escape-load-fill"></div></div>';}
 
   $('back').hidden=false;$('back').textContent='SAVE ROOM';$('back').onclick=()=>{loadToken++;onExit();};let count=0;
   const critical=data.view==='room'?['room-clean.png','phone-item.png',...floorItems.map(item=>item.file),'room-interior-mask.svg']:data.view==='phone'?['phone-clean.jpg','class-card.png','teacher-card.png',...(phoneListAsset?[phoneListAsset]:[])]:data.view==='exam'?['exam.png']:data.view==='computer'?['computer.png']:['game.png'];
   const assets=escapeLoadingAsset.available?[escapeLoadingAsset.src,...critical]:critical;
   warmImages(files.map(file=>'/assets/escape/'+file));
-  const started=performance.now(),duration=1400;
-  const progress=()=>{if(!alive||token!==loadToken)return;const amount=Math.min(count/assets.length,(performance.now()-started)/duration);$('escape-load-fill').style.width=(Math.min(.98,amount)*100)+'%';loadingFrame=requestAnimationFrame(progress);};progress();
+  const duration=2400;let elapsed=0,last=performance.now();
+  const progress=now=>{if(!alive||token!==loadToken)return;if(!document.hidden)elapsed+=Math.min(80,Math.max(0,now-last));last=now;const amount=Math.min(count/assets.length,elapsed/duration);$('escape-load-fill').style.width=(Math.min(.98,amount)*100)+'%';loadingMotion?.paint(elapsed);loadingFrame=requestAnimationFrame(progress);};progress(last);
   const minimum=new Promise(resolve=>{timer=setTimeout(resolve,duration);});
   try{
    await Promise.all([minimum,Promise.all(assets.map(async file=>{await prepareImage('/assets/escape/'+file);count++;}))]);
    if(!alive||token!==loadToken)return;cancelAnimationFrame(loadingFrame);loadingFrame=0;$('escape-load-fill').style.width='100%';
    await new Promise(resolve=>{timer=setTimeout(resolve,180);});
-  }catch{cancelAnimationFrame(loadingFrame);loadingFrame=0;if(alive&&token===loadToken){cover.innerHTML='<button id="escape-retry">RETRY</button>';$('escape-retry').onclick=loading;}return;}
-  if(!alive||token!==loadToken)return;if(!await intro.play(2,()=>draw())||!alive||token!==loadToken)return;busy=false;roomInputLocked(false);schedulePhoneHints();scheduleDragTutorial();
+  }catch{cancelAnimationFrame(loadingFrame);loadingFrame=0;loadingMotion?.dispose();loadingMotion=null;if(alive&&token===loadToken){cover.innerHTML='<button id="escape-retry">RETRY</button>';$('escape-retry').onclick=loading;}return;}
+  if(!alive||token!==loadToken)return;loadingMotion?.dispose();loadingMotion=null;if(!await intro.play(2,()=>draw())||!alive||token!==loadToken)return;busy=false;roomInputLocked(false);schedulePhoneHints();scheduleDragTutorial();
  }
  persist();loading();
  return ()=>{alive=false;$('back').hidden=false;nativePhone.dispose();$('visual').style.filter='';hints.dispose();loadToken++;hide();videos.dispose();$('stage').removeEventListener('wheel',wheel);window.removeEventListener('pagehide',hide);$('stage').classList.remove('escape-scene');delete $('stage').dataset.escapeView;delete $('stage').dataset.escapePaperCount;delete $('stage').dataset.escapeDistance;$('stage').classList.remove('escape-game-complete');};

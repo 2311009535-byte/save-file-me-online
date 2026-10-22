@@ -4,8 +4,7 @@ export const operationHints={
  box:'Click to open. Every adventure starts somewhere.',
  note:'Click to read. A small note might lead somewhere new.',
  phone:'Swipe the messages away. Take a little space for yourself.',
- papers:'Drag a paper toward me. There’s always one more.',
- exam:'Click the score. I wish that number would disappear.'
+ papers:'Drag a paper toward me. There’s always one more.'
 };
 export function createChapterHints(stage){
  let panel=null;
