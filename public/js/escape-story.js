@@ -19,9 +19,9 @@ export function createEscapeStory(stage,{canRead,isComplete,onReturn}){
   const duration=Math.max(4500,escapeStory[next].split(/\s+/).length*240+1600),auto=next==='exam'||next==='phone';
   function tick(now){
    if(!panel)return;const dt=last===null?0:Math.min(100,Math.max(0,now-last));last=now;
-   if(!document.hidden&&canRead(next)){elapsed+=dt;if(auto&&isComplete(next))completedElapsed+=dt;}
-   const leaving=!auto&&elapsed>duration,opacity=Math.min(1,elapsed/450,leaving?Math.max(0,1-(elapsed-duration)/550):1);panel.style.opacity=String(opacity);panel.dataset.elapsed=String(Math.round(elapsed));
-   if(auto&&elapsed>=duration&&completedElapsed>=1000){const finished=key;clear();onReturn(finished);return;}
+   if(!document.hidden&&canRead(next)){elapsed+=dt;if(auto){if(isComplete(next))completedElapsed+=dt;else completedElapsed=0;}}
+   const leaving=!auto&&elapsed>duration,opacity=Math.min(1,elapsed/450,leaving?Math.max(0,1-(elapsed-duration)/550):1);panel.style.opacity=String(opacity);panel.dataset.elapsed=String(Math.round(elapsed));panel.dataset.completedElapsed=String(Math.round(completedElapsed));
+   if(auto&&completedElapsed>=(next==='exam'?3000:5000)){const finished=key;clear();onReturn(finished);return;}
    if(leaving&&opacity===0)return;
    raf=requestAnimationFrame(tick);
   }
