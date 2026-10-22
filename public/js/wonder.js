@@ -1,6 +1,7 @@
 import {mountWindowBackMask} from './wonder-window-ui-mask.js';
 import {createWonderReflections} from './wonder-reflections.js';
 import {mountMapGlass} from './wonder-map-glass.js';
+import {mountRoomAtmosphere} from './wonder-room-atmosphere.js';
 import {mountNoteBreeze} from './wonder-note-breeze.js';
 import {boxTransitionTone,BOX_BRIGHTNESS} from './wonder-box-tone.js';
 import {mountClosedBox} from './wonder-box-lid.js';
@@ -98,7 +99,8 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  if(data.view==='room'){
  const ready=ids.every(id=>data.done[id]);imageScene('wonder/1_1.png','Wonder 房间',1669,942);
  addContourLights($('visual'),data.done,{closedBox:!data.boxOpened,movingNote:true});
- disposeDetail=mountNoteBreeze($('visual'),{room:true,completed:data.done.note});
+ const stopNote=mountNoteBreeze($('visual'),{room:true,completed:data.done.note});
+ const stopAtmosphere=mountRoomAtmosphere($('visual'));disposeDetail=()=>{stopNote();stopAtmosphere();};
  if(!data.boxOpened)boxLid=mountClosedBox($('visual'));
  hideRoomMeteor($('visual'),data.done.window);
  const light=mountRoomLighting($('visual'),data.done,shownRoom);disposeRoomLight=light;shownRoom={...data.done};
