@@ -24,14 +24,14 @@ function roomSurfaces(){
 }
 export function mountWindowTraffic(visual,{canPlay=()=>true}={}){
  const layer=document.createElement('div');layer.className='escape-window-traffic';layer.setAttribute('aria-hidden','true');Object.assign(layer.style,{position:'absolute',inset:0,pointerEvents:'none',contain:'strict',maskSize:'100% 100%',maskRepeat:'no-repeat'});
- const band=document.createElement('div');Object.assign(band.style,{position:'absolute',left:`${455/1920*100}%`,top:`${(330-190)/1080*100}%`,width:`${1500/1920*100}%`,height:`${380/1080*100}%`,transformOrigin:'0 50%',willChange:'transform, opacity',opacity:0,background:'linear-gradient(to bottom,rgba(255,246,207,0),rgba(255,246,207,.12) 18%,rgba(255,246,207,.32) 32%,rgba(255,246,207,.27) 42%,rgba(255,246,207,.17) 46%,rgba(255,246,207,.30) 50%,rgba(255,246,207,.23) 66%,rgba(255,246,207,.09) 82%,rgba(255,246,207,0))'});layer.append(band);
+ const band=document.createElement('div');Object.assign(band.style,{position:'absolute',left:`${455/1920*100}%`,top:`${(330-190)/1080*100}%`,width:`${1500/1920*100}%`,height:`${380/1080*100}%`,transformOrigin:'0 50%',willChange:'transform, opacity',opacity:0,background:'linear-gradient(to bottom,rgba(250,253,255,0),rgba(250,253,255,.24) 18%,rgba(250,253,255,.64) 32%,rgba(250,253,255,.54) 42%,rgba(250,253,255,.34) 46%,rgba(250,253,255,.60) 50%,rgba(250,253,255,.46) 66%,rgba(250,253,255,.18) 82%,rgba(250,253,255,0))'});layer.append(band);
  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
  let alive=true,raf=0,last=null,lastPaint=-Infinity,ready=false;
  roomSurfaces().then(maskUrl=>{if(alive&&maskUrl){layer.style.maskImage=`url(${maskUrl})`;ready=true;}});
  function paint(){
-  const local=trafficElapsed%13500,u=(local-1200)/4200,passing=!reduced&&ready&&u>0&&u<1;
+  const local=trafficElapsed%8000,u=(local-600)/4200,passing=!reduced&&ready&&u>0&&u<1;
   layer.dataset.motion=reduced?'static':'running';layer.dataset.passing=String(passing);layer.dataset.phase=u.toFixed(4);
-  band.style.opacity=passing?String(Math.pow(Math.sin(u*Math.PI),1.3)):0;
+  band.style.opacity=passing?String(Math.pow(Math.sin(u*Math.PI),.85)):0;
   if(!passing)return;
   const angle=1.08-.88*u;layer.dataset.lightAngle=angle.toFixed(3);
   // Animate a composited band under a fixed surface mask. Repainting a full-room
