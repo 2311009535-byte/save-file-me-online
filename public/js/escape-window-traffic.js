@@ -22,9 +22,36 @@ function roomSurfaces(){
   };image.onerror=()=>resolve(null);image.src='/assets/escape/room-clean.png';
  });
 }
+let paintedBand;
+function headlightPaint(){
+ if(paintedBand)return paintedBand;
+ const canvas=document.createElement('canvas');canvas.width=750;canvas.height=190;
+ const ctx=canvas.getContext('2d');let seed=2707;
+ const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+ // Overlapping pale strokes match the flat printed colours in the source art.
+ // Uneven edges and dry pigment are baked once, so the texture never shimmers.
+ function stroke(top,bottom,alpha,roughness){
+  const upper=[],lower=[];
+  for(let x=0;x<=774;x+=24){upper.push([x,top+(random()-.5)*roughness]);lower.push([x,bottom+(random()-.5)*roughness]);}
+  ctx.beginPath();[...upper,...lower.reverse()].forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fillStyle=`rgba(250,253,255,${alpha})`;ctx.fill();
+ }
+ stroke(18,174,.07,12);stroke(29,162,.13,10);stroke(43,149,.20,8);
+ stroke(54,135,.55,7);
+ // Small breaks in the paint suggest window-frame shadows without adding ink.
+ ctx.globalCompositeOperation='destination-out';ctx.fillStyle='rgba(0,0,0,.16)';
+ ctx.beginPath();ctx.moveTo(0,93);ctx.lineTo(750,98);ctx.lineTo(750,102);ctx.lineTo(0,97);ctx.closePath();ctx.fill();
+ const pixels=ctx.getImageData(0,0,canvas.width,canvas.height),d=pixels.data;
+ for(let y=0;y<canvas.height;y++)for(let x=0;x<canvas.width;x++){
+  const i=(y*canvas.width+x)*4;
+  // Fine paper tooth with occasional short dry-brush gaps, rather than blur.
+  const tooth=.9+random()*.1;d[i+3]=Math.round(d[i+3]*tooth);
+  if(random()<.018){d[i+3]=Math.round(d[i+3]*.55);if(x+1<canvas.width)d[i+7]=Math.round(d[i+7]*.7);}
+ }
+ ctx.putImageData(pixels,0,0);return paintedBand=canvas.toDataURL();
+}
 export function mountWindowTraffic(visual,{canPlay=()=>true}={}){
  const layer=document.createElement('div');layer.className='escape-window-traffic';layer.setAttribute('aria-hidden','true');Object.assign(layer.style,{position:'absolute',inset:0,pointerEvents:'none',contain:'strict',maskSize:'100% 100%',maskRepeat:'no-repeat'});
- const band=document.createElement('div');Object.assign(band.style,{position:'absolute',left:`${455/1920*100}%`,top:`${(330-190)/1080*100}%`,width:`${1500/1920*100}%`,height:`${380/1080*100}%`,transformOrigin:'0 50%',willChange:'transform, opacity',opacity:0,background:'linear-gradient(to bottom,rgba(250,253,255,0),rgba(250,253,255,.24) 18%,rgba(250,253,255,.64) 32%,rgba(250,253,255,.54) 42%,rgba(250,253,255,.34) 46%,rgba(250,253,255,.60) 50%,rgba(250,253,255,.46) 66%,rgba(250,253,255,.18) 82%,rgba(250,253,255,0))'});layer.append(band);
+ const band=document.createElement('div');Object.assign(band.style,{position:'absolute',left:`${455/1920*100}%`,top:`${(330-190)/1080*100}%`,width:`${1500/1920*100}%`,height:`${380/1080*100}%`,transformOrigin:'0 50%',willChange:'transform, opacity',opacity:0,backgroundImage:`url(${headlightPaint()})`,backgroundSize:'100% 100%',backgroundRepeat:'no-repeat'});layer.append(band);
  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
  let alive=true,raf=0,last=null,lastPaint=-Infinity,ready=false;
  roomSurfaces().then(maskUrl=>{if(alive&&maskUrl){layer.style.maskImage=`url(${maskUrl})`;ready=true;}});
