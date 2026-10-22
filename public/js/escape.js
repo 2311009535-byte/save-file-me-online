@@ -1,3 +1,4 @@
+import {mountWallPressure} from './escape-wall-pressure.js';
 import {mountEscapeLoadingMotion} from './escape-loading-motion.js';
 import {createEscapeStory} from './escape-story.js';
 import {gameAudio} from './game-audio.js';
@@ -24,7 +25,7 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
  const floorUnlocked=()=>data.exam&&data.messages.every(Boolean);
  const ready=()=>data.messages.every(Boolean)&&data.papers.every(Boolean)&&data.exam;
  if((data.view==='phone'&&!data.exam)||(['computer','game'].includes(data.view)&&!ready()))data.view='room';
- let alive=true,busy=true,drag=null,loadToken=0,timer=0,motionToken=0,overlay=null,gameController=null,examInk=null,hintTimer=0,phoneGesture=false,hintLastActivity=0,dragHintTimer=0,loadingFrame=0,loadingMotion=null,roomDragStarted=false,disposePhoneList=null,phoneSettled=false,drawEpoch=0;const motions=new Set();const openMessages=[false,false];
+ let alive=true,busy=true,drag=null,loadToken=0,timer=0,motionToken=0,overlay=null,gameController=null,examInk=null,hintTimer=0,phoneGesture=false,hintLastActivity=0,dragHintTimer=0,loadingFrame=0,loadingMotion=null,roomDragStarted=false,disposePhoneList=null,disposeWallPressure=null,phoneSettled=false,drawEpoch=0;const motions=new Set();const openMessages=[false,false];
  const videos=createVideoTransitions({phone:{enter:{src:'/assets/escape/videos/phone_enter.mp4',available:true},return:{available:false}},exam:{enter:{src:'/assets/escape/videos/exam_enter.mp4',available:true},return:{available:false}},computer:{enter:{src:'/assets/escape/videos/computer_enter.mp4',available:true},return:{available:false}}},'escape-video-overlay');
  const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(data));}catch{}};
  const story=createEscapeStory($('stage'),{
@@ -122,7 +123,7 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
   old.remove();overlay=null;incoming.style.transformOrigin='';busy=false;roomInputLocked(false);delete $('stage').dataset.motion;persist();if(data.view==='phone')hintLastActivity=performance.now();schedulePhoneHints();scheduleDragTutorial();
  }
  async function draw(animateDarkness=false){
-  const version=++drawEpoch;$('visual').style.filter='';
+  const version=++drawEpoch;disposeWallPressure?.();disposeWallPressure=null;$('visual').style.filter='';
   const wasRoom=$('stage').dataset.escapeView==='room';if(!wasRoom)roomDragStarted=false;stopDragTutorial();
   const previousDarkness=Number($('visual').querySelector('.escape-room-dim')?getComputedStyle($('visual').querySelector('.escape-room-dim')).opacity:0);
   disposePhoneList?.();disposePhoneList=null;phoneSettled=false;stopPhoneHints();phoneGesture=false;examInk?.dispose();examInk=null;gameController?.dispose();gameController=null;cancelDrag();$('hotspots').replaceChildren();$('stage').classList.add('escape-scene');$('stage').dataset.escapeView=data.view;
@@ -140,7 +141,8 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
    hotspot('escape-phone',[28.85,33.24,11.51,18.89],'PHONE',!data.exam,()=>transition('phone'));
    hotspot('escape-exam',[41.5,25,5.5,7],'EXAM',false,()=>transition('exam'));
    $('stage').dataset.escapePaperCount=String(count);
-   // The original character pose remains unchanged; only room illumination changes.
+   disposeWallPressure=mountWallPressure($('visual'),count,{animate:animateDarkness});
+   // Wall marks accumulate with collected homework; the original pose stays fixed.
    if(!data.exam){const light=add('div','escape-exam-mist');light.innerHTML='<svg viewBox="0 0 100 100" preserveAspectRatio="none"><polygon filter="url(#escape-exam-mist)" points="42.2,28.8 44.4,26.2 46.5,28.2 44.1,30.6"/></svg>';}
    data.papers.forEach((done,i)=>{if(done)return;const paper=add('button','escape-paper');paper.id='escape-paper-'+i;paper.disabled=busy||!floorUnlocked();const item=floorItems[i];paper.setAttribute('aria-label',(item.bundle?'拖动叠放作业组 ':'拖动作业 ')+(i+1)+' 到小人');Object.assign(paper.style,{left:item.x+'%',top:item.y+'%',width:item.w+'%',height:item.h+'%'});if(floorUnlocked())mist(item.file,paper,{left:'0',top:'0',width:'100%',height:'100%'},-i*.31);const art=img(item.file,'escape-paper-art'+(animateDarkness?' escape-paper-dim-step':''),paper);art.style.filter=`brightness(${1-darkness})`;art.style.setProperty('--paper-from',String(1-previousDarkness));art.style.setProperty('--paper-to',String(1-darkness));bindDrag(paper,'paper',i);});
    if(ready()){const light=add('div','escape-monitor-light');light.setAttribute('aria-hidden','true');}
@@ -154,7 +156,8 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
   }else if(data.view==='exam'){
    imageScene('escape/exam.png','58 分试卷',1675,939);$('visual').style.filter=`brightness(${1-roomDarkness(data.papers.filter(Boolean).length,floorItems.length)})`;
    examInk=mountExamInk({host:$('visual'),completed:data.exam,onState:drawing=>{if(drawing)$('stage').dataset.escapeInk='drawing';else delete $('stage').dataset.escapeInk;},onComplete:()=>{if(!alive||data.view!=='exam')return;data.exam=true;persist();updateProgress();}});
-   hotspot('escape-cross-exam',[12,3,82,89],'划掉分数',data.exam,()=>{if(busy||data.exam)return;$('escape-cross-exam').disabled=true;examInk?.play();});
+   hotspot('escape-cross-exam',[77.1,68.4,10,31.6],'点击笔，划掉分数',data.exam,()=>{if(busy||data.exam)return;$('escape-cross-exam').disabled=true;examInk?.play();});
+   const pen=$('escape-cross-exam');pen.classList.add('escape-exam-pen');pen.style.clipPath='polygon(8% 0,27% 7%,44% 33%,100% 100%,47% 100%,15% 39%,0 14%)';pen.removeAttribute('title');pen.replaceChildren();
   }else if(data.view==='computer'){
    imageScene('escape/computer.png','STAY HERE FOR A WHILE?',1676,939);
    hotspot('escape-yes',[63,28,14,11],'YES',false,()=>go('game'));
@@ -167,7 +170,7 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
   syncStory();
  }
  const wheel=e=>{if(data.view!=='game'||busy||!$('dev-panel').hidden)return;e.preventDefault();gameController?.handleInput({kind:'wheel',point:scenePoint(e.clientX,e.clientY),deltaY:e.deltaY,deltaMode:e.deltaMode,direction:e.deltaY>0?'forward':e.deltaY<0?'backward':'none'});};
- const hide=()=>{story.dispose();disposePhoneList?.();disposePhoneList=null;stopDragTutorial();stopPhoneHints();examInk?.dispose();examInk=null;gameController?.dispose();gameController=null;cancelDrag();cancelMotion();cancelAnimationFrame(loadingFrame);loadingFrame=0;loadingMotion?.dispose();loadingMotion=null;clearTimeout(timer);};window.addEventListener('pagehide',hide);$('stage').addEventListener('wheel',wheel,{passive:false});
+ const hide=()=>{disposeWallPressure?.();disposeWallPressure=null;story.dispose();disposePhoneList?.();disposePhoneList=null;stopDragTutorial();stopPhoneHints();examInk?.dispose();examInk=null;gameController?.dispose();gameController=null;cancelDrag();cancelMotion();cancelAnimationFrame(loadingFrame);loadingFrame=0;loadingMotion?.dispose();loadingMotion=null;clearTimeout(timer);};window.addEventListener('pagehide',hide);$('stage').addEventListener('wheel',wheel,{passive:false});
  async function loading(){
   loadingMotion?.dispose();loadingMotion=null;
   const token=++loadToken;$('stage').classList.add('escape-scene');$('stage').dataset.escapeView='loading';$('hotspots').replaceChildren();

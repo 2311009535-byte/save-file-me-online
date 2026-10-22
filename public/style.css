@@ -354,3 +354,6 @@
 /* Chapter 2 inner voice sits above the separate operation hint. */
 .escape-story{position:absolute;left:13%;bottom:14%;width:74%;margin:0;padding:calc(10px * var(--scene-ui,1)) calc(18px * var(--scene-ui,1));z-index:5;pointer-events:none;text-align:center;text-wrap:balance;color:#f5ead9;font:calc(18px * var(--scene-ui,1))/1.55 Georgia,serif;text-shadow:0 2px 4px #000;background:linear-gradient(90deg,transparent,#10151de8 12%,#10151de8 88%,transparent)}
 .chapter-intro-active .escape-story{visibility:hidden}
+
+.escape-exam-pen{cursor:pointer!important;border-radius:0!important;box-shadow:none!important;outline:none!important;background:transparent!important}
+.escape-exam-pen:hover,.escape-exam-pen:focus-visible{background:#bcecff38!important;filter:drop-shadow(0 0 7px #a6efff)}

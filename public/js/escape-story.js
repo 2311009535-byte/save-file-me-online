@@ -21,7 +21,7 @@ export function createEscapeStory(stage,{canRead,isComplete,onReturn}){
    if(!panel)return;const dt=last===null?0:Math.min(100,Math.max(0,now-last));last=now;
    if(!document.hidden&&canRead(next)){elapsed+=dt;if(auto){if(isComplete(next))completedElapsed+=dt;else completedElapsed=0;}}
    const leaving=!auto&&elapsed>duration,opacity=Math.min(1,elapsed/450,leaving?Math.max(0,1-(elapsed-duration)/550):1);panel.style.opacity=String(opacity);panel.dataset.elapsed=String(Math.round(elapsed));panel.dataset.completedElapsed=String(Math.round(completedElapsed));
-   if(auto&&completedElapsed>=(next==='exam'?3000:5000)){const finished=key;clear();onReturn(finished);return;}
+   if(auto&&completedElapsed>=(next==='exam'?3000:8000)){const finished=key;clear();onReturn(finished);return;}
    if(leaving&&opacity===0)return;
    raf=requestAnimationFrame(tick);
   }
