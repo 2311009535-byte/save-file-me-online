@@ -12,7 +12,7 @@ import {createEscapeGame} from './escape-game.js';
 import {floorItems,FLOOR_VERSION} from './escape-floor.js';
 import {escapeLoadingAsset} from './escape-loading-asset.js';
 import {createVideoTransitions} from './wonder-videos.js';
-import {mountSceneDimming,roomDarkness} from './escape-lighting.js';
+import {mountSceneDimming,ROOM_DARKNESS} from './escape-lighting.js';
 import {createNativePhone,phoneCardRects} from './escape-phone-native.js';
 import {cameraProfiles,cameraPose} from './escape-camera.js';
 const KEY='save-file-me:escape:v1';
@@ -110,7 +110,7 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
   const previewSrc='/assets/escape/'+file;try{await prepareImage(previewSrc);}catch{busy=false;roomInputLocked(false);delete $('stage').dataset.motion;return;}if(!alive||token!==motionToken)return;
   if(['phone','exam','computer'].includes(view)&&!back){
    $('back').textContent='BACK';$('back').setAttribute('aria-label','BACK');$('back').hidden=['exam','phone'].includes(view);
-   const result=await videos.play(view,false,$('stage'),{effect:['phone','exam'].includes(view)?(video,layer)=>mountSceneDimming(video,layer,roomDarkness(data.papers.filter(Boolean).length,floorItems.length)):null});
+   const result=await videos.play(view,false,$('stage'),{effect:['phone','exam'].includes(view)?(video,layer)=>mountSceneDimming(video,layer,ROOM_DARKNESS):null});
    if(!alive||token!==motionToken||result==='cancelled')return;
    if(view==='phone')gameAudio.effect('unlock');if(view==='computer')gameAudio.effect('boot',{chapter:2});data.view=view;await draw();videos.cancel();busy=false;delete $('stage').dataset.motion;persist();hintLastActivity=performance.now();schedulePhoneHints();return;
   }
@@ -123,10 +123,9 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
   if(!results.every(Boolean)){if(alive&&token===motionToken){data.view=origin;draw();}return;}
   old.remove();overlay=null;incoming.style.transformOrigin='';busy=false;roomInputLocked(false);delete $('stage').dataset.motion;persist();if(data.view==='phone')hintLastActivity=performance.now();schedulePhoneHints();scheduleDragTutorial();
  }
- async function draw(animateDarkness=false){
+ async function draw(animatePressure=false){
   const version=++drawEpoch;disposeWindowTraffic?.();disposeWindowTraffic=null;disposeWallPressure?.();disposeWallPressure=null;$('visual').style.filter='';
   const wasRoom=$('stage').dataset.escapeView==='room';if(!wasRoom)roomDragStarted=false;stopDragTutorial();
-  const previousDarkness=Number($('visual').querySelector('.escape-room-dim')?getComputedStyle($('visual').querySelector('.escape-room-dim')).opacity:0);
   disposePhoneList?.();disposePhoneList=null;phoneSettled=false;stopPhoneHints();phoneGesture=false;examInk?.dispose();examInk=null;gameController?.dispose();gameController=null;cancelDrag();$('hotspots').replaceChildren();$('stage').classList.add('escape-scene');$('stage').dataset.escapeView=data.view;
   updateProgress();
   $('back').hidden=['exam','phone'].includes(data.view);
@@ -135,28 +134,28 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
   if(data.view==='room'){
    mistDefinitions();
    imageScene('escape/room-clean.png','Escape 房间',3840,2160);
-   const count=data.papers.filter(Boolean).length,darkness=.56*count/floorItems.length;
+   const count=data.papers.filter(Boolean).length,darkness=ROOM_DARKNESS;
    const phonePosition={left:'28.85%',top:'33.24%',width:'11.51%',height:'18.89%'};const phone=img('phone-item.png','escape-phone-item');Object.assign(phone.style,phonePosition);
-   const dim=add('div','escape-room-dim'+(animateDarkness?' escape-dim-step':''));dim.setAttribute('aria-hidden','true');dim.style.opacity=String(darkness);dim.style.setProperty('--dim-from',String(previousDarkness));dim.style.setProperty('--dim-to',String(darkness));
+   const dim=add('div','escape-room-dim');dim.setAttribute('aria-hidden','true');dim.style.opacity=String(darkness);
    if(data.exam&&!data.messages.every(Boolean))mist('phone-item.png',$('visual'),phonePosition,-.35);
    hotspot('escape-phone',[28.85,33.24,11.51,18.89],'PHONE',!data.exam,()=>transition('phone'));
    hotspot('escape-exam',[41.5,25,5.5,7],'EXAM',false,()=>transition('exam'));
    $('stage').dataset.escapePaperCount=String(count);
    disposeWindowTraffic=mountWindowTraffic($('visual'),{canPlay:()=>alive&&!busy&&!$('stage').dataset.motion});
-   disposeWallPressure=mountWallPressure($('visual'),count,{animate:animateDarkness});
+   disposeWallPressure=mountWallPressure($('visual'),count,{animate:animatePressure});
    // Wall marks accumulate with collected homework; the original pose stays fixed.
    if(!data.exam){const light=add('div','escape-exam-mist');light.innerHTML='<svg viewBox="0 0 100 100" preserveAspectRatio="none"><polygon filter="url(#escape-exam-mist)" points="42.2,28.8 44.4,26.2 46.5,28.2 44.1,30.6"/></svg>';}
-   data.papers.forEach((done,i)=>{if(done)return;const paper=add('button','escape-paper');paper.id='escape-paper-'+i;paper.disabled=busy||!floorUnlocked();const item=floorItems[i];paper.setAttribute('aria-label',(item.bundle?'拖动叠放作业组 ':'拖动作业 ')+(i+1)+' 到小人');Object.assign(paper.style,{left:item.x+'%',top:item.y+'%',width:item.w+'%',height:item.h+'%'});if(floorUnlocked())mist(item.file,paper,{left:'0',top:'0',width:'100%',height:'100%'},-i*.31);const art=img(item.file,'escape-paper-art'+(animateDarkness?' escape-paper-dim-step':''),paper);art.style.filter=`brightness(${1-darkness})`;art.style.setProperty('--paper-from',String(1-previousDarkness));art.style.setProperty('--paper-to',String(1-darkness));bindDrag(paper,'paper',i);});
+   data.papers.forEach((done,i)=>{if(done)return;const paper=add('button','escape-paper');paper.id='escape-paper-'+i;paper.disabled=busy||!floorUnlocked();const item=floorItems[i];paper.setAttribute('aria-label',(item.bundle?'拖动叠放作业组 ':'拖动作业 ')+(i+1)+' 到小人');Object.assign(paper.style,{left:item.x+'%',top:item.y+'%',width:item.w+'%',height:item.h+'%'});if(floorUnlocked())mist(item.file,paper,{left:'0',top:'0',width:'100%',height:'100%'},-i*.31);const art=img(item.file,'escape-paper-art',paper);art.style.filter=`brightness(${1-darkness})`;bindDrag(paper,'paper',i);});
    if(ready()){const light=add('div','escape-monitor-light');light.setAttribute('aria-hidden','true');}
    hotspot('escape-computer',[46.5,15.8,8.2,10],'COMPUTER',!ready(),()=>transition('computer'));
    scheduleDragTutorial();
   }else if(data.view==='phone'){
-   const prepared=await nativePhone.prepare(videos.layer()?.querySelector('video'));if(!alive||version!==drawEpoch||data.view!=='phone')return;if(!prepared)throw Error('Phone ending could not load');imageScene(nativePhone.background(),'Phone notifications',1920,1080);$('visual').style.filter=`brightness(${1-roomDarkness(data.papers.filter(Boolean).length,floorItems.length)})`;
-   hintLastActivity=performance.now();const screen=add('div','escape-phone-screen',$('hotspots'));screen.style.filter=`brightness(${1-roomDarkness(data.papers.filter(Boolean).length,floorItems.length)})`;
+   const prepared=await nativePhone.prepare(videos.layer()?.querySelector('video'));if(!alive||version!==drawEpoch||data.view!=='phone')return;if(!prepared)throw Error('Phone ending could not load');imageScene(nativePhone.background(),'Phone notifications',1920,1080);$('visual').style.filter=`brightness(${1-ROOM_DARKNESS})`;
+   hintLastActivity=performance.now();const screen=add('div','escape-phone-screen',$('hotspots'));screen.style.filter=`brightness(${1-ROOM_DARKNESS})`;
    if(data.messages.every(Boolean))disposePhoneList=mountPhoneList(screen,{onReady:()=>{if(alive&&data.view==='phone')phoneSettled=true;}});
    else{data.messages.forEach((done,i)=>{if(!done)messageRow(screen,i);});schedulePhoneHints();}
   }else if(data.view==='exam'){
-   imageScene('escape/exam.png','58 分试卷',1675,939);$('visual').style.filter=`brightness(${1-roomDarkness(data.papers.filter(Boolean).length,floorItems.length)})`;
+   imageScene('escape/exam.png','58 分试卷',1675,939);$('visual').style.filter=`brightness(${1-ROOM_DARKNESS})`;
    examInk=mountExamInk({host:$('visual'),completed:data.exam,onState:drawing=>{if(drawing)$('stage').dataset.escapeInk='drawing';else delete $('stage').dataset.escapeInk;},onComplete:()=>{if(!alive||data.view!=='exam')return;data.exam=true;persist();updateProgress();}});
    hotspot('escape-cross-exam',[77.1,68.4,10,31.6],'点击笔，划掉分数',data.exam,()=>{if(busy||data.exam)return;$('escape-cross-exam').disabled=true;examInk?.play();});
    const pen=$('escape-cross-exam');pen.classList.add('escape-exam-pen');pen.style.clipPath='polygon(8% 0,27% 7%,44% 33%,100% 100%,47% 100%,15% 39%,0 14%)';pen.removeAttribute('title');pen.replaceChildren();
