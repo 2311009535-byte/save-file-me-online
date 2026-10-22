@@ -350,3 +350,7 @@
 .wonder-story-spark{position:absolute;width:5px;height:5px;pointer-events:none;z-index:1;background:#fff4bc;box-shadow:0 0 0 2px #f3c66d66,0 0 15px 5px #f7d56d66;animation:wonder-story-spark 2.8s ease-in-out infinite}
 @keyframes wonder-story-caret{50%{opacity:0}}@keyframes wonder-story-spark{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-5px)}}
 @media(prefers-reduced-motion:reduce){.wonder-story-spark,.wonder-game-story.is-typing .wonder-game-story-copy:after{animation:none}}
+
+/* Chapter 2 inner voice sits above the separate operation hint. */
+.escape-story{position:absolute;left:13%;bottom:14%;width:74%;margin:0;padding:calc(10px * var(--scene-ui,1)) calc(18px * var(--scene-ui,1));z-index:5;pointer-events:none;text-align:center;text-wrap:balance;color:#f5ead9;font:calc(18px * var(--scene-ui,1))/1.55 Georgia,serif;text-shadow:0 2px 4px #000;background:linear-gradient(90deg,transparent,#10151de8 12%,#10151de8 88%,transparent)}
+.chapter-intro-active .escape-story{visibility:hidden}
