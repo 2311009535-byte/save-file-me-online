@@ -342,3 +342,11 @@
 .wonder-scene #visual{isolation:isolate}
 /* Keep the decoded video end frame and interactive window at one exposure. */
 .wonder-scene #visual.wonder-window-dim{filter:brightness(.65)}
+
+/* In-game thoughts: pixel-cut navy panel, warm lettering, clear of the path/UI. */
+.wonder-game-story{position:absolute;left:18%;top:23%;width:64%;padding:15px 24px 15px 42px;min-height:60px;z-index:2;pointer-events:none;opacity:0;color:#fff1c6;background:#0b1849eb;font:bold 23px/1.4 'Courier New',monospace;letter-spacing:.015em;text-shadow:2px 2px #182957;border:2px solid #b4bee4;box-shadow:inset 0 0 0 3px #31477b;clip-path:polygon(0 8px,8px 8px,8px 0,calc(100% - 8px) 0,calc(100% - 8px) 8px,100% 8px,100% calc(100% - 8px),calc(100% - 8px) calc(100% - 8px),calc(100% - 8px) 100%,8px 100%,8px calc(100% - 8px),0 calc(100% - 8px))}
+.wonder-game-story:before{content:'';position:absolute;left:19px;top:23px;width:8px;height:8px;background:#ffe6a0;box-shadow:0 0 9px #ffd77a80}
+.wonder-game-story-copy:after{content:' ';white-space:pre}.wonder-game-story.is-typing .wonder-game-story-copy:after{content:'▌';color:#ffe6a0;animation:wonder-story-caret .7s steps(1,end) infinite}
+.wonder-story-spark{position:absolute;width:5px;height:5px;pointer-events:none;z-index:1;background:#fff4bc;box-shadow:0 0 0 2px #f3c66d66,0 0 15px 5px #f7d56d66;animation:wonder-story-spark 2.8s ease-in-out infinite}
+@keyframes wonder-story-caret{50%{opacity:0}}@keyframes wonder-story-spark{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-5px)}}
+@media(prefers-reduced-motion:reduce){.wonder-story-spark,.wonder-game-story.is-typing .wonder-game-story-copy:after{animation:none}}

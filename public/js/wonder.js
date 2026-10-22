@@ -3,7 +3,7 @@ import {mountWindowBackMask} from './wonder-window-ui-mask.js';
 import {createWonderReflections} from './wonder-reflections.js';
 import {mountMapGlass} from './wonder-map-glass.js';
 import {mountRoomAtmosphere} from './wonder-room-atmosphere.js';
-import {mountNoteBreeze} from './wonder-note-breeze.js';
+import {mountGameStory} from './wonder-game-story.js';
 import {boxTransitionTone,BOX_BRIGHTNESS} from './wonder-box-tone.js';
 import {mountClosedBox} from './wonder-box-lid.js';
 import {windowTransitionTone} from './wonder-window-tone.js';
@@ -115,9 +115,8 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  $('back').hidden=ids.includes(data.view);$('back').setAttribute('aria-label',$('back').textContent);$('back').onclick=()=>{if(busy){cancelMotion();go('room');return;}if(data.view==='room')onExit();else{if(data.view==='map'||data.view==='note')mark(data.view);if(profiles[data.view])transition(data.view,true);else go('room');}};
  if(data.view==='room'){
  const ready=ids.every(id=>data.done[id]);imageScene('wonder/1_1.png','Wonder 房间',1669,942);
- addContourLights($('visual'),data.done,{closedBox:!data.boxOpened,movingNote:true});
- const stopNote=mountNoteBreeze($('visual'),{room:true,completed:data.done.note});
- const stopAtmosphere=mountRoomAtmosphere($('visual'));disposeDetail=()=>{stopNote();stopAtmosphere();};
+ addContourLights($('visual'),data.done,{closedBox:!data.boxOpened,movingNote:false});
+ disposeDetail=mountRoomAtmosphere($('visual'));
  if(!data.boxOpened)boxLid=mountClosedBox($('visual'));
  hideRoomMeteor($('visual'),data.done.window);
  const light=mountRoomLighting($('visual'),data.done,shownRoom);disposeRoomLight=light;shownRoom={...data.done};
@@ -142,7 +141,7 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  disposeDetail=mountMapGlass($('visual'),top,{scenePoint,onReveal:()=>{hints.hide();reflections.start('map');}});
  }else if(data.view==='note'){
  imageScene('wonder/1_7.jpg','便利贴 · 探索学校后山',825,466);
- disposeDetail=mountNoteBreeze($('visual'));reflections.start('note');
+ reflections.start('note');
  }
  else if(data.view==='computer'){
  imageScene('wonder/1_15.png','电脑特写',1672,941);hotspot('wonder-play',[32,28,29,9],'点击屏幕进入平台游戏',true,enterGame);$('wonder-play').classList.add('wonder-enter-game');$('wonder-play').textContent='ENTER GAME';gameFlow.revealEntry($('wonder-play'),$('visual').querySelector('.scene-image'));
@@ -151,10 +150,10 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  runner=createRunner(data.level);$('stage').dataset.level=String(data.level);
  const sprite=document.createElement('img');sprite.id='wonder-player';sprite.src='/assets/wonder/character.png';sprite.alt='自动向右前进的小人';sprite.className='wonder-player';$('visual').append(sprite);
  hotspot('wonder-jump',[40,82,20,12],'Space / 点击跳跃',false,()=>jumpWithSound());
- const status=document.createElement('div');status.id='runner-status';status.className='runner-status';$('visual').append(status);
+ const story=mountGameStory($('visual'),data.level);disposeDetail=story.dispose;
  last=0;const tick=time=>{if(!alive||data.view!=='game')return;const dt=last?Math.min((time-last)/1000,.035):0;last=time;
  if(!document.hidden&&!$('dev-panel').hidden){raf=requestAnimationFrame(tick);return;}
- if(jumpHeld&&runner.grounded&&!intro.active&&!busy)jumpWithSound();const outcome=document.hidden||intro.active||busy?'running':step(runner,dt);sprite.style.left=(runner.x-30)+'px';sprite.style.top=(runner.y-75)+'px';sprite.dataset.x=runner.x;sprite.dataset.y=runner.y;sprite.dataset.grounded=runner.grounded;status.textContent=`${data.level+1} / 5 · HOLD SPACE / TAP TO JUMP`;
+ if(jumpHeld&&runner.grounded&&!intro.active&&!busy)jumpWithSound();const outcome=document.hidden||intro.active||busy?'running':step(runner,dt);sprite.style.left=(runner.x-30)+'px';sprite.style.top=(runner.y-75)+'px';sprite.dataset.x=runner.x;sprite.dataset.y=runner.y;sprite.dataset.grounded=runner.grounded;if(!document.hidden&&!intro.active&&!busy)story.update(dt);
  if(outcome==='next'){data.level++;persist();draw();return;}if(outcome==='win'){go('win');return;}raf=requestAnimationFrame(tick);};raf=requestAnimationFrame(tick);
  }else{
  imageScene('wonder/1_12.png','Wonder · 到达出口',1672,941);

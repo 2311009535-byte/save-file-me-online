@@ -1,30 +1,7 @@
 import {prepareImage} from './image-cache.js';
-import {mountNoteBreeze} from './wonder-note-breeze.js';
-
-// Original artwork coordinates. Each sheet keeps its own fixed top attachment;
-// no animated region overlaps the bed dog or the bookcase rabbit.
 const clockEpoch=performance.now();
-const papers=[
- ['bed-photo',[[458,423],[497,423],[497,456],[458,456]],.9,1390,.4],
- ['left-photo',[[507,284],[551,284],[551,341],[507,341]],1.8,1730,2.1],
- ['lower-photo',[[511,377],[553,377],[553,434],[511,434]],1.2,2110,4.3],
- ['map-photo',[[613,402],[656,402],[656,449],[613,449]],1.7,1510,1.5],
- ['desk-photo',[[679,419],[719,419],[719,461],[679,461]],1.1,2470,3.2],
- ['right-photo',[[941,255],[991,255],[991,336],[941,336]],1.3,1930,5.4],
- ['blue-note',[[1011,264],[1051,264],[1051,315],[1011,315]],2.1,1670,2.8],
- ['small-note',[[973,337],[1015,337],[1015,380],[973,380]],1.5,2290,.9],
- ['calendar',[[1078,158],[1175,158],[1175,302],[1078,302]],.6,2810,4.8],
- ['star-poster',[[980,168],[1043,168],[1043,235],[980,235]],.45,2570,1.9],
- ['planet-poster',[[382,236],[485,236],[485,418],[382,418]],.5,3070,3.8],
- ['map',[[597,194],[902,194],[902,377],[597,377]],.35,3370,5.9],
- ['pennant',[[406,157],[537,181],[406,212]],.65,1870,3.5]
-];
 
 export function mountRoomAtmosphere(visual){
- const stops=papers.map(([id,paper,amplitude,period,phase])=>{
-  const xs=paper.map(p=>p[0]),ys=paper.map(p=>p[1]),x=Math.min(...xs),y=Math.min(...ys),w=Math.max(...xs)-x,h=Math.max(...ys)-y;
-  return mountNoteBreeze(visual,{room:true,completed:true,configuration:{id,width:1669,height:942,src:'/assets/wonder/1_1.png',paper,tape:[x+w/2-3,y-5,6,8],anchor:y,amplitude,period,phase,slowPeriod:period*2.31,curlPeriod:period*1.43,curl:.35,wall:[x+w+9,y,4,h],patch:[x-9,y-9,w+18,h+18]}});
- });
  const layer=document.createElement('canvas');layer.width=1669;layer.height=942;layer.className='wonder-room-atmosphere';layer.setAttribute('aria-hidden','true');Object.assign(layer.style,{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',zIndex:1});visual.append(layer);
  const ctx=layer.getContext('2d');ctx.imageSmoothingEnabled=false;
  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -62,5 +39,5 @@ export function mountRoomAtmosphere(visual){
   function tick(now){if(!alive||!layer.isConnected)return;if(!document.hidden&&now-last>=40){paint(now);last=now;}raf=requestAnimationFrame(tick);}
   paint(performance.now());if(!reduced)raf=requestAnimationFrame(tick);
  }).catch(()=>{layer.dataset.error='image-load';});
- return()=>{alive=false;cancelAnimationFrame(raf);stops.forEach(stop=>stop());layer.remove();};
+ return()=>{alive=false;cancelAnimationFrame(raf);layer.remove();};
 }
