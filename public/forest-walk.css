@@ -23,3 +23,7 @@ html[data-forest-study] #meter{width:90px;height:2px;margin:7px auto;opacity:.55
 .forest-observation button{pointer-events:auto;cursor:pointer;color:inherit;background:#172023b8;border:1px solid #dec7a366;padding:7px 14px;border-radius:3px;font:11px monospace}
 @media(max-width:700px){.forest-observation{bottom:12px;font-size:12px}.forest-observation p{margin-bottom:5px;padding:3px 8px}.forest-observation button{font-size:10px;padding:6px 10px}}
 body[data-observation]:not([data-observation=none]) footer{visibility:hidden}
+.forest-wildlife-target{position:fixed;z-index:6;border:0;background:transparent;cursor:pointer;padding:0;border-radius:50%;touch-action:manipulation}
+.forest-wildlife-target[hidden]{display:none}
+.forest-wildlife-target:hover,.forest-wildlife-target:focus-visible{outline:1px dashed #ffedcb99;outline-offset:4px;background:#ffedcb0c}
+.forest-sky-view footer,.forest-sky-view .forest-walk-hint,.forest-sky-view .forest-touch-walk,.forest-sky-view .forest-touch-hint{visibility:hidden}

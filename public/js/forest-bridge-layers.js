@@ -47,5 +47,5 @@ export function prepareForestLayers(images){
   addForestMeadow({texture,quad},images.butterflySheet);
   addForestDoor({texture,quad},images.forestDoor);
  }
- return {water,sky:images.panorama,add,end:FOREST_ROUTE.end,length:ROUTE_LENGTH,camera:forestCamera,houseZ:FOREST_PLACEMENT.houseZ,...createForestAtmosphere(images.house,COTTAGE_GROVE.chimney)};
+ return {wildlife:true,water,sky:images.panorama,add,end:FOREST_ROUTE.end,length:ROUTE_LENGTH,camera:forestCamera,houseZ:FOREST_PLACEMENT.houseZ,...createForestAtmosphere(images.house,COTTAGE_GROVE.chimney)};
 }

@@ -8,7 +8,7 @@ export function createForestAtmosphere(source,anchor={x:712,y:294,z:2200}){
  return {
   update(camera,time,canvas){
    if(!overlay){overlay=document.createElement('canvas');overlay.width=1672;overlay.height=941;overlay.setAttribute('aria-hidden','true');overlay.style.cssText='position:absolute;pointer-events:none;';canvas.after(overlay);ctx=overlay.getContext('2d');}
-   overlay.style.width=canvas.clientWidth+'px';overlay.style.height=canvas.clientHeight+'px';ctx.clearRect(0,0,1672,941);
+   overlay.style.opacity=String(1-(camera.fullSky||0));overlay.style.width=canvas.clientWidth+'px';overlay.style.height=canvas.clientHeight+'px';ctx.clearRect(0,0,1672,941);
    drawForestFireflies(ctx,camera,time);
    ctx.imageSmoothingEnabled=false;
    for(let i=0;i<6;i++){
