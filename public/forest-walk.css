@@ -16,3 +16,10 @@ html[data-forest-study] #meter{width:90px;height:2px;margin:7px auto;opacity:.55
 .forest-short-label,.forest-touch-hint{display:none}
 @media(pointer:coarse),(max-width:700px){.forest-full-label{display:none}.forest-short-label,.forest-touch-hint{display:inline}.forest-touch-hint{font-size:10px}}
 @media(max-width:700px){.forest-look{left:12px;right:120px;justify-content:flex-start}}
+.forest-walk-controls.is-observing{visibility:hidden}
+.forest-observation{position:fixed;left:10%;right:10%;bottom:8%;z-index:9;text-align:center;color:#ffedcb;text-shadow:0 2px 5px #172023;font:17px/1.6 Georgia,serif;pointer-events:none}
+.forest-observation[hidden]{display:none}
+.forest-observation p{display:table;margin:0 auto 10px;padding:6px 18px;background:#172023a8;border-radius:3px}
+.forest-observation button{pointer-events:auto;cursor:pointer;color:inherit;background:#172023b8;border:1px solid #dec7a366;padding:7px 14px;border-radius:3px;font:11px monospace}
+@media(max-width:700px){.forest-observation{bottom:12px;font-size:12px}.forest-observation p{margin-bottom:5px;padding:3px 8px}.forest-observation button{font-size:10px;padding:6px 10px}}
+body[data-observation]:not([data-observation=none]) footer{visibility:hidden}

@@ -18,7 +18,7 @@ export function mountForestDoor(canvas,draw){
  button.onclick=()=>{if(opening||button.disabled)return;opening=true;start=performance.now();button.disabled=true;document.body.dataset.door='opening';};
  function tick(now){
   if(disposed)return;
-  const z=Number(document.body.dataset.cameraZ||300),camera={x:Number(document.body.dataset.cameraX||0),y:105,z,yaw:Number(document.body.dataset.cameraYaw||0),pitch:Number(document.body.dataset.cameraPitch||0)};
+  const z=Number(document.body.dataset.cameraZ||300),camera={x:Number(document.body.dataset.cameraX||0),y:Number(document.body.dataset.cameraY||105),z,yaw:Number(document.body.dataset.cameraYaw||0),pitch:Number(document.body.dataset.cameraPitch||0)};
   const points=[[-65,160],[65,160],[65,0],[-65,0]].map(([dx,y])=>projectForestPoint(camera,routeX(DOOR_Z)+dx,y,DOOR_Z));
   const r=canvas.getBoundingClientRect(),s=r.width/1672,ready=z>=6030&&points.every(p=>p.depth>100);
   button.style.display=ready&&!opening?'block':'none';button.disabled=!ready||opening;
