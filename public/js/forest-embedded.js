@@ -15,14 +15,7 @@ if(token&&window.parent!==window){
   }
  });
  observer.observe(document.body,{attributes:true,attributeFilter:['data-ready','data-error']});
- function wheel(e){
-  if(e.origin!==location.origin||e.source!==parent||e.data?.token!==token||e.data.type!=='forest-wheel')return;
-  const scroll=document.querySelector('#scroll'),mode=e.data.deltaMode;
-  const m=mode===1?24:mode===2?scroll.clientHeight:1;
-  scroll.scrollTop+=Math.max(-1000,Math.min(1000,Number(e.data.deltaY)||0))*m;
- }
- window.addEventListener('message',wheel);
  window.addEventListener('pagehide',()=>{
-  observer.disconnect();window.removeEventListener('message',wheel);
+  observer.disconnect();
  },{once:true});
 }

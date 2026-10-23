@@ -1,17 +1,16 @@
 
+import {projectForestPoint} from './forest-walk.js';
 import {routeX} from './forest-route.js';
 export function drawForestFireflies(ctx,camera,time){
- const cs=Math.cos(camera.yaw||0),sn=Math.sin(camera.yaw||0);
  ctx.save();ctx.globalCompositeOperation='lighter';
  for(let i=0;i<48;i++){
   const z=1640+i*110,side=i%2?1:-1,offset=side*(190+i*37%200);
   if(side>0&&offset>330&&z>2190&&z<2650)continue;
   const x=routeX(z)+offset+Math.sin(time*.65+i*2.3)*16;
   const y=32+(i*17%65)+Math.sin(time*.8+i)*12;
-  const dx=x-camera.x,dz=z-camera.z,depth=dx*sn+dz*cs;
+  const point=projectForestPoint(camera,x,y,z),depth=point.depth;
   if(depth<90||depth>1550)continue;
-  const sx=836+(dx*cs-dz*sn)*900/depth;
-  const sy=240-(y-camera.y)*900/depth;
+  const sx=point.x,sy=point.y;
   if(sx<0||sx>1672||sy<0||sy>941)continue;
   const fade=Math.min(1,(depth-90)/100,(1550-depth)/350);
   const pulse=.35+.65*Math.pow(.5+.5*Math.sin(time*1.8+i*2.4),2);

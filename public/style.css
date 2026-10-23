@@ -352,3 +352,4 @@
 
 .escape-exam-pen{cursor:pointer!important;border-radius:0!important;box-shadow:none!important;outline:none!important;background:transparent!important}
 .escape-exam-pen:hover,.escape-exam-pen:focus-visible{background:#bcecff38!important;filter:drop-shadow(0 0 7px #a6efff)}
+@media(max-width:700px){.escape-scene[data-escape-view=game] .escape-story{bottom:43%}}

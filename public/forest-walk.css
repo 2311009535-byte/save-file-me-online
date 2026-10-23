@@ -1,0 +1,18 @@
+html[data-forest-study] #scroll{overflow:hidden;touch-action:none}
+html[data-forest-study] #track{height:100%!important}
+html[data-forest-study] canvas{touch-action:none;cursor:grab}
+html[data-forest-study] canvas:active{cursor:grabbing}
+html[data-forest-study] footer{bottom:155px!important;font-size:11px;letter-spacing:.05em}
+html[data-forest-study] #meter{width:90px;height:2px;margin:7px auto;opacity:.55}
+.forest-walk-controls{position:fixed;z-index:8;bottom:max(16px,env(safe-area-inset-bottom));left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;color:#ffedcb;font:11px/1.6 monospace;text-shadow:0 1px 4px #172023}
+.forest-look{display:flex;gap:8px;pointer-events:auto}
+.forest-walk-controls button{font:inherit;color:inherit;background:#172023c9;border:1px solid #dec7a366;border-radius:3px;padding:6px 11px;cursor:pointer;box-shadow:0 2px 8px #0002;touch-action:none}
+.forest-walk-controls button:hover,.forest-walk-controls button:focus-visible{background:#39473ce8;border-color:#ffedcb}
+.forest-walk-hint{margin:0;text-align:center;color:#e4dac4}
+.forest-touch-walk{display:none;gap:8px;pointer-events:auto}
+.forest-touch-walk button{min-width:44px;min-height:44px;font-size:22px;user-select:none;-webkit-user-select:none}
+@media(pointer:coarse),(max-width:700px){.forest-touch-walk{display:flex}.forest-walk-hint{display:none}.forest-look{gap:5px}.forest-look button{font-size:10px;padding:7px 8px}html[data-forest-study] footer{bottom:116px!important}html[data-forest-study] #phase{font-size:10px}}
+@media(max-width:700px){.forest-look{position:fixed;top:10px;left:0;right:0;justify-content:center}.forest-walk-controls{bottom:10px}html[data-forest-study] footer{display:none}}
+.forest-short-label,.forest-touch-hint{display:none}
+@media(pointer:coarse),(max-width:700px){.forest-full-label{display:none}.forest-short-label,.forest-touch-hint{display:inline}.forest-touch-hint{font-size:10px}}
+@media(max-width:700px){.forest-look{left:12px;right:120px;justify-content:flex-start}}
