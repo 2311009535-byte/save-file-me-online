@@ -1,3 +1,4 @@
+import {createRetryAtmosphere,retryAtmosphereAssets} from './retry-atmosphere.js';
 import {createDiaryTurn} from './retry-page-turn.js?v=diary3';
 import {createSwitchBook} from './retry-switch-book.js';
 import {gameAudio} from './game-audio.js';
@@ -15,19 +16,19 @@ const files=['3_1.png','3_2.png','3_3.png','3_4.png','3_5.png','3_6.png','3_7.JP
 const url=f=>'/assets/retry/'+f;
 export function mountRetry({imageScene,hotspot,onExit,onVictory}){
  const $=id=>document.getElementById(id),stage=$('stage'),visual=$('visual'),videos=createRetryVideo(),victoryFrame=createVictoryFrame();let data;try{data=normalizeRetry(JSON.parse(localStorage.getItem(RETRY_KEY)));}catch{data=normalizeRetry(null);}
- const intro=createChapterIntro(stage),loader=createChapterLoading(stage);
+ const intro=createChapterIntro(stage),loader=createChapterLoading(stage),atmosphere=createRetryAtmosphere(visual);
  const partnerVideo=createVideoTransitions({partner:{enter:{src:'/assets/retry/videos/player2-join.mp4',available:true},return:{available:false}}},'retry-partner-overlay');
  const diaryVideo=createVideoTransitions({diary:{enter:{src:'/assets/retry/videos/diary-enter.mp4',available:true},return:{available:false}}},'retry-diary-video');
  let alive=true,busy=true,generation=0,viewGeneration=0,loadingFrame=0,diaryTurn=null,switchBook=null;const timers=new Map(),animations=new Set();
  const persist=()=>{gameAudio.setRetry({joined:data.joined,view:data.view,won:data.won});try{localStorage.setItem(RETRY_KEY,JSON.stringify(data));}catch{}$('retry-progress').textContent=`第三章：失败 ${data.failures}/3 · player2 ${data.joined?'已加入':'未加入'} · ${data.won?'已获胜':'未获胜'} · 日记 ${data.page+1}/4`;stage.dataset.retryFailures=String(data.failures);stage.dataset.retryJoined=String(data.joined);stage.dataset.retryWon=String(data.won);};
  function pause(ms){return new Promise(resolve=>{const timer=setTimeout(()=>{timers.delete(timer);resolve(alive);},ms);timers.set(timer,resolve);});}
  const actions=createRetryActions({visual,show,onCue:name=>name==='stopCombat'?gameAudio.stopCombat():gameAudio.effect(name),hold:ms=>animate(visual.querySelector('.scene-image'),[{opacity:1},{opacity:1}],{duration:ms})});
- function cancel(){loader.dispose();intro.dispose();diaryTurn?.dispose();diaryTurn=null;switchBook?.dispose();switchBook=null;generation++;actions.dispose();victoryFrame.dispose();partnerVideo.dispose();diaryVideo.dispose();for(const [timer,resolve] of timers){clearTimeout(timer);resolve(false);}timers.clear();cancelAnimationFrame(loadingFrame);animations.forEach(a=>a.cancel());animations.clear();videos.dispose();}
+ function cancel(){atmosphere.dispose();loader.dispose();intro.dispose();diaryTurn?.dispose();diaryTurn=null;switchBook?.dispose();switchBook=null;generation++;actions.dispose();victoryFrame.dispose();partnerVideo.dispose();diaryVideo.dispose();for(const [timer,resolve] of timers){clearTimeout(timer);resolve(false);}timers.clear();cancelAnimationFrame(loadingFrame);animations.forEach(a=>a.cancel());animations.clear();videos.dispose();}
  async function animate(element,frames,options){if(!alive)return false;const a=element.animate(frames,options);animations.add(a);try{await a.finished;return alive;}catch{return false;}finally{animations.delete(a);}}
  function lock(){busy=true;$('hotspots').querySelectorAll('button').forEach(b=>b.disabled=true);visual.querySelectorAll('.retry-card-art').forEach(c=>c.classList.remove('is-selected'));}
  function corner(){const diary=data.view==='diary';$('back').textContent=diary?'BACK':'SAVE ROOM';$('back').setAttribute('aria-label',diary?'BACK':'SAVE ROOM');$('back').hidden=!diary;$('back').onclick=()=>{if(diary&&!busy){gameAudio.effect('page');data.view='switch';persist();draw();}};}
  function button(id,rect,label,callback,disabled=false){hotspot(id,rect,label,disabled,()=>{if(!alive||busy||disabled)return;callback();});}
- async function show(f){const version=++viewGeneration;if(f==='3_14.png'){const frame=await videos.finalFrame();if(!alive||version!==viewGeneration)return false;if(!frame){overlayText('桌面动画未能加载，请重新进入第三章。');return false;}imageScene('retry/'+f,f,1672,941);const im=visual.querySelector('.scene-image');im.src=frame;await im.decode();if(!alive||version!==viewGeneration)return false;stage.dataset.retryFrame='switch-blank';return true;}if(f==='3_12.png'){const frame=await victoryFrame.get(visual);if(!alive||version!==viewGeneration)return false;if(frame){imageScene('retry/'+f,f,1672,941);visual.replaceChildren(frame);stage.dataset.retryFrame=f;return true;}}await prepareImage(url(f));if(!alive||version!==viewGeneration)return false;imageScene('retry/'+f,f,1672,941);stage.dataset.retryFrame=f;return true;}
+ async function show(f){atmosphere.clear();const version=++viewGeneration;if(f==='3_14.png'){const frame=await videos.finalFrame();if(!alive||version!==viewGeneration)return false;if(!frame){overlayText('桌面动画未能加载，请重新进入第三章。');return false;}imageScene('retry/'+f,f,1672,941);const im=visual.querySelector('.scene-image');im.src=frame;await im.decode();if(!alive||version!==viewGeneration)return false;stage.dataset.retryFrame='switch-blank';return true;}if(f==='3_12.png'){const frame=await victoryFrame.get(visual);if(!alive||version!==viewGeneration)return false;if(frame){imageScene('retry/'+f,f,1672,941);visual.replaceChildren(frame);stage.dataset.retryFrame=f;return true;}}await prepareImage(url(f));if(!alive||version!==viewGeneration)return false;imageScene('retry/'+f,f,1672,941);stage.dataset.retryFrame=f;await atmosphere.show(f);return alive&&version===viewGeneration;}
  function overlayText(text,cls='retry-action'){const div=document.createElement('div');div.className=cls;div.textContent=text;visual.append(div);return div;}
  function drawHP(value){const bar=document.createElement('div');bar.className='retry-hp';bar.style.setProperty('--hp',value);bar.append(document.createElement('i'));visual.append(bar);return bar;}
  function patchAttempt(switchScreen=false){// Only the printed attempt label is patched; originals stay intact.
@@ -113,7 +114,7 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
  const current=()=>alive&&token===generation;
  stage.dataset.retryPlayerHp='1';stage.dataset.retryBossHp='1';
  const play=async(group,onEnded)=>{
-  stage.dataset.retryGroup=group;
+  atmosphere.clear();stage.dataset.retryGroup=group;
   return await actions.play(group,{onEnded:async()=>{if(current()){await onEnded();if(current())stage.dataset.retryActionEnded=group;}}})==='ended'&&current();
  };
  try{
@@ -129,7 +130,7 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
     const feedback=overlayText(action==='DEFEND'?'DEFEND':'HEAL +');feedback.classList.add('retry-'+action.toLowerCase());
     if(!await animate(feedback,[{opacity:0,transform:'translateY(10px) scale(.9)'},{opacity:1,transform:'translateY(0) scale(1)',offset:.2},{opacity:1,offset:.8},{opacity:0,transform:'translateY(-8px)'}],{duration:1300})||!current())return;
    }
-   stage.dataset.retryGroup='bossWarning';if(!await bossPaper(visual,animate,pause)||!current())return;
+   stage.dataset.retryGroup='bossWarning';atmosphere.charge();if(!await bossPaper(visual,animate,pause)||!current())return;
    if(!await play('bossAttack',async()=>{
     // Both real clips and demos must finish before HP reaches zero.
     if(!await show('3_5.png')||!current())return;
@@ -153,7 +154,7 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
  stage.classList.add('retry-scene');stage.dataset.retryView='loading';persist();corner();
  if(!alive)return;imageScene('retry/3_1.png','Retry loading',1672,941);
  const critical=[...files];
- if(!await loader.play(3,critical.map(url))||!alive)return;
+ if(!await loader.play(3,[...critical.map(url),...retryAtmosphereAssets])||!alive)return;
  await intro.play(3,()=>draw());
  }
  function suspend(){cancel();}window.addEventListener('pagehide',suspend);if(data.won)onVictory();load();
