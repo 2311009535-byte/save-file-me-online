@@ -1,3 +1,5 @@
+import {crumpledExamAsset,mountCrumpledExam} from './escape-exam-paper.js';
+import {reactionBlinkAsset} from './escape-reaction-blink.js';
 import {createEscapeComputerFlow,computerReactionAsset,computerEndingAsset} from './escape-computer-flow.js';
 import {mountWindowTraffic} from './escape-window-traffic.js';
 import {mountWallPressure} from './escape-wall-pressure.js';
@@ -14,10 +16,10 @@ import {floorItems,FLOOR_VERSION} from './escape-floor.js';
 import {escapeLoadingAsset} from './escape-loading-asset.js';
 import {createVideoTransitions} from './wonder-videos.js';
 import {mountSceneDimming,ROOM_DARKNESS} from './escape-lighting.js';
-import {createNativePhone,phoneCardRects} from './escape-phone-native.js';
+import {createNativePhone,phoneCardRects,phoneEntryAsset} from './escape-phone-native.js';
 import {cameraProfiles,cameraPose} from './escape-camera.js';
 const KEY='save-file-me:escape:v1';
-const files=[computerReactionAsset.split('/assets/escape/')[1],computerEndingAsset.split('/assets/escape/')[1],...(phoneListAsset?[phoneListAsset]:[]),'room-interior-mask.svg','room-clean.png','phone-clean.jpg','class-card.png','teacher-card.png',...floorItems.map(item=>item.file),'phone-item.png','exam.png','game.png'];
+const files=[crumpledExamAsset.split('/assets/escape/')[1],reactionBlinkAsset.split('/assets/escape/')[1],computerReactionAsset.split('/assets/escape/')[1],computerEndingAsset.split('/assets/escape/')[1],...(phoneListAsset?[phoneListAsset]:[]),'room-interior-mask.svg','room-clean.png','phone-clean.jpg','class-card.png','teacher-card.png',...floorItems.map(item=>item.file),'phone-item.png','exam.png','game.png'];
 export function resetEscape(){try{localStorage.removeItem(KEY);}catch{}}
 export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAdapter=null}){
  const nativePhone=createNativePhone();
@@ -28,7 +30,7 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
  const ready=()=>data.messages.every(Boolean)&&data.papers.every(Boolean)&&data.exam;
  if((data.view==='phone'&&!data.exam)||(['computer','game'].includes(data.view)&&!ready()))data.view='room';
  let alive=true,busy=true,drag=null,loadToken=0,timer=0,motionToken=0,overlay=null,gameController=null,examInk=null,hintTimer=0,phoneGesture=false,hintLastActivity=0,dragHintTimer=0,loadingFrame=0,loadingMotion=null,roomDragStarted=false,disposePhoneList=null,disposeWallPressure=null,disposeWindowTraffic=null,phoneSettled=false,drawEpoch=0;const motions=new Set();const openMessages=[false,false];
- const videos=createVideoTransitions({phone:{enter:{src:'/assets/escape/videos/phone_enter.mp4',available:true},return:{available:false}},exam:{enter:{src:'/assets/escape/videos/exam_enter.mp4',available:true},return:{available:false}},computer:{enter:{src:'/assets/escape/videos/computer-enter-pressure.mp4',available:true},return:{available:false}}},'escape-video-overlay');
+ const videos=createVideoTransitions({phone:{enter:{src:phoneEntryAsset,available:true},return:{available:false}},exam:{enter:{src:'/assets/escape/videos/exam_enter.mp4',available:true},return:{available:false}},computer:{enter:{src:'/assets/escape/videos/computer-enter-pressure.mp4',available:true},return:{available:false}}},'escape-video-overlay');
  const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(data));}catch{}};
  const story=createEscapeStory($('stage'),{
   canRead:key=>alive&&!busy&&!$('stage').dataset.motion&&$('dev-panel').hidden&&(key!=='game'||!$('visual').querySelector('.escape-parallax')||$('visual').querySelector('.escape-parallax').dataset.ready==='true'),
@@ -137,6 +139,7 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
   if(data.view==='room'){
    mistDefinitions();
    imageScene('escape/room-clean.png','Escape 房间',3840,2160);
+   if(data.exam)mountCrumpledExam($('visual'));
    const count=data.papers.filter(Boolean).length,darkness=ROOM_DARKNESS;
    const phonePosition={left:'28.85%',top:'33.24%',width:'11.51%',height:'18.89%'};const phone=img('phone-item.png','escape-phone-item');Object.assign(phone.style,phonePosition);
    const dim=add('div','escape-room-dim');dim.setAttribute('aria-hidden','true');dim.style.opacity=String(darkness);

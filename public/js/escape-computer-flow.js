@@ -1,3 +1,4 @@
+import {reactionBlinkAsset,mountReactionBlink,blinkKeyframes} from './escape-reaction-blink.js';
 import {prepareImage} from './image-cache.js';
 export const computerReactionAsset='/assets/escape/computer-reaction.png';
 export const computerEndingAsset='/assets/escape/computer-ending.webp';
@@ -10,14 +11,18 @@ export function createEscapeComputerFlow(stage){
   try{await animation.finished;return true;}catch{return false;}finally{animations.delete(animation);animation.cancel();}
  }
  async function react(onReturn){
-  const token=version;let image;
+  const token=version;let image;const closedEyes=prepareImage(reactionBlinkAsset).catch(()=>null);
   try{image=await prepareImage(computerReactionAsset);}catch{if(token!==version)return false;await onReturn();return token===version;}
-  if(token!==version)return false;
+  const closed=await closedEyes;if(token!==version)return false;
   const node=document.createElement('div');node.className='escape-computer-reaction';node.dataset.phase='appearing';node.setAttribute('aria-label','A quiet moment of relief');Object.assign(node.style,{position:'absolute',inset:0,zIndex:3,background:'#000',pointerEvents:'none'});
   const shot=image.cloneNode();shot.alt='Resting at the desk with a small, relieved smile';Object.assign(shot.style,{display:'block',width:'100%',height:'100%',objectFit:'contain'});node.append(shot);stage.append(node);reaction=node;
   try{
    if(!await animate(node,[{opacity:0},{opacity:1}],reduced()?100:220)||token!==version)return false;
    node.style.opacity='1';node.dataset.phase='holding';
+   if(closed&&!reduced()){
+    const eyes=mountReactionBlink(node),blink=eyes.animate(blinkKeyframes,{duration:2200,easing:'linear',fill:'both'});animations.add(blink);
+    blink.finished.catch(()=>{}).finally(()=>{animations.delete(blink);blink.cancel();});
+   }
    if(!await animate(node,[{opacity:1},{opacity:1}],2200)||token!==version)return false;
    await onReturn();if(token!==version)return false;
    node.dataset.phase='returning';

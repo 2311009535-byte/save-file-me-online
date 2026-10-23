@@ -1,3 +1,4 @@
+export const phoneEntryAsset='/assets/escape/videos/phone-enter-crumpled.mp4';
 // Card pixels and their positions come from the actual supplied video ending.
 export const phoneCardRects=[[.411,.264,.195,.155],[.407,.417,.199,.159]];
 export function createNativePhone(){
@@ -7,7 +8,7 @@ export function createNativePhone(){
   async prepare(source){
    if(frame)return true;if(disposed)return false;
    let video=source;
-   if(!video||!video.src.endsWith('phone_enter.mp4')||video.readyState<2||video.currentTime<3.8){owned=document.createElement('video');video=owned;video.muted=true;video.playsInline=true;video.preload='auto';video.src='/assets/escape/videos/phone_enter.mp4';video.load();if(!await wait(video,'loadeddata',()=>video.readyState>=2))return false;video.currentTime=Math.max(0,video.duration-.1);if(!await wait(video,'seeked',()=>!video.seeking&&video.readyState>=2))return false;}
+   if(!video||!video.src.endsWith(phoneEntryAsset.split('/').pop())||video.readyState<2||video.currentTime<3.8){owned=document.createElement('video');video=owned;video.muted=true;video.playsInline=true;video.preload='auto';video.src=phoneEntryAsset;video.load();if(!await wait(video,'loadeddata',()=>video.readyState>=2))return false;video.currentTime=Math.max(0,video.duration-.1);if(!await wait(video,'seeked',()=>!video.seeking&&video.readyState>=2))return false;}
    if(disposed)return false;frame=document.createElement('canvas');frame.width=video.videoWidth;frame.height=video.videoHeight;frame.getContext('2d').drawImage(video,0,0);
    background=document.createElement('canvas');background.width=frame.width;background.height=frame.height;const c=background.getContext('2d');c.drawImage(frame,0,0);
    for(const [x,y,w,h] of phoneCardRects){const card=document.createElement('canvas');card.width=Math.round(w*frame.width);card.height=Math.round(h*frame.height);card.getContext('2d').drawImage(frame,x*frame.width,y*frame.height,w*frame.width,h*frame.height,0,0,card.width,card.height);cards.push(card.toDataURL());}
