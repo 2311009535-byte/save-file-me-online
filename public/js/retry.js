@@ -1,3 +1,4 @@
+import {createRetryCardMotion} from './retry-card-motion.js';
 import {createRetryAtmosphere,retryAtmosphereAssets} from './retry-atmosphere.js';
 import {createDiaryTurn} from './retry-page-turn.js?v=diary3';
 import {createSwitchBook} from './retry-switch-book.js';
@@ -19,11 +20,11 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
  const intro=createChapterIntro(stage),loader=createChapterLoading(stage),atmosphere=createRetryAtmosphere(visual);
  const partnerVideo=createVideoTransitions({partner:{enter:{src:'/assets/retry/videos/player2-join.mp4',available:true},return:{available:false}}},'retry-partner-overlay');
  const diaryVideo=createVideoTransitions({diary:{enter:{src:'/assets/retry/videos/diary-enter.mp4',available:true},return:{available:false}}},'retry-diary-video');
- let alive=true,busy=true,generation=0,viewGeneration=0,loadingFrame=0,diaryTurn=null,switchBook=null;const timers=new Map(),animations=new Set();
+ let alive=true,busy=true,generation=0,viewGeneration=0,loadingFrame=0,diaryTurn=null,switchBook=null;const timers=new Map(),animations=new Set(),cardMotions=new Map();
  const persist=()=>{gameAudio.setRetry({joined:data.joined,view:data.view,won:data.won});try{localStorage.setItem(RETRY_KEY,JSON.stringify(data));}catch{}$('retry-progress').textContent=`第三章：失败 ${data.failures}/3 · player2 ${data.joined?'已加入':'未加入'} · ${data.won?'已获胜':'未获胜'} · 日记 ${data.page+1}/4`;stage.dataset.retryFailures=String(data.failures);stage.dataset.retryJoined=String(data.joined);stage.dataset.retryWon=String(data.won);};
  function pause(ms){return new Promise(resolve=>{const timer=setTimeout(()=>{timers.delete(timer);resolve(alive);},ms);timers.set(timer,resolve);});}
  const actions=createRetryActions({visual,show,onCue:name=>name==='stopCombat'?gameAudio.stopCombat():gameAudio.effect(name),hold:ms=>animate(visual.querySelector('.scene-image'),[{opacity:1},{opacity:1}],{duration:ms})});
- function cancel(){atmosphere.dispose();loader.dispose();intro.dispose();diaryTurn?.dispose();diaryTurn=null;switchBook?.dispose();switchBook=null;generation++;actions.dispose();victoryFrame.dispose();partnerVideo.dispose();diaryVideo.dispose();for(const [timer,resolve] of timers){clearTimeout(timer);resolve(false);}timers.clear();cancelAnimationFrame(loadingFrame);animations.forEach(a=>a.cancel());animations.clear();videos.dispose();}
+ function cancel(){cardMotions.forEach(m=>m.dispose());cardMotions.clear();atmosphere.dispose();loader.dispose();intro.dispose();diaryTurn?.dispose();diaryTurn=null;switchBook?.dispose();switchBook=null;generation++;actions.dispose();victoryFrame.dispose();partnerVideo.dispose();diaryVideo.dispose();for(const [timer,resolve] of timers){clearTimeout(timer);resolve(false);}timers.clear();cancelAnimationFrame(loadingFrame);animations.forEach(a=>a.cancel());animations.clear();videos.dispose();}
  async function animate(element,frames,options){if(!alive)return false;const a=element.animate(frames,options);animations.add(a);try{await a.finished;return alive;}catch{return false;}finally{animations.delete(a);}}
  function lock(){busy=true;$('hotspots').querySelectorAll('button').forEach(b=>b.disabled=true);visual.querySelectorAll('.retry-card-art').forEach(c=>c.classList.remove('is-selected'));}
  function corner(){const diary=data.view==='diary';$('back').textContent=diary?'BACK':'SAVE ROOM';$('back').setAttribute('aria-label',diary?'BACK':'SAVE ROOM');$('back').hidden=!diary;$('back').onclick=()=>{if(diary&&!busy){gameAudio.effect('page');data.view='switch';persist();draw();}};}
@@ -36,7 +37,7 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
  }
  function retryButton(rect,id,callback){button(id,rect,'RETRY',callback);const b=$(id);b.classList.add('retry-paper-button');b.textContent='RETRY';}
  async function draw(){
- if(!alive)return;diaryTurn?.dispose();diaryTurn=null;switchBook?.dispose();switchBook=null;delete stage.dataset.retryBook;lock();const version=++generation;stage.dataset.retryView=data.view;delete stage.dataset.retryAction;delete stage.dataset.retryActionEnded;$('hotspots').replaceChildren();corner();persist();
+ if(!alive)return;cardMotions.forEach(m=>m.dispose());cardMotions.clear();diaryTurn?.dispose();diaryTurn=null;switchBook?.dispose();switchBook=null;delete stage.dataset.retryBook;lock();const version=++generation;stage.dataset.retryView=data.view;delete stage.dataset.retryAction;delete stage.dataset.retryActionEnded;$('hotspots').replaceChildren();corner();persist();
  let f=data.view==='battle'?(data.joined?'3_9.JPG':'3_1.png'):data.view==='defeat'?'3_6.png':data.view==='discovered'?'3_6.png':data.view==='invite'?'3_8.png':data.view==='victory'?'3_12.png':data.view==='switch'?'3_14.png':['3_15.png','3_16.PNG','3_17.PNG','3_18.PNG'][data.page];
  if(!await show(f)||!alive||version!==generation)return;
  if(data.view==='battle'){
@@ -54,10 +55,16 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
    c.width=Math.round(im.naturalWidth*w/100);c.height=Math.round(im.naturalHeight*h/100);c.className='retry-card-art';c.dataset.card=name.toLowerCase();c.setAttribute('aria-hidden','true');
    Object.assign(c.style,{left:x+'%',top:y+'%',width:w+'%',height:h+'%'});
    const ctx=c.getContext('2d');ctx.beginPath();outline.forEach(([px,py],j)=>ctx[j?'lineTo':'moveTo'](px*c.width/100,py*c.height/100));ctx.closePath();ctx.clip();ctx.drawImage(im,im.naturalWidth*x/100,im.naturalHeight*y/100,im.naturalWidth*w/100,im.naturalHeight*h/100,0,0,c.width,c.height);visual.append(c);
-   const select=()=>{if(busy||b.disabled)return;visual.querySelectorAll('.retry-card-art').forEach(other=>other.classList.toggle('is-selected',other===c));};
-   const clear=()=>c.classList.remove('is-selected');b.onmouseenter=select;b.onmouseleave=clear;b.onfocus=select;b.onblur=clear;
+   const motion=createRetryCardMotion(c);cardMotions.set(name,motion);
+   const select=()=>{if(busy||b.disabled)return;for(const [other,m]of cardMotions)if(other!==name)m.reset();motion.play();};
+   const clear=()=>{if(!busy)motion.reset();};b.onmouseenter=select;b.onmouseleave=clear;b.onfocus=select;b.onblur=clear;
   });
- }else if(data.view==='defeat')button('retry-again',[43.3,55.8,13.4,6.6],'RETRY',()=>retry());
+ }else if(data.view==='defeat'){
+  const blank=await prepareImage('/assets/retry/ambient/defeat-blank.png');if(!alive||version!==generation)return;
+  const patch=document.createElement('canvas');patch.className='retry-taunt-paper';patch.width=720;patch.height=220;patch.getContext('2d').drawImage(blank,blank.naturalWidth*.29,blank.naturalHeight*.325,blank.naturalWidth*.42,blank.naturalHeight*.23,0,0,720,220);visual.append(patch);
+  const taunt=document.createElement('div');taunt.className='retry-boss-taunt';taunt.setAttribute('role','status');for(const line of ['Go on. Try again.','We both know how this ends.']){const p=document.createElement('p');p.textContent=line;taunt.append(p);}visual.append(taunt);
+  button('retry-again',[43.3,55.8,13.4,6.6],'RETRY',()=>retry());
+ }
  else if(data.view==='discovered')button('retry-again',[43.3,55.8,13.4,6.6],'RETRY',()=>{data=retryRound(data);persist();draw();});
  else if(data.view==='invite')button('retry-invite',[43.3,55.8,13.4,6.6],'YES',()=>invitePartner());
  else if(data.view==='victory'){button('retry-continue',[40.5,48.5,16.5,6.5],'CONTINUE',()=>toSwitch());}
@@ -112,6 +119,7 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
  async function battle(action){
  if(busy||!alive||data.view!=='battle')return;gameAudio.effect('card');lock();const token=++generation;stage.dataset.retryAction=action;stage.dataset.retryView='action';persist();
  const current=()=>alive&&token===generation;
+ const motion=cardMotions.get(action);if(motion&&(!await motion.play()||!current()))return;
  stage.dataset.retryPlayerHp='1';stage.dataset.retryBossHp='1';
  const play=async(group,onEnded)=>{
   atmosphere.clear();stage.dataset.retryGroup=group;
@@ -154,7 +162,7 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
  stage.classList.add('retry-scene');stage.dataset.retryView='loading';persist();corner();
  if(!alive)return;imageScene('retry/3_1.png','Retry loading',1672,941);
  const critical=[...files];
- if(!await loader.play(3,[...critical.map(url),...retryAtmosphereAssets])||!alive)return;
+ if(!await loader.play(3,[...critical.map(url),...retryAtmosphereAssets,'/assets/retry/ambient/defeat-blank.png'])||!alive)return;
  await intro.play(3,()=>draw());
  }
  function suspend(){cancel();}window.addEventListener('pagehide',suspend);if(data.won)onVictory();load();

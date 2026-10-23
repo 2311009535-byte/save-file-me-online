@@ -1,6 +1,6 @@
 import {prepareImage} from './image-cache.js';
 import {RETRY_ATMOSPHERE_ART} from './retry-atmosphere-art.js';
-import {addBuildings,addSkyBands,addMessages,addCalendar,addFlags,keepPaperComponents} from './retry-atmosphere-layers.js';
+import {addBuildings,addSkyBands,addMessages,addCalendar,addFlags,addHair,keepPaperComponents} from './retry-atmosphere-layers.js';
 export {retryAtmosphereAssets} from './retry-atmosphere-art.js';
 const W=1672,H=941,NS='http://www.w3.org/2000/svg';
 const makeCanvas=(w=W,h=H)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c;};
@@ -17,7 +17,7 @@ export function createRetryAtmosphere(visual){
  async function show(file){
   clear(false);lastFile=file;const version=epoch,art=RETRY_ATMOSPHERE_ART[file];
   if(dead||reduced.matches||!art)return false;
-  let original,plate,bossPlate,motionPlate;try{[original,plate,bossPlate,motionPlate]=await Promise.all([prepareImage('/assets/retry/'+file),prepareImage(art.plate),prepareImage(art.bossPlate),prepareImage(art.motionPlate)]);}catch{return false;}
+  let original,plate,bossPlate,motionPlate,hairPlate;try{[original,plate,bossPlate,motionPlate,hairPlate]=await Promise.all([prepareImage('/assets/retry/'+file),prepareImage(art.plate),prepareImage(art.bossPlate),prepareImage(art.motionPlate),art.hairPlate?prepareImage(art.hairPlate):null]);}catch{return false;}
   if(dead||version!==epoch||reduced.matches||!visual.querySelector('.scene-image')?.src.endsWith('/'+file))return false;
   const source=makeCanvas(),sc=source.getContext('2d',{willReadFrequently:true});sc.drawImage(original,0,0,W,H);
   root=document.createElement('div');root.className='retry-atmosphere';root.dataset.source=file;root.setAttribute('aria-hidden','true');Object.assign(root.style,{width:W+'px',height:H+'px',transformOrigin:'0 0',transform:`scale(${visual.clientWidth/W},${visual.clientHeight/H})`});
@@ -50,7 +50,11 @@ export function createRetryAtmosphere(visual){
   for(const points of [...art.loosePages,...art.flags]){polygon(patchCtx,points);patchCtx.fill();patchCtx.stroke();}
   pc.globalCompositeOperation='destination-out';pc.drawImage(patches,0,0);
   const motionBacking=makeCanvas(),mb=motionBacking.getContext('2d');mb.drawImage(motionPlate,0,0,W,H);mb.globalCompositeOperation='destination-in';mb.drawImage(patches,0,0);
-  rc.drawImage(plate,0,0,W,H);rc.drawImage(motionBacking,0,0);rc.globalCompositeOperation='destination-out';rc.drawImage(protect,0,0);repair.className='retry-atmosphere-repair';root.append(repair);
+  const hairMask=makeCanvas(),hc=hairMask.getContext('2d');for(const points of art.hair||[]){polygon(hc,points);hc.fill();}
+  pc.drawImage(hairMask,0,0);
+  rc.drawImage(plate,0,0,W,H);rc.drawImage(motionBacking,0,0);
+  if(hairPlate){const backing=makeCanvas(),bc=backing.getContext('2d');bc.drawImage(hairPlate,0,0,W,H);bc.globalCompositeOperation='destination-in';bc.drawImage(hairMask,0,0);rc.drawImage(backing,0,0);}
+  rc.globalCompositeOperation='destination-out';rc.drawImage(protect,0,0);repair.className='retry-atmosphere-repair';root.append(repair);
   // Arms are independent native ink, pivoted at their shoulders. The torso
   // covers the joints; the foreground ridge is explicitly outside the mask.
   for(const [name,x,w,pivot,frames,duration]of [
@@ -61,7 +65,7 @@ export function createRetryAtmosphere(visual){
    const c=makeCanvas(w,bh);c.getContext('2d').drawImage(boss,x-bx,0,w,bh,0,0,w,bh);place(c,[x,by,w,bh]);c.style.transformOrigin=`${(pivot[0]-x)/w*100}% ${(pivot[1]-by)/bh*100}%`;c.dataset.bossPart=name;root.append(c);animate(c,'boss-'+name,frames,{duration});
   }
   const moving=makeCanvas(),movingCtx=moving.getContext('2d');movingCtx.drawImage(source,0,0);movingCtx.globalCompositeOperation='destination-out';movingCtx.drawImage(protect,0,0);
-  const structures=makeCanvas(),stc=structures.getContext('2d');stc.drawImage(moving,0,0);stc.globalCompositeOperation='destination-out';polygon(stc,outer);stc.fill();stc.drawImage(patches,0,0);
+  const structures=makeCanvas(),stc=structures.getContext('2d');stc.drawImage(moving,0,0);stc.globalCompositeOperation='destination-out';polygon(stc,outer);stc.fill();stc.drawImage(patches,0,0);stc.drawImage(hairMask,0,0);
   const backdrop=makeCanvas(),backdropCtx=backdrop.getContext('2d');backdropCtx.drawImage(plate,0,0,W,H);
   addBuildings(root,structures,backdrop,art,animate);
   addMessages(root,moving,art,animate,backdrop);
@@ -71,6 +75,7 @@ export function createRetryAtmosphere(visual){
   const foreground=makeCanvas(),fg=foreground.getContext('2d');fg.drawImage(source,0,0);fg.globalCompositeOperation='destination-in';fg.drawImage(protect,0,0);foreground.className='retry-atmosphere-foreground';root.append(foreground);
   addCalendar(root,source,art,animate);
   addFlags(root,source,art,animate);
+  addHair(root,source,art,animate);
   const cloudSource=makeCanvas(),clc=cloudSource.getContext('2d');clc.drawImage(structures,0,0);clc.globalCompositeOperation='destination-out';clc.lineWidth=4;for(const points of art.towers){polygon(clc,points);clc.fill();clc.stroke();}
   const sky=document.createElement('div');sky.className='retry-sky-paper';addSkyBands(sky,cloudSource,art.skyBands,animate);root.insertBefore(sky,root.children[1]);root.insertBefore(svg,root.children[1]);visual.append(root);sync();return true;
  }

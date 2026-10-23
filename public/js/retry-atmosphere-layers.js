@@ -86,6 +86,13 @@ export function addFlags(root,source,art,animate){
   animate(c,'red-flag',[{transform:'none'},{offset:.24,transform:'skewY(-7deg) scaleX(.9)'},{offset:.51,transform:'skewY(5deg) scaleX(.98)'},{offset:.77,transform:'skewY(-3deg) scaleX(.94)'},{transform:'none'}],{duration:2100+i*390,delay:-i*650,easing:'ease-in-out'});
  });
 }
+// Hair tips are cut from the original cream silhouettes. Their roots stay
+// anchored beside the head; separate periods keep the two players natural.
+export function addHair(root,source,art,animate){
+ (art.hair||[]).forEach((points,i)=>{const {c,box}=sample(source,points),ctx=c.getContext('2d',{willReadFrequently:true}),pixels=ctx.getImageData(0,0,c.width,c.height);for(let k=0;k<pixels.data.length;k+=4)pixels.data[k+3]*=Math.max(0,Math.min(1,(Math.min(pixels.data[k],pixels.data[k+1],pixels.data[k+2])-165)/30));ctx.putImageData(keepPaperComponents(pixels,400),0,0);place(c,box);c.dataset.playerHair=String(i+1);c.style.transformOrigin='100% 50%';root.append(c);
+  animate(c,'player-hair',[{transform:'none'},{offset:.27,transform:'skewY(1.6deg) scaleY(.985)'},{offset:.56,transform:'skewY(-1.3deg) scaleY(1.015)'},{offset:.79,transform:'skewY(.7deg) scaleY(.995)'},{transform:'none'}],{duration:3400+i*850,delay:-i*1100,easing:'ease-in-out'});
+ });
+}
 // Keep the connected paper sheets and player silhouettes, without accidentally
 // restoring small white window marks on a building hidden behind them.
 export function keepPaperComponents(data,minSize=240){
