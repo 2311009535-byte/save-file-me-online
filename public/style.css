@@ -389,3 +389,12 @@
 .escape-story{left:12%;bottom:13%;width:76%;padding:14px 22px;font-size:calc(22px * var(--scene-ui,1));color:#f9edd8;background:linear-gradient(90deg,transparent,rgba(9,12,17,.82) 18%,rgba(9,12,17,.82) 82%,transparent);text-shadow:0 2px 5px #000}
 
 .escape-scene[data-motion] .chapter-operation-hint{visibility:hidden}
+
+/* Keep the operation readable while retaining its floating paper-like style. */
+.escape-scene .chapter-operation-hint{font-size:calc(28px * var(--scene-ui,1));color:rgba(255,248,231,.95);text-shadow:0 2px 6px #000,0 0 2px #000;animation-name:escape-hint-breathe}
+@keyframes escape-hint-breathe{0%,100%{opacity:.68}50%{opacity:.98}}
+.escape-paper{z-index:3}.escape-paper:active{z-index:4}
+.escape-phone-item.is-notifying{transform-origin:50% 58%;animation:escape-phone-vibrate 4.8s linear infinite}
+@keyframes escape-phone-vibrate{0%,10%,100%{transform:translateX(0) rotate(0)}1%,5%{transform:translateX(calc(-1.6px * var(--scene-ui,1))) rotate(-.6deg)}3%,7%{transform:translateX(calc(1.6px * var(--scene-ui,1))) rotate(.6deg)}8%{transform:translateX(calc(-.8px * var(--scene-ui,1))) rotate(-.3deg)}}
+.escape-scene[data-motion] .escape-phone-item{animation-play-state:paused}
+@media(prefers-reduced-motion:reduce){.escape-phone-item.is-notifying{animation:none}.escape-scene .chapter-operation-hint{animation:none;opacity:.9}}

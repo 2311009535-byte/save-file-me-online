@@ -27,13 +27,14 @@ export function mountWindowTraffic(visual,{canPlay=()=>true}={}){
   const u=(trafficElapsed%6500-350)/4000,passing=!reduced&&wall&&u>0&&u<1;
   layer.dataset.motion=reduced?'static':'running';layer.dataset.passing=String(Boolean(passing));layer.dataset.phase=u.toFixed(4);
   if(!passing){ctx.clearRect(0,0,W,H);return;}
-  // Travel from the window side, around the lower curve and up the right wall.
+  // The whole pale wall lights from ceiling to floor. A broad moving wash
+  // shifts along its curve; it never becomes a small spotlight.
   const centre=-Math.PI+u*Math.PI*2,envelope=Math.sin(u*Math.PI)**.7;
   for(const p of wall.points){
    const i=p*4;frame.data[i]=250;frame.data[i+1]=253;frame.data[i+2]=255;
    const d=Math.atan2(Math.sin(wall.angle[p]-centre),Math.cos(wall.angle[p]-centre));
-   const band=Math.max(0,1-Math.abs(d)/.62);
-   frame.data[i+3]=Math.round(wall.alpha[p]*band*band*envelope);
+   const band=.82+.18*Math.cos(d);
+   frame.data[i+3]=Math.round(wall.alpha[p]*band*envelope);
   }
   ctx.putImageData(frame,0,0);
  }

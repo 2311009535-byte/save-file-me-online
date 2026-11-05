@@ -23,12 +23,14 @@ function wallAssets(){
 // A single clean pocket protects the original child, chair, desktop and monitor.
 // Everywhere else can be invaded, including floor, window and outer frame.
 export const pressurePocket=[[.466,.155],[.547,.16],[.547,.205],[.573,.168],[.613,.183],[.620,.390],[.579,.401],[.573,.500],[.558,.607],[.478,.625],[.448,.568],[.431,.478],[.422,.362],[.390,.357],[.397,.297],[.421,.225],[.461,.222]];
-function clearPocket(ctx){
- ctx.save();ctx.globalCompositeOperation='destination-out';ctx.fillStyle='#000';ctx.beginPath();pressurePocket.forEach(([x,y],i)=>ctx[i?'lineTo':'moveTo'](x*W,y*H));ctx.closePath();ctx.fill();ctx.restore();
+function clearPocket(ctx,safePapers){
+ ctx.save();ctx.globalCompositeOperation='destination-out';ctx.fillStyle='#000';ctx.beginPath();pressurePocket.forEach(([x,y],i)=>ctx[i?'lineTo':'moveTo'](x*W,y*H));ctx.closePath();ctx.fill();
+ for(const paper of safePapers)ctx.fillRect((paper.x/100-.012)*W,(paper.y/100-.018)*H,(paper.w/100+.024)*W,(paper.h/100+.036)*H);
+ ctx.restore();
 }
-function drawGroup(ctx,index,brushes){
+function drawGroup(ctx,index,brushes,safePapers){
  let seed=413+index*997;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
- const marks=index===6?180:65+index*25,thickness=1.1+index*.45;
+ const marks=index===6?180:12+index*6,thickness=1.1+index*.20;
  for(let n=0;n<marks;n++){
   const brush=brushes[Math.floor(random()*brushes.length)],x=random()*W,y=random()*H,scale=(1.1+random()*1.4)*thickness;
   ctx.save();ctx.translate(x,y);ctx.rotate((random()-.5)*Math.PI);ctx.scale(scale*(random()>.5?1:-1),scale);
@@ -48,17 +50,17 @@ function drawGroup(ctx,index,brushes){
   }
   ctx.restore();
  }
- clearPocket(ctx);
+ clearPocket(ctx,safePapers);
 }
 
-export function mountWallPressure(visual,count,{animate=false}={}){
+export function mountWallPressure(visual,count,{animate=false,safePapers=[]}={}){
  if(!count)return()=>{};
  const layers=[],animations=[];let alive=true,frame=0;
  wallAssets().then(({brushes})=>{
   if(!alive)return;
   const layer=(from,to,fresh)=>{
-   const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;canvas.className='escape-wall-pressure';canvas.dataset.count=String(count);canvas.dataset.style='native-ink';canvas.dataset.scope='screen';canvas.dataset.thickness=String(1.1+(count-1)*.45);canvas.dataset.fresh=String(fresh);canvas.setAttribute('aria-hidden','true');Object.assign(canvas.style,{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',opacity:'1',zIndex:1});
-   const ctx=canvas.getContext('2d');for(let i=from;i<to;i++)drawGroup(ctx,i,brushes);visual.append(canvas);layers.push(canvas);
+   const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;canvas.className='escape-wall-pressure';canvas.dataset.count=String(count);canvas.dataset.style='native-ink';canvas.dataset.scope='screen';canvas.dataset.thickness=String(1.1+(count-1)*.20);canvas.dataset.fresh=String(fresh);canvas.setAttribute('aria-hidden','true');Object.assign(canvas.style,{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',opacity:'1',zIndex:1});
+   const ctx=canvas.getContext('2d');for(let i=from;i<to;i++)drawGroup(ctx,i,brushes,safePapers);visual.append(canvas);layers.push(canvas);
    if(fresh&&!matchMedia('(prefers-reduced-motion: reduce)').matches)animations.push(canvas.animate([{opacity:0},{opacity:1}],{duration:650,easing:'ease-out'}));
   };
   function reveal(){if(!alive)return;if(visual.closest('#stage')?.dataset.motion){frame=requestAnimationFrame(reveal);return;}if(animate){if(count>1)layer(0,count-1,false);layer(count-1,count,true);}else layer(0,count,false);}
