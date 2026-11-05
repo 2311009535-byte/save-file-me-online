@@ -2,6 +2,7 @@ import {crumpledExamAsset,mountCrumpledExam} from './escape-exam-paper.js';
 import {reactionBlinkAsset} from './escape-reaction-blink.js';
 import {createEscapeComputerFlow,computerReactionAsset,computerEndingAsset} from './escape-computer-flow.js';
 import {mountWindowTraffic} from './escape-window-traffic.js';
+import {mountComputerPressure} from './escape-computer-pressure.js';
 import {mountWallPressure} from './escape-wall-pressure.js';
 import {mountEscapeLoadingMotion} from './escape-loading-motion.js';
 import {createChapterHints} from './chapter-hints.js';
@@ -113,7 +114,7 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
   const previewSrc='/assets/escape/'+file;try{await prepareImage(previewSrc);}catch{busy=false;roomInputLocked(false);delete $('stage').dataset.motion;return;}if(!alive||token!==motionToken)return;
   if(['phone','exam','computer'].includes(view)&&!back){
    $('back').textContent='BACK';$('back').setAttribute('aria-label','BACK');$('back').hidden=['exam','phone'].includes(view);
-   const result=await videos.play(view,false,$('stage'),{effect:['phone','exam'].includes(view)?(video,layer)=>mountSceneDimming(video,layer,ROOM_DARKNESS):null});
+   const result=await videos.play(view,false,$('stage'),{effect:view==='computer'?(video,layer)=>mountComputerPressure(video,layer,$('visual')):(video,layer)=>mountSceneDimming(video,layer,ROOM_DARKNESS)});
    if(!alive||token!==motionToken||result==='cancelled')return;
    if(view==='phone')gameAudio.effect('unlock');if(view==='computer')gameAudio.effect('boot',{chapter:2});
    const settle=async()=>{if(!alive||token!==motionToken)return;data.view=view;await draw();videos.cancel();};
