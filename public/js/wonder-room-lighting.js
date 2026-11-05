@@ -1,6 +1,6 @@
 import {prepareImage} from './image-cache.js';
 const regions={window:[.12,.34,.27,.49],box:[.93,.81,.30,.43],map:[.45,.30,.29,.38],note:[.642,.383,.20,.30]};
-export function mountRoomLighting(visual,done,previous=null){
+export function mountRoomLighting(visual,done,previous=null,{lampPatch=true}={}){
  const canvas=document.createElement('canvas');canvas.width=1669;canvas.height=942;canvas.className='wonder-room-lighting';canvas.setAttribute('aria-hidden','true');
  Object.assign(canvas.style,{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',zIndex:2});visual.append(canvas);
  const glow=document.createElement('canvas');glow.width=1669;glow.height=942;glow.className='wonder-room-light-spill';glow.setAttribute('aria-hidden','true');
@@ -8,13 +8,13 @@ export function mountRoomLighting(visual,done,previous=null){
  // Dim the source's baked lamp mouth as well as removing emitted overlays.
  // Pixel grading preserves the original shade edges and grain.
  const lampOff=document.createElement('canvas');lampOff.width=1669;lampOff.height=942;lampOff.className='wonder-lamp-unlit';lampOff.setAttribute('aria-hidden','true');Object.assign(lampOff.style,{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',zIndex:1});visual.append(lampOff);
- prepareImage('/assets/wonder/1_1.png').then(image=>{
+ if(lampPatch)prepareImage('/assets/wonder/1_1.png').then(image=>{
   if(!alive)return;const c=lampOff.getContext('2d',{willReadFrequently:true});c.drawImage(image,0,0);const pixels=c.getImageData(0,0,1669,942);
   for(let y=0;y<942;y++)for(let x=0;x<1669;x++){
    const i=(y*1669+x)*4,r=pixels.data[i],g=pixels.data[i+1],b=pixels.data[i+2];
    const mouth=x>=1124&&x<=1174&&y>=395&&y<=443&&r>175&&g>105&&r>b*1.3;
    const beam=y>=441&&y<=512&&x>=1115&&x<=1178-(y-441)*.28&&r>g*1.15&&g>b*1.2;
-   if(mouth){pixels.data[i]=r*.23;pixels.data[i+1]=g*.20;pixels.data[i+2]=b*.25;}
+   if(mouth){pixels.data[i]=r*.58;pixels.data[i+1]=g*.60;pixels.data[i+2]=b*.67;}
    else if(beam){const fade=Math.min(1,(x-1115)/9,(1178-(y-441)*.28-x)/9,(y-441)/8,(512-y)/10);const a=Math.max(0,fade)*.65;pixels.data[i]=r*(1-a*.60);pixels.data[i+1]=g*(1-a*.40);pixels.data[i+2]=b*(1-a*.10);}
    else pixels.data[i+3]=0;
   }
