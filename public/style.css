@@ -378,3 +378,9 @@
 .prologue-help p{animation:prologue-help-reveal .6s ease-out both}
 @keyframes prologue-help-reveal{from{opacity:0}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.prologue-help p{animation:none}}
+
+/* Chapter-one operation prompts float at the centre, without a panel. */
+.wonder-scene .chapter-operation-hint{left:12%;top:50%;bottom:auto;width:76%;transform:translateY(-50%);padding:0;border:0;background:none;box-shadow:none;color:rgba(249,240,222,.72);text-shadow:0 1px 5px #000;animation:wonder-hint-breathe 2.8s ease-in-out infinite}
+@keyframes wonder-hint-breathe{0%,100%{opacity:.38}50%{opacity:.85}}
+@media(prefers-reduced-motion:reduce){.wonder-scene .chapter-operation-hint{animation:none;opacity:.65}}
+.wonder-game-story{top:16%}

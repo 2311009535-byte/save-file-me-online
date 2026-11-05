@@ -1,3 +1,4 @@
+import {mountWindowDarkness} from './wonder-window-darkness.js';
 import {createWonderGameFlow} from './wonder-game-flow.js';
 import {mountWindowBackMask} from './wonder-window-ui-mask.js';
 import {createWonderReflections} from './wonder-reflections.js';
@@ -28,7 +29,7 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  let alive=true,raf=0,runner=null,last=0,meteorShown=false,busy=false,motionToken=0,drawVersion=0;
  data.boxOpened=data?.boxOpened===true||data.done.box||data.view==='box';
  const animations=new Set();let transitionOverlay=null,monitorPowered=ids.every(id=>data.done[id]),jumpHeld=false;
- let disposeRoomLight=null,shownRoom=null,boxLid=null,disposeDetail=null;
+ let windowSky=null,disposeRoomLight=null,shownRoom=null,boxLid=null,disposeDetail=null;
  const videos=createVideoTransitions();
  const $=id=>document.getElementById(id),intro=createChapterIntro($('stage')),hints=createChapterHints($('stage'));
  const loader=createChapterLoading($('stage'));
@@ -36,7 +37,7 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  const reflections=createWonderReflections($('stage'),{canRead:id=>alive&&data.view===id&&!busy&&!intro.active&&!$('stage').dataset.motion,onReturn:id=>{if(!alive||data.view!==id||busy)return;if(id==='map'||id==='note')mark(id);transition(id,true);}});
  const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(data));}catch{}};
  function jumpWithSound(){const was=runner?.grounded;jump(runner);}
- function clear(){gameFlow.clearEntry();reflections.cancel();disposeDetail?.();disposeDetail=null;boxLid?.dispose();boxLid=null;disposeRoomLight?.();disposeRoomLight=null;cancelAnimationFrame(raf);$('hotspots').replaceChildren();}
+ function clear(){windowSky?.dispose();windowSky=null;gameFlow.clearEntry();reflections.cancel();disposeDetail?.();disposeDetail=null;boxLid?.dispose();boxLid=null;disposeRoomLight?.();disposeRoomLight=null;cancelAnimationFrame(raf);$('hotspots').replaceChildren();}
  function mark(id){data.done[id]=true;persist();if(id==='window'&&data.view==='window')reflections.start('window');}
  function glow(id){$(id)?.classList.add('wonder-target');}
  function cancelMotion(){gameFlow.cancel();reflections.cancel();loader.dispose();intro.cancel();hints.hide();videos.cancel();stopMeteor();motionToken++;animations.forEach(a=>a.cancel());animations.clear();transitionOverlay?.remove();transitionOverlay=null;$('visual').style.transform='';$('visual').style.transformOrigin='';busy=false;delete $('stage').dataset.motion;}
@@ -52,7 +53,7 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  try{await prepareImage(previewSrc);}catch{cancelMotion();return;}if(!alive||token!==motionToken)return;
  // No intermediate still-image playback. Missing clips use a direct, honest fallback.
  const returnEffect=back&&view==='window'?createWindowReturnHold({visual:$('visual'),meteor:meteorLayer}):null;
- const effect=view==='window'?windowTransitionTone({back,roomBrightness:ids.every(id=>data.done[id])?1:(back ? .58 : .56),returnEffect}):boxTransitionTone({back,done:data.done});
+ const effect=view==='window'?windowTransitionTone({back,hideSky:!back,roomBrightness:ids.every(id=>data.done[id])?1:(back ? .58 : .56),returnEffect}):boxTransitionTone({back,done:data.done});
  const result=await videos.play(view,back,$('stage'),{effect});
  if(!alive||token!==motionToken||result==='cancelled')return;
  if(back)stopMeteor();if(destination==='box')data.boxOpened=true;data.view=destination;meteorShown=false;draw();
@@ -118,7 +119,7 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  addContourLights($('visual'),data.done,{closedBox:!data.boxOpened,movingNote:false});
  disposeDetail=mountRoomAtmosphere($('visual'));
  if(!data.boxOpened)boxLid=mountClosedBox($('visual'));
- hideRoomMeteor($('visual'),data.done.window);
+ windowSky=hideRoomMeteor($('visual'),data.done.window);
  const light=mountRoomLighting($('visual'),data.done,shownRoom);disposeRoomLight=light;shownRoom={...data.done};
  const powerDelay=Math.max(light.duration,$('stage').dataset.motion?(videos.layer()?160:1250):0);
  if(ready){const monitor=document.createElement('img');monitor.className='computer-light';monitor.src='/assets/wonder/1_13.png';monitor.alt='已亮起的电脑';$('visual').append(monitor);if(!monitorPowered){monitorPowered=true;gameAudio.effect('boot',{chapter:1,delay:powerDelay/1000});monitor.classList.add('is-powering-on');const power=monitor.animate([{opacity:0},{opacity:1,offset:.12},{opacity:.1,offset:.22},{opacity:1,offset:.38},{opacity:.15,offset:.48},{opacity:1,offset:.66},{opacity:.55,offset:.76},{opacity:1}],{duration:500,delay:powerDelay,easing:'steps(1,end)',fill:'both'});animations.add(power);power.finished.then(()=>{if(!alive||!monitor.isConnected)return;monitor.classList.remove('is-powering-on');const button=$('wonder-computer');if(button)button.disabled=false;}).catch(()=>{}).finally(()=>{animations.delete(power);power.cancel();});}}
@@ -129,15 +130,16 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  stopMeteor();
  imageScene('wonder/window-enter-supplied-last.png','窗户特写 · 视频最后一帧',1910,1084);
  disposeDetail=mountWindowBackMask($('visual'),$('visual').querySelector('.scene-image'));
+ windowSky=mountWindowDarkness($('visual').querySelector('.scene-image'),$('visual'),{kind:'detail'});
  hints.show('window');
- hotspot('wonder-meteor',[18,12,64,73],'点击窗户，寻找流星',false,()=>{if(busy)return;windowActivated=true;hints.hide();meteor();});if(!data.done.window)glow('wonder-meteor');
+ hotspot('wonder-meteor',[18,12,64,73],'点击窗户，寻找流星',false,()=>{if(busy)return;windowActivated=true;windowSky?.reveal();hints.hide();meteor();});if(!data.done.window)glow('wonder-meteor');
  }else if(data.view==='box'){
  imageScene('wonder/box-enter-supplied-last.png','打开的纸箱 · 箱内物品',1916,1082);
  mark('box');if(shownRoom)shownRoom={...shownRoom,box:true};reflections.start('box');
  }else if(data.view==='map'){
  hints.show('map');
  imageScene('wonder/1_4.png','下层游戏地图',1669,942);
- const top=document.createElement('img');top.className='map-real';top.src='/assets/wonder/1_3.png';top.alt='上层现实地图';$('visual').append(top);
+ const top=document.createElement('img');top.className='map-real';top.src='/assets/wonder/1_3.png';top.alt='上层现实地图';top.style.filter='grayscale(1)';$('visual').append(top);
  disposeDetail=mountMapGlass($('visual'),top,{scenePoint,onReveal:()=>{hints.hide();reflections.start('map');}});
  }else if(data.view==='note'){
  imageScene('wonder/1_7.jpg','便利贴 · 探索学校后山',825,466);
