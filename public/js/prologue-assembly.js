@@ -1,3 +1,4 @@
+import {particleField} from './prologue-particle-field.js';
 import {prepareImage} from './image-cache.js';
 export const ASSEMBLY_KEY='save-file-me:assembly:v2';
 export const components=[
@@ -33,7 +34,7 @@ export function mountAssembly(visual,{completed=0}={}){
  function click(e){if(suppressClick){suppressClick=false;e.preventDefault();e.stopImmediatePropagation();return;}const entry=e.target.closest('[id^=entry-]');const id=entry&&['window','lamp','computer','door'][Number(entry.id.slice(6))-1];if(source&&id&&!done.has(id)){e.preventDefault();e.stopImmediatePropagation();}}
  for(const [type,fn] of [['pointermove',move],['pointerleave',leave],['pointerdown',down],['pointerup',up],['pointercancel',up],['click',click]])stage.addEventListener(type,fn,type==='click');
  function persist(){try{localStorage.setItem(ASSEMBLY_KEY,JSON.stringify({completed,formed:[...done]}));}catch{}}
- function mark(p,alpha){if(alpha<.01)return;ctx.globalAlpha=alpha;ctx.drawImage(atlas,p.g*16,p.a*16,16,16,p.x-8,p.y-8,16,16);}
+ function mark(p,alpha,position=p){if(alpha<.01)return;ctx.globalAlpha=alpha;ctx.drawImage(atlas,p.g*16,p.a*16,16,16,position.x-8,position.y-8,16,16);}
  // Reference cursor halo: loose ASCII strokes, separate from the dwell meter.
  const orbit={x:768,y:530,alpha:0};
  const orbitAtlas=document.createElement('canvas');orbitAtlas.width=96;orbitAtlas.height=64;const oc=orbitAtlas.getContext('2d');
@@ -54,6 +55,7 @@ export function mountAssembly(visual,{completed=0}={}){
   canvas.dataset.orbitX=orbit.x.toFixed(2);canvas.dataset.orbitY=orbit.y.toFixed(2);canvas.dataset.orbitCount='84';canvas.dataset.orbitAlpha=orbit.alpha.toFixed(3);
  }
  function frame(now){if(disposed)return;raf=requestAnimationFrame(frame);if(!source||document.hidden){last=now;return;}const began=performance.now(),dt=Math.min(last?(now-last)/1000:0,.04);last=now;
+ const field=!reduced&&pointer&&pointer.x>=40&&pointer.x<=1495&&pointer.y>=216&&pointer.y<=858?{x:orbit.alpha>.1?orbit.x:pointer.x,y:orbit.alpha>.1?orbit.y:pointer.y}:null;
  if(active)hold=Math.min(1,(now-holdStarted)/1500);
  ctx.clearRect(0,0,1536,1024);ctx.save();ctx.beginPath();ctx.rect(40,216,1455,642);ctx.clip();ctx.fillStyle='#000';ctx.fillRect(40,216,1455,642);
  for(const group of groups){const c=group.c,isActive=active?.id===c.id;
@@ -69,11 +71,12 @@ export function mountAssembly(visual,{completed=0}={}){
   const k=1-Math.exp(-dt*7),t=reduced?0:now*.001;
   for(const p of group.particles){const gather=group.progress,driftX=Math.sin(t*.55+p.phase)*9,driftY=Math.cos(t*.47+p.phase)*12;
    let tx=p.homeX+(p.goalX-p.homeX)*gather+driftX*(1-gather),ty=p.homeY+(p.goalY-p.homeY)*gather+driftY*(1-gather);
-   if(pointer&&!done.has(c.id)){const dx=tx-pointer.x,dy=ty-pointer.y,d=Math.hypot(dx,dy);if(d>1&&d<95){tx+=dx/d*(95-d)*.32;ty+=dy/d*(95-d)*.32;}}
-   p.x+=(tx-p.x)*k;p.y+=(ty-p.y)*k;mark(p,(.30+.50*(isActive?1:0))*(1-gather));
+   p.x+=(tx-p.x)*k;p.y+=(ty-p.y)*k;mark(p,(.30+.50*(isActive?1:0))*(1-gather),particleField(p,p.x,p.y,field,dt));
   }
  }
- for(const p of ambient){if(!reduced){p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.x<44||p.x>1485)p.vx*=-1;if(p.y<224||p.y>850)p.vy*=-1;}mark(p,.68);}
+ let pushed=0,maxShift=0;
+ for(const p of ambient){if(!reduced){p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.x<44||p.x>1485)p.vx*=-1;if(p.y<224||p.y>850)p.vy*=-1;}const position=particleField(p,p.x,p.y,field,dt);if(position.shift>3)pushed++;maxShift=Math.max(maxShift,position.shift);mark(p,.68,position);}
+ canvas.dataset.repelledParticles=String(pushed);canvas.dataset.fieldShift=maxShift.toFixed(2);
  drawPointerOrbit(dt,now);
  ctx.globalAlpha=1;
  if(pointer&&active){const radius=15/pointer.scale,x=Math.min(1480-radius,pointer.x+24/pointer.scale),y=Math.max(230+radius,Math.min(848-radius,pointer.y-24/pointer.scale));ctx.lineWidth=2/pointer.scale;ctx.strokeStyle='#ffffff30';ctx.beginPath();ctx.arc(x,y,radius,0,Math.PI*2);ctx.stroke();ctx.strokeStyle='#d5eadc';ctx.beginPath();ctx.arc(x,y,radius,-Math.PI/2,-Math.PI/2+Math.PI*2*hold);ctx.stroke();}
