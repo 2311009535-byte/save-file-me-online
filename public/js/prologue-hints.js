@@ -11,7 +11,7 @@ export function createPrologueHints(visual,{eligible,box}){
   update(dt,pointer,formed,blocked,touch=false){
    if(blocked){show('hidden','');return{pulse:0,near:false};}
    elapsed+=dt;idle+=dt;
-   const [x,y,w,h]=box,inside=pointer&&pointer.x>=x&&pointer.x<=x+w&&pointer.y>=y&&pointer.y<=y+h,near=Boolean(pointer&&pointer.x>=x-28&&pointer.x<=x+w+28&&pointer.y>=y-28&&pointer.y<=y+h+28);
+   const [x,y,w,h]=box,inside=pointer&&pointer.x>=x-48&&pointer.x<=x+w+48&&pointer.y>=y-40&&pointer.y<=y+h+40,near=Boolean(pointer&&pointer.x>=x-72&&pointer.x<=x+w+72&&pointer.y>=y-64&&pointer.y<=y+h+64);
    if((inside&&!formed)||formed!==wasFormed)idle=0;wasFormed=formed;
    if(!seen&&elapsed>=8){seen=true;try{sessionStorage.setItem(SEEN_KEY,'seen');}catch{}}
    if(inside)show(formed?'click':'stay',formed?(coarse||touch?'Tap to explore':'Click to explore'):(coarse||touch?'Hold a little longer…':'Stay a little longer…'));

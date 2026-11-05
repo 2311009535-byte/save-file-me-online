@@ -3,6 +3,7 @@ export const operationHints={
  map:'Click the map. There’s more beyond this room.',
  box:'Click to open. Every adventure starts somewhere.',
  note:'Click to read. A small note might lead somewhere new.',
+ exam:'Click the pen. Cross out the score.',
  phone:'Swipe the messages away. Take a little space for yourself.',
  papers:'Drag a paper toward me. There’s always one more.'
 };

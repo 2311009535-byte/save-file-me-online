@@ -30,7 +30,7 @@ export function mountAssembly(visual,{completed=0}={}){
  const random=i=>{const n=Math.sin(i*127.1+311.7)*43758.5453;return n-Math.floor(n);};
  const ambient=Array.from({length:440},(_,i)=>({x:44+random(i+1)*1440,y:224+random(i+230)*624,vx:(random(i+900)-.5)*9,vy:(random(i+1200)-.5)*7,g:i%6,a:i%4}));
  function point(e){const r=stage.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*1536,y:(e.clientY-r.top)/r.height*1024,scale:r.width/1536};}
- function move(e){if(e.pointerType==='touch'&&!touch)return;pointer=point(e);const next=sceneComponents.find(c=>!done.has(c.id)&&pointer.x>=c.box[0]&&pointer.x<=c.box[0]+c.box[2]&&pointer.y>=c.box[1]&&pointer.y<=c.box[1]+c.box[3]);if(next?.id!==active?.id){active=next;hold=0;holdStarted=performance.now();}}
+ function move(e){if(e.pointerType==='touch'&&!touch)return;pointer=point(e);const candidates=sceneComponents.filter(c=>!done.has(c.id)&&pointer.x>=c.box[0]-48&&pointer.x<=c.box[0]+c.box[2]+48&&pointer.y>=c.box[1]-40&&pointer.y<=c.box[1]+c.box[3]+40);const next=candidates.find(c=>c.id===eligible)||candidates[0];if(next?.id!==active?.id){active=next;hold=0;holdStarted=performance.now();}}
  function leave(){pointer=null;active=null;hold=0;holdStarted=0;}
  function down(e){if(e.pointerType==='touch'){touch=true;suppressClick=!done.has(eligible)&&!!e.target.closest('#entry-'+(['window','lamp','computer','door'].indexOf(eligible)+1));move(e);}}
  function up(e){if(e.pointerType==='touch'){touch=false;leave();}}
