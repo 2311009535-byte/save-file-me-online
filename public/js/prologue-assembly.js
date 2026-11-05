@@ -1,3 +1,4 @@
+import {getOpeningHandoff} from './prologue-handoff.js';
 import {particleField} from './prologue-particle-field.js';
 import {prepareImage} from './image-cache.js';
 export const ASSEMBLY_KEY='save-file-me:assembly:v2';
@@ -54,7 +55,7 @@ export function mountAssembly(visual,{completed=0}={}){
   }
   canvas.dataset.orbitX=orbit.x.toFixed(2);canvas.dataset.orbitY=orbit.y.toFixed(2);canvas.dataset.orbitCount='84';canvas.dataset.orbitAlpha=orbit.alpha.toFixed(3);
  }
- function frame(now){if(disposed)return;raf=requestAnimationFrame(frame);if(!source||document.hidden){last=now;return;}const began=performance.now(),dt=Math.min(last?(now-last)/1000:0,.04);last=now;
+ function frame(now){if(disposed)return;raf=requestAnimationFrame(frame);if(!source||document.hidden){last=now;return;}const handoff=getOpeningHandoff(stage);if(handoff){handoff.atlas=atlas;handoff.targets=ambient;}const began=performance.now(),dt=Math.min(last?(now-last)/1000:0,.04);last=now;
  const field=!reduced&&pointer&&pointer.x>=40&&pointer.x<=1495&&pointer.y>=216&&pointer.y<=858?{x:orbit.alpha>.1?orbit.x:pointer.x,y:orbit.alpha>.1?orbit.y:pointer.y}:null;
  if(active)hold=Math.min(1,(now-holdStarted)/1500);
  ctx.clearRect(0,0,1536,1024);ctx.save();ctx.beginPath();ctx.rect(40,216,1455,642);ctx.clip();ctx.fillStyle='#000';ctx.fillRect(40,216,1455,642);
@@ -71,11 +72,11 @@ export function mountAssembly(visual,{completed=0}={}){
   const k=1-Math.exp(-dt*7),t=reduced?0:now*.001;
   for(const p of group.particles){const gather=group.progress,driftX=Math.sin(t*.55+p.phase)*9,driftY=Math.cos(t*.47+p.phase)*12;
    let tx=p.homeX+(p.goalX-p.homeX)*gather+driftX*(1-gather),ty=p.homeY+(p.goalY-p.homeY)*gather+driftY*(1-gather);
-   p.x+=(tx-p.x)*k;p.y+=(ty-p.y)*k;mark(p,(.30+.50*(isActive?1:0))*(1-gather),particleField(p,p.x,p.y,field,dt));
+   p.x+=(tx-p.x)*k;p.y+=(ty-p.y)*k;mark(p,(.30+.50*(isActive?1:0))*(1-gather)*(handoff?handoff.progress:1),particleField(p,p.x,p.y,field,dt));
   }
  }
  let pushed=0,maxShift=0;
- for(const p of ambient){if(!reduced){p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.x<44||p.x>1485)p.vx*=-1;if(p.y<224||p.y>850)p.vy*=-1;}const position=particleField(p,p.x,p.y,field,dt);if(position.shift>3)pushed++;maxShift=Math.max(maxShift,position.shift);mark(p,.68,position);}
+ for(const p of ambient){if(!reduced){p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.x<44||p.x>1485)p.vx*=-1;if(p.y<224||p.y>850)p.vy*=-1;}const position=particleField(p,p.x,p.y,field,dt);if(position.shift>3)pushed++;maxShift=Math.max(maxShift,position.shift);mark(p,.68*(handoff?handoff.ambientOpacity:1),position);}
  canvas.dataset.repelledParticles=String(pushed);canvas.dataset.fieldShift=maxShift.toFixed(2);
  drawPointerOrbit(dt,now);
  ctx.globalAlpha=1;

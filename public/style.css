@@ -366,3 +366,6 @@
 .retry-boss-taunt{position:absolute;left:30%;top:34%;width:40%;height:18%;display:flex;flex-direction:column;justify-content:center;gap:calc(12px * var(--scene-ui,1));pointer-events:none;color:#24211f;text-align:center;font:calc(31px * var(--scene-ui,1))/1.35 Georgia,serif;transform:rotate(-.5deg)}
 .retry-boss-taunt p{margin:0;white-space:nowrap}
 @media(max-width:600px){.retry-boss-taunt{font-size:44px;gap:18px}}
+
+/* Cover the baked room title until the single moving title reaches it. */
+.opening-room-title-mask{position:absolute;left:38px;top:26px;width:230px;height:36px;background:#000;pointer-events:none}
