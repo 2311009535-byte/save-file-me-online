@@ -369,3 +369,12 @@
 
 /* Cover the baked room title until the single moving title reaches it. */
 .opening-room-title-mask{position:absolute;left:38px;top:26px;width:230px;height:36px;background:#000;pointer-events:none}
+
+/* Quiet room guidance follows the current chapter entrance. */
+.prologue-help{position:absolute;inset:0;pointer-events:none;color:#c5d3c6;font:calc(13px * var(--scene-ui,1))/1.4 monospace;text-align:center}
+.prologue-help p{position:absolute;margin:0;padding:4px 8px;text-shadow:0 1px 4px #000;background:linear-gradient(90deg,transparent,#000b 20%,#000b 80%,transparent)}
+.prologue-help-general{left:5%;top:21%;width:90%}.prologue-help-local{width:50%}
+@media(max-width:600px){.prologue-help{font-size:calc(11px * var(--scene-ui,1))}}
+.prologue-help p{animation:prologue-help-reveal .6s ease-out both}
+@keyframes prologue-help-reveal{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.prologue-help p{animation:none}}

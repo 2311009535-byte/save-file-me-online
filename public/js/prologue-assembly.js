@@ -1,3 +1,4 @@
+import {createPrologueHints} from './prologue-hints.js';
 import {getOpeningHandoff} from './prologue-handoff.js';
 import {particleField} from './prologue-particle-field.js';
 import {prepareImage} from './image-cache.js';
@@ -21,6 +22,7 @@ export function mountAssembly(visual,{completed=0}={}){
  const done=new Set(Array.isArray(saved)?saved.filter(id=>retained.includes(id)||id===eligible):[]),groups=[];
  retained.forEach(id=>done.add(id));
  let disposed=false,raf=0,source=null,pointer=null,active=null,hold=0,holdStarted=0,last=0,touch=false,suppressClick=false;
+ const hints=createPrologueHints(visual,{eligible,box:sceneComponents.find(c=>c.id===eligible).box});
  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
  // Render small ASCII marks once. Animation only moves cached sprites.
  const atlas=document.createElement('canvas');atlas.width=96;atlas.height=64;const ac=atlas.getContext('2d');
@@ -58,6 +60,7 @@ export function mountAssembly(visual,{completed=0}={}){
  function frame(now){if(disposed)return;raf=requestAnimationFrame(frame);if(!source||document.hidden){last=now;return;}const handoff=getOpeningHandoff(stage);if(handoff){handoff.atlas=atlas;handoff.targets=ambient;}const began=performance.now(),dt=Math.min(last?(now-last)/1000:0,.04);last=now;
  const field=!reduced&&pointer&&pointer.x>=40&&pointer.x<=1495&&pointer.y>=216&&pointer.y<=858?{x:orbit.alpha>.1?orbit.x:pointer.x,y:orbit.alpha>.1?orbit.y:pointer.y}:null;
  if(active)hold=Math.min(1,(now-holdStarted)/1500);
+ const guidance=hints.update(dt,pointer,done.has(eligible),Boolean(handoff)||stage.inert||Boolean(stage.dataset.chapterIntro),touch);
  ctx.clearRect(0,0,1536,1024);ctx.save();ctx.beginPath();ctx.rect(40,216,1455,642);ctx.clip();ctx.fillStyle='#000';ctx.fillRect(40,216,1455,642);
  for(const group of groups){const c=group.c,isActive=active?.id===c.id;
   if(isActive&&hold>=1&&c.id===eligible){done.add(c.id);persist();active=null;hold=0;}
@@ -70,9 +73,10 @@ export function mountAssembly(visual,{completed=0}={}){
   ctx.globalAlpha=1;if(group.progress>=.999)ctx.drawImage(source,...c.box,...c.box);else ctx.drawImage(group.layer,c.box[0],c.box[1]);
   // Object names stay hidden; accessible button labels remain in the DOM.
   const k=1-Math.exp(-dt*7),t=reduced?0:now*.001;
-  for(const p of group.particles){const gather=group.progress,driftX=Math.sin(t*.55+p.phase)*9,driftY=Math.cos(t*.47+p.phase)*12;
+  for(const p of group.particles){const cue=c.id===eligible?guidance.pulse:0,gather=Math.max(group.progress,cue*.48),driftX=Math.sin(t*.55+p.phase)*9,driftY=Math.cos(t*.47+p.phase)*12;
    let tx=p.homeX+(p.goalX-p.homeX)*gather+driftX*(1-gather),ty=p.homeY+(p.goalY-p.homeY)*gather+driftY*(1-gather);
-   p.x+=(tx-p.x)*k;p.y+=(ty-p.y)*k;mark(p,(.30+.50*(isActive?1:0))*(1-gather)*(handoff?handoff.progress:1),particleField(p,p.x,p.y,field,dt));
+   p.x+=(tx-p.x)*k;p.y+=(ty-p.y)*k;mark(p,(.30+.50*(isActive?1:0)+.35*(c.id===eligible&&guidance.near?1:0)+.35*cue)*(1-group.progress)*(handoff?handoff.progress:1),particleField(p,p.x,p.y,field,dt));
+   if(cue>0&&done.has(c.id))mark(p,cue*.4,{x:p.goalX,y:p.goalY});
   }
  }
  let pushed=0,maxShift=0;
@@ -92,7 +96,7 @@ export function mountAssembly(visual,{completed=0}={}){
   const particles=Array.from({length:110},(_,i)=>{const goal=goals[Math.floor(random(index*301+i+50)*goals.length)]||{x:x+w/2,y:y+h/2},phase=random(i+index*110)*Math.PI*2,spread=24+random(i+400)*60,homeX=Math.max(44,Math.min(1485,goal.x+Math.cos(phase)*spread)),homeY=Math.max(224,Math.min(850,goal.y+Math.sin(phase)*spread));return{x:homeX,y:homeY,homeX,homeY,goalX:goal.x,goalY:goal.y,phase,g:i%6,a:i%4};});
   groups.push({c,layer,context:layer.getContext('2d'),tiles,particles,progress:done.has(c.id)?1:0,bucket:-1});
  });if(reduced){done.add(eligible);persist();}canvas.dataset.assembled=[...done].join(',');raf=requestAnimationFrame(frame);
- }).catch(()=>{canvas.remove();});
+ }).catch(()=>{hints.dispose();canvas.remove();});
  const visibility=()=>{leave();last=performance.now();};document.addEventListener('visibilitychange',visibility);
- return()=>{disposed=true;cancelAnimationFrame(raf);for(const [type,fn] of [['pointermove',move],['pointerleave',leave],['pointerdown',down],['pointerup',up],['pointercancel',up],['click',click]])stage.removeEventListener(type,fn,type==='click');document.removeEventListener('visibilitychange',visibility);for(const c of components)stage.style.removeProperty('--assembly-'+c.id);canvas.remove();};
+ return()=>{disposed=true;hints.dispose();cancelAnimationFrame(raf);for(const [type,fn] of [['pointermove',move],['pointerleave',leave],['pointerdown',down],['pointerup',up],['pointercancel',up],['click',click]])stage.removeEventListener(type,fn,type==='click');document.removeEventListener('visibilitychange',visibility);for(const c of components)stage.style.removeProperty('--assembly-'+c.id);canvas.remove();};
 }
