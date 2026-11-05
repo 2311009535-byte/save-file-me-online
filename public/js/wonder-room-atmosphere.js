@@ -29,12 +29,7 @@ export function mountRoomAtmosphere(visual){
    const seconds=reduced?0:(now-clockEpoch)/1000;
    function hand(angle,length,width,color){ctx.save();ctx.translate(1274,224);ctx.rotate(angle);ctx.fillStyle=color;ctx.fillRect(-width/2,-length,width,length+3);ctx.restore();}
    hand(-Math.PI/2+seconds/43200*Math.PI*2,23,5,'#252329');hand(seconds/3600*Math.PI*2,29,4,'#252329');hand(seconds/60*Math.PI*2,30,1.5,'#784331');ctx.fillStyle='#252329';ctx.fillRect(1271,221,6,6);
-   if(!reduced)for(let i=0;i<15;i++){
-    const t=now/1000,x=1080+((i*37.7+t*(2+i%3))%100)+Math.sin(t*.31+i)*4,y=502-((i*19.3+t*(2.1+i%4*.3))%72);
-    const alpha=(.10+.12*(.5+.5*Math.sin(t*.7+i)))*Math.max(0,1-Math.abs(x-1130)/60);
-    ctx.fillStyle=`rgba(255,221,155,${alpha})`;ctx.fillRect(x,y,i%4===0?2:1,1);
-   }
-   layer.dataset.clockSeconds=seconds.toFixed(3);layer.dataset.dustCount=reduced?'0':'15';layer.dataset.motion=reduced?'static':'running';layer.dataset.curtainPhase=String(now);
+   layer.dataset.clockSeconds=seconds.toFixed(3);layer.dataset.dustCount='0';layer.dataset.motion=reduced?'static':'running';layer.dataset.curtainPhase=String(now);
   }
   function tick(now){if(!alive||!layer.isConnected)return;if(!document.hidden&&now-last>=40){paint(now);last=now;}raf=requestAnimationFrame(tick);}
   paint(performance.now());if(!reduced)raf=requestAnimationFrame(tick);
