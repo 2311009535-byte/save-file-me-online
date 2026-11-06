@@ -11,8 +11,7 @@ export function createRetryVideo(){
    let timer;const finish=value=>{clearTimeout(timer);video.pause();video.playbackRate=1;video.removeEventListener('ended',done);video.removeEventListener('error',fail);stopStill=null;resolve(value);};
    const fail=()=>finish(null),done=()=>{try{finish(disposed?null:capture());}catch{fail();}};
    stopStill=fail;video.addEventListener('ended',done);video.addEventListener('error',fail);timer=setTimeout(fail,15000);
-   // The local static server does not support byte ranges. Decode through the
-   // clip silently rather than seeking, which can silently land on frame zero.
+   // Decode through the clip silently to capture its actual final frame.
    video.playbackRate=8;video.play().catch(fail);
   });const value=await stillJob;stillJob=null;return value;
  }

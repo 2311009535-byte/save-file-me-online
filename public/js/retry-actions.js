@@ -4,7 +4,7 @@ export const retryActionAssets={
  bossAttack:{audioGain:.640472,src:'/assets/retry/videos/boss-attack.mp4',enabled:true,frames:[['3_3.png',650],['3_4.png',1200]]},
  duoAttack:{audioGain:.747309,src:'/assets/retry/videos/duo-attack.mp4',enabled:true,frames:[['3_9.JPG',450],['3_10.png',1150],['3_11.png',1800]]}
 };
-export function createRetryActions({visual,show,hold,assets=retryActionAssets,onCue=()=>{},startupTimeout=8000}){
+export function createRetryActions({visual,show,hold,assets=retryActionAssets,onCue=()=>{},startupTimeout=30000}){
  let disposed=false,active=null,playing=false,abortPlayback=null,held=null;
  const clips=new Map();
  for(const [name,asset] of Object.entries(assets))if(asset.enabled){
@@ -86,6 +86,15 @@ export function createRetryActions({visual,show,hold,assets=retryActionAssets,on
    }).catch(error);
   });
  }
+ function retryVideo(){
+  return new Promise(resolve=>{
+   const panel=document.createElement('div');panel.className='retry-video-error';panel.setAttribute('role','alert');
+   const message=document.createElement('p');message.textContent='The attack animation could not load.';
+   const button=document.createElement('button');button.type='button';button.textContent='RETRY ANIMATION';panel.append(message,button);visual.append(panel);
+   const finish=ok=>{panel.remove();if(active?.panel===panel)active=null;resolve(ok);};
+   active={panel,cancel:()=>finish(false)};button.addEventListener('click',()=>finish(true),{once:true});button.focus();
+  });
+ }
  return {
   async play(group,{onEnded=()=>{}}={}){
    if(disposed)return 'cancelled';
@@ -99,6 +108,14 @@ export function createRetryActions({visual,show,hold,assets=retryActionAssets,on
     let result=clips.has(group)?
      await playClip(clips.get(group),asset.outTime,asset.audioGain):'missing';
     if(disposed||result==='cancelled')return 'cancelled';
+    // Real attack clips must play. Never replace a failed video with stills
+    // or settle the round while waiting for the player's explicit retry.
+    while(result==='missing'&&asset.enabled){
+     if(!await retryVideo()||disposed)return 'cancelled';
+     const video=clips.get(group);video.load();
+     result=await playClip(video,asset.outTime,asset.audioGain);
+     if(disposed||result==='cancelled')return 'cancelled';
+    }
     if(result==='missing'){
      active={cancel:()=>{}};
      try{

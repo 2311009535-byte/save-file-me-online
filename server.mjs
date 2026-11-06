@@ -1,3 +1,4 @@
+import {sendVideo} from './video-response.mjs';
 import {loadAvatarSettings} from './avatar-settings.mjs';
 import http from 'node:http';
 import {readFile} from 'node:fs/promises';
@@ -15,6 +16,8 @@ http.createServer(async(req,res)=>{
  const pathname=rewrites[requested]||requested;
  const file=path.resolve(root,'.'+(pathname==='/'?'/index.html':pathname));
  if(!file.startsWith(root+path.sep)){res.writeHead(403);res.end();return;}
+ const ext=path.extname(file).toLowerCase();
+ if(ext==='.mp4'||ext==='.webm'){await sendVideo(req,res,file,mime[ext]);return;}
  const data=await readFile(file);res.writeHead(200,{'Content-Type':mime[path.extname(file).toLowerCase()]||'application/octet-stream','Cache-Control':'no-cache'});res.end(data);
  }catch{res.writeHead(404);res.end('Not found');}
 }).listen(Number(process.env.PORT)||3000,'0.0.0.0',()=>console.log('Save File: Me running on port '+(process.env.PORT||3000)));

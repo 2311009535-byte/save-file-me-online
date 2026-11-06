@@ -406,3 +406,5 @@
 @keyframes escape-paper-count{0%,65%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-20px)}}
 
 .retry-action-loading{position:absolute;left:15%;top:46%;width:70%;text-align:center;color:#f8efd9;font:calc(24px * var(--scene-ui,1)) "Courier New",monospace;text-shadow:0 2px 5px #171615;pointer-events:none}
+
+.retry-video-error{position:absolute;inset:35% 15% auto;z-index:5;text-align:center;color:#f8efd9;font:calc(22px * var(--scene-ui,1)) "Courier New",monospace;text-shadow:0 2px 5px #171615}.retry-video-error button{cursor:pointer;color:#f8efd9;background:#242220e8;border:1px solid #d8cbb3;padding:12px 20px;font:inherit}
