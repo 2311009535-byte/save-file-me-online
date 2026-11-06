@@ -27,3 +27,10 @@ body[data-observation]:not([data-observation=none]) footer{visibility:hidden}
 .forest-wildlife-target[hidden]{display:none}
 .forest-wildlife-target:hover,.forest-wildlife-target:focus-visible{outline:1px dashed #ffedcb99;outline-offset:4px;background:#ffedcb0c}
 .forest-sky-view footer,.forest-sky-view .forest-walk-hint,.forest-sky-view .forest-touch-walk,.forest-sky-view .forest-touch-hint{visibility:hidden}
+
+/* Existing grass art frames the sky when the walker lies in the meadow. */
+.forest-rest-grass{position:fixed;inset:0;z-index:3;pointer-events:none;overflow:hidden}
+.forest-rest-grass[hidden]{display:none}
+.forest-rest-grass img{position:absolute;bottom:-11vh;left:-7vw;width:27vw;height:43vh;object-fit:contain;image-rendering:pixelated;transform:rotate(24deg);transform-origin:50% 100%}
+.forest-rest-grass img+img{left:auto;right:-7vw;transform:scaleX(-1) rotate(24deg)}
+@media(max-width:700px){.forest-rest-grass img{width:42vw;height:34vh;left:-10vw;bottom:-6vh}.forest-rest-grass img+img{left:auto;right:-10vw}}

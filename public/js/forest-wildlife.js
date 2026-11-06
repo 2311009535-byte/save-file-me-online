@@ -15,9 +15,10 @@ export function mountForestWildlife(canvas){
  const root=document.createElement('div');root.className='forest-wildlife';document.body.append(root);
  const make=(label,kind,id)=>{const button=document.createElement('button');button.className='forest-wildlife-target';button.hidden=true;button.setAttribute('aria-label',label);button.dataset.kind=kind;button.dataset.animal=String(id);button.title=label;root.append(button);return button;};
  const rabbit=make('Say hello to the rabbit','rabbit',0),butterflies=BUTTERFLIES.map((_,i)=>make('Watch the butterfly','butterfly',i));
- const interact=kind=>document.dispatchEvent(new CustomEvent('forest-wildlife-interact',{detail:{kind}}));
+ const interact=(kind,detail={})=>document.dispatchEvent(new CustomEvent('forest-wildlife-interact',{detail:{kind,...detail}}));
  rabbit.onclick=()=>{if(dead||rabbit.disabled||rabbitStart!==null||rabbitPending)return;rabbitPending=true;rabbit.disabled=true;interact('rabbit');};
- butterflies.forEach((b,id)=>b.onclick=()=>{if(dead||b.hidden||b.disabled||butterflyPending>=0||butterflyStart!==null||!camera)return;butterflyPending=id;anchor={x:camera.x+Math.sin(camera.yaw||0)*130,y:camera.y-32,z:camera.z+Math.cos(camera.yaw||0)*130};interact('butterfly');});
+ butterflies.forEach((b,id)=>b.onclick=()=>{if(dead||b.hidden||b.disabled||butterflyPending>=0||butterflyStart!==null||!camera)return;butterflyPending=id;anchor={x:camera.x+Math.sin(camera.yaw||0)*130,y:camera.y-32,z:camera.z+Math.cos(camera.yaw||0)*130};interact('butterfly',{anchor:{...anchor}});});
+ const cue=e=>{if(e.detail.kind==='rabbit')rabbit.onclick();else if(e.detail.kind==='butterfly')(butterflies.find(b=>!b.hidden&&!b.disabled))?.onclick();};document.addEventListener('forest-wildlife-cue',cue);
  function place(button,p,w,h,enabled){
   const r=canvas.getBoundingClientRect(),s=r.width/1672,point=projectForestPoint(camera,p.x,p.y,p.z);
   const width=Math.max(44,w*900/point.depth*s),height=Math.max(44,h*900/point.depth*s),x=r.left+point.x*s,y=r.top+point.y*s;
@@ -42,6 +43,6 @@ export function mountForestWildlife(canvas){
    return {rabbitTime:rt,butterflyTime:bt>=7?-1:bt,butterflyId,anchor,origin:{x:routeX(z)+offset,y:y+h/2,z}};
   },
   reset(){rabbitStart=null;rabbitPending=false;butterflyStart=null;butterflyPending=-1;butterflyId=-1;rabbit.disabled=false;},
-  dispose(){dead=true;rabbit.onclick=null;butterflies.forEach(b=>b.onclick=null);root.remove();delete canvas.dataset.rabbit;delete canvas.dataset.butterfly;}
+  dispose(){dead=true;document.removeEventListener('forest-wildlife-cue',cue);rabbit.onclick=null;butterflies.forEach(b=>b.onclick=null);root.remove();delete canvas.dataset.rabbit;delete canvas.dataset.butterfly;}
  };
 }
