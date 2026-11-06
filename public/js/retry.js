@@ -20,11 +20,12 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
  const intro=createChapterIntro(stage),loader=createChapterLoading(stage),atmosphere=createRetryAtmosphere(visual);
  const partnerVideo=createVideoTransitions({partner:{enter:{src:'/assets/retry/videos/player2-join.mp4',available:true},return:{available:false}}},'retry-partner-overlay');
  const diaryVideo=createVideoTransitions({diary:{enter:{src:'/assets/retry/videos/diary-enter.mp4',available:true},return:{available:false}}},'retry-diary-video');
+ let defeatFrame=null;
  let alive=true,busy=true,generation=0,viewGeneration=0,loadingFrame=0,diaryTurn=null,switchBook=null;const timers=new Map(),animations=new Set(),cardMotions=new Map();
  const persist=()=>{gameAudio.setRetry({joined:data.joined,view:data.view,won:data.won});try{localStorage.setItem(RETRY_KEY,JSON.stringify(data));}catch{}$('retry-progress').textContent=`第三章：失败 ${data.failures}/3 · player2 ${data.joined?'已加入':'未加入'} · ${data.won?'已获胜':'未获胜'} · 日记 ${data.page+1}/4`;stage.dataset.retryFailures=String(data.failures);stage.dataset.retryJoined=String(data.joined);stage.dataset.retryWon=String(data.won);};
  function pause(ms){return new Promise(resolve=>{const timer=setTimeout(()=>{timers.delete(timer);resolve(alive);},ms);timers.set(timer,resolve);});}
  const actions=createRetryActions({visual,show,onCue:name=>name==='stopCombat'?gameAudio.stopCombat():gameAudio.effect(name),hold:ms=>animate(visual.querySelector('.scene-image'),[{opacity:1},{opacity:1}],{duration:ms})});
- function cancel(){cardMotions.forEach(m=>m.dispose());cardMotions.clear();atmosphere.dispose();loader.dispose();intro.dispose();diaryTurn?.dispose();diaryTurn=null;switchBook?.dispose();switchBook=null;generation++;actions.dispose();victoryFrame.dispose();partnerVideo.dispose();diaryVideo.dispose();for(const [timer,resolve] of timers){clearTimeout(timer);resolve(false);}timers.clear();cancelAnimationFrame(loadingFrame);animations.forEach(a=>a.cancel());animations.clear();videos.dispose();}
+ function cancel(){defeatFrame=null;cardMotions.forEach(m=>m.dispose());cardMotions.clear();atmosphere.dispose();loader.dispose();intro.dispose();diaryTurn?.dispose();diaryTurn=null;switchBook?.dispose();switchBook=null;generation++;actions.dispose();victoryFrame.dispose();partnerVideo.dispose();diaryVideo.dispose();for(const [timer,resolve] of timers){clearTimeout(timer);resolve(false);}timers.clear();cancelAnimationFrame(loadingFrame);animations.forEach(a=>a.cancel());animations.clear();videos.dispose();}
  async function animate(element,frames,options){if(!alive)return false;const a=element.animate(frames,options);animations.add(a);try{await a.finished;return alive;}catch{return false;}finally{animations.delete(a);}}
  function lock(){busy=true;$('hotspots').querySelectorAll('button').forEach(b=>b.disabled=true);visual.querySelectorAll('.retry-card-art').forEach(c=>c.classList.remove('is-selected'));}
  function corner(){const diary=data.view==='diary';$('back').textContent=diary?'BACK':'SAVE ROOM';$('back').setAttribute('aria-label',diary?'BACK':'SAVE ROOM');$('back').hidden=!diary;$('back').onclick=()=>{if(diary&&!busy){gameAudio.effect('page');data.view='switch';persist();draw();}};}
@@ -39,8 +40,17 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
  async function draw(){
  if(!alive)return;cardMotions.forEach(m=>m.dispose());cardMotions.clear();diaryTurn?.dispose();diaryTurn=null;switchBook?.dispose();switchBook=null;delete stage.dataset.retryBook;lock();const version=++generation;stage.dataset.retryView=data.view;delete stage.dataset.retryAction;delete stage.dataset.retryActionEnded;$('hotspots').replaceChildren();corner();persist();
  let f=data.view==='battle'?(data.joined?'3_9.JPG':'3_1.png'):data.view==='defeat'?'3_6.png':data.view==='discovered'?'3_6.png':data.view==='invite'?'3_8.png':data.view==='victory'?'3_12.png':data.view==='switch'?'3_14.png':['3_15.png','3_16.PNG','3_17.PNG','3_18.PNG'][data.page];
- if(!await show(f)||!alive||version!==generation)return;
+ const nativeDefeat=Boolean(defeatFrame&&['defeat','discovered'].includes(data.view));
+ if(nativeDefeat){
+  await prepareImage(defeatFrame);if(!alive||version!==generation)return;
+  atmosphere.clear();imageScene('retry/'+f,f,1672,941);visual.querySelector('.scene-image').src=defeatFrame;stage.dataset.retryFrame='boss-final-frame';
+  const shade=document.createElement('div');shade.className='retry-defeat-shade';visual.append(shade);animate(shade,[{opacity:0},{opacity:.38}],{duration:450,fill:'forwards'});
+  const paper=await prepareImage(url(data.view==='defeat'?'ambient/defeat-blank.png':'3_6.png'));if(!alive||version!==generation)return;
+  const modal=document.createElement('canvas');modal.width=1672;modal.height=941;modal.className='retry-taunt-paper';modal.dataset.defeatPaper='native';Object.assign(modal.style,{left:0,top:0,width:'100%',height:'100%'});
+  const ctx=modal.getContext('2d');ctx.beginPath();[[471,249],[505,221],[1166,222],[1165,249],[1185,257],[1180,624],[1133,628],[1131,649],[465,658]].forEach(([x,y],i)=>ctx[i?'lineTo':'moveTo'](x,y));ctx.closePath();ctx.clip();ctx.drawImage(paper,0,0,1672,941);visual.append(modal);animate(modal,[{opacity:0},{opacity:1}],{duration:450,fill:'forwards'});
+ }else if(!await show(f)||!alive||version!==generation)return;
  if(data.view==='battle'){
+  defeatFrame=null;
   const cards=data.joined?[[64.3,74.3,10.4,22.5],[75.2,74.5,10.6,22.7],[86.3,74.5,10.7,22.7]]:[[47.5,73.5,11.5,25.5],[61.5,73.5,11.5,25.5],[75,73.5,11.5,25.5]];
   const outlines=[
    [[8,8],[23,0],[36,5],[66,3],[85,5],[91,12],[94,42],[100,84],[92,99],[62,98],[30,96],[3,94],[0,86],[6,53],[6,22]],
@@ -61,8 +71,8 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
   });
  }else if(data.view==='defeat'){
   const blank=await prepareImage('/assets/retry/ambient/defeat-blank.png');if(!alive||version!==generation)return;
-  const patch=document.createElement('canvas');patch.className='retry-taunt-paper';patch.width=720;patch.height=220;patch.getContext('2d').drawImage(blank,blank.naturalWidth*.29,blank.naturalHeight*.325,blank.naturalWidth*.42,blank.naturalHeight*.23,0,0,720,220);visual.append(patch);
-  const taunt=document.createElement('div');taunt.className='retry-boss-taunt';taunt.setAttribute('role','status');for(const line of ['Go on. Try again.','We both know how this ends.']){const p=document.createElement('p');p.textContent=line;taunt.append(p);}visual.append(taunt);
+  if(!nativeDefeat){const patch=document.createElement('canvas');patch.className='retry-taunt-paper';patch.width=720;patch.height=220;patch.getContext('2d').drawImage(blank,blank.naturalWidth*.29,blank.naturalHeight*.325,blank.naturalWidth*.42,blank.naturalHeight*.23,0,0,720,220);visual.append(patch);}
+  const taunt=document.createElement('div');taunt.className='retry-boss-taunt';taunt.setAttribute('role','status');for(const line of ['Go on. Try again.','We both know how this ends.']){const p=document.createElement('p');p.textContent=line;taunt.append(p);}visual.append(taunt);if(nativeDefeat)animate(taunt,[{opacity:0},{opacity:1}],{duration:450,fill:'forwards'});
   button('retry-again',[43.3,55.8,13.4,6.6],'RETRY',()=>retry());
  }
  else if(data.view==='discovered')button('retry-again',[43.3,55.8,13.4,6.6],'RETRY',()=>{data=retryRound(data);persist();draw();});
@@ -141,9 +151,11 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
    stage.dataset.retryGroup='bossWarning';atmosphere.charge();if(!await bossPaper(visual,animate,pause)||!current())return;
    if(!await play('bossAttack',async()=>{
     // Both real clips and demos must finish before HP reaches zero.
-    if(!await show('3_5.png')||!current())return;
-    stage.dataset.retryPlayerHp='0';drawHP(0);
-    await animate(visual.querySelector('.scene-image'),[{opacity:1},{opacity:1}],{duration:500});
+    defeatFrame=actions.captureHeldFrame();
+    if(!defeatFrame&&(!await show('3_5.png')||!current()))return;
+    if(defeatFrame)stage.dataset.retryFrame='boss-final-frame';
+    stage.dataset.retryPlayerHp='0';if(!defeatFrame)drawHP(0);
+    await pause(500);
    }))return;
   }
   if(!current())return;delete stage.dataset.retryGroup;data=settleRetryRound(data);persist();if(data.won)onVictory();await draw();

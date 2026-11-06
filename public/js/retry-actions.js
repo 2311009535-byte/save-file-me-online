@@ -96,6 +96,10 @@ export function createRetryActions({visual,show,hold,assets=retryActionAssets,on
   });
  }
  return {
+  captureHeldFrame(){
+   if(!held||held.readyState<2||!held.videoWidth)return null;
+   try{const frame=document.createElement('canvas');frame.width=held.videoWidth;frame.height=held.videoHeight;frame.getContext('2d').drawImage(held,0,0);return frame.toDataURL('image/png');}catch{return null;}
+  },
   async play(group,{onEnded=()=>{}}={}){
    if(disposed)return 'cancelled';
    if(playing)throw new Error('Retry action playback is already active');

@@ -1,3 +1,4 @@
+import {addClothes} from './retry-clothes.js';
 import {addBossBackdrop,prepareRopes,addRopes} from './retry-boss-rope.js';
 import {addSwordBreathing,addLoadingDots} from './retry-foreground-life.js';
 import {prepareImage} from './image-cache.js';
@@ -85,6 +86,7 @@ export function createRetryAtmosphere(visual){
   addCalendar(root,source,art,animate);
   addFlags(root,source,art,animate);
   addBreathing(root,source,art,animate);
+  addClothes(root,source,art,animate);
   addHair(root,source,art,animate);
   const cloudSource=makeCanvas(),clc=cloudSource.getContext('2d');clc.drawImage(structures,0,0);clc.globalCompositeOperation='destination-out';clc.lineWidth=4;for(const points of art.towers){polygon(clc,points);clc.fill();clc.stroke();}
   const sky=document.createElement('div');sky.className='retry-sky-paper';addSkyBands(sky,cloudSource,art.skyBands,animate);root.insertBefore(sky,root.children[1]);root.insertBefore(svg,root.children[1]);visual.append(root);sync();return true;

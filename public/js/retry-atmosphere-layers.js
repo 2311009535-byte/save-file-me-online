@@ -114,7 +114,7 @@ export function addFlags(root,source,art,animate){
 // anchored beside the head; separate periods keep the two players natural.
 export function addHair(root,source,art,animate){
  (art.hair||[]).forEach((points,i)=>{const {c,box}=sample(source,points),ctx=c.getContext('2d',{willReadFrequently:true}),pixels=ctx.getImageData(0,0,c.width,c.height);for(let k=0;k<pixels.data.length;k+=4)pixels.data[k+3]*=Math.max(0,Math.min(1,(Math.min(pixels.data[k],pixels.data[k+1],pixels.data[k+2])-165)/30));ctx.putImageData(keepPaperComponents(pixels,400),0,0);place(c,box);c.dataset.playerHair=String(i+1);c.style.transformOrigin='100% 50%';root.append(c);
-  animate(c,'player-hair',[{transform:'none'},{offset:.27,transform:'skewY(1.6deg) scaleY(.985)'},{offset:.56,transform:'skewY(-1.3deg) scaleY(1.015)'},{offset:.79,transform:'skewY(.7deg) scaleY(.995)'},{transform:'none'}],{duration:3400+i*850,delay:-i*1100,easing:'ease-in-out'});
+  animate(c,'player-hair',[{transform:'none'},{offset:.27,transform:'skewY(7deg) scaleY(.94)'},{offset:.56,transform:'skewY(-6deg) scaleY(1.04)'},{offset:.79,transform:'skewY(3deg) scaleY(.97)'},{transform:'none'}],{duration:1500+i*330,delay:-i*510,easing:'ease-in-out'});
  });
 }
 // Only coat/chest paper rises; feet, heads, weapons and the ground stay fixed.
