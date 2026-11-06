@@ -4,7 +4,7 @@ export const retryActionAssets={
  bossAttack:{audioGain:.640472,src:'/assets/retry/videos/boss-attack.mp4',enabled:true,frames:[['3_3.png',650],['3_4.png',1200]]},
  duoAttack:{audioGain:.747309,src:'/assets/retry/videos/duo-attack.mp4',enabled:true,frames:[['3_9.JPG',450],['3_10.png',1150],['3_11.png',1800]]}
 };
-export function createRetryActions({visual,show,hold,assets=retryActionAssets,onCue=()=>{}}){
+export function createRetryActions({visual,show,hold,assets=retryActionAssets,onCue=()=>{},startupTimeout=8000}){
  let disposed=false,active=null,playing=false,abortPlayback=null,held=null;
  const clips=new Map();
  for(const [name,asset] of Object.entries(assets))if(asset.enabled){
@@ -20,12 +20,24 @@ export function createRetryActions({visual,show,hold,assets=retryActionAssets,on
  }
  function playClip(video,outTime=null,audioGain=1){
   return new Promise(resolve=>{
-   let finished=false,frame=0;
+   let finished=false,frame=0,loading=null,lastTime=0,lastProgress=performance.now();
+   const waiting=setTimeout(()=>{if(finished)return;loading=document.createElement('div');loading.className='retry-action-loading';loading.setAttribute('role','status');loading.textContent='Preparing attack…';visual.append(loading);},500);
+   const startup=setTimeout(()=>finish('missing'),startupTimeout);
+   const stalled=setInterval(()=>{
+    const now=performance.now();
+    if(video.paused||document.hidden){lastProgress=now;return;}
+    if(video.currentTime>lastTime+.01){lastTime=video.currentTime;lastProgress=now;}
+    else if(now-lastProgress>=startupTimeout)finish('missing');
+   },Math.min(1000,startupTimeout/4));
+   const started=()=>{clearTimeout(waiting);clearTimeout(startup);loading?.remove();loading=null;};
    onCue('stopCombat');
    const detachAudio=gameAudio.bindVideoAudio(video,audioGain);
    const finish=result=>{
     if(finished)return;
     finished=true;
+    clearInterval(stalled);
+    started();
+    video.removeEventListener('playing',started);
     detachAudio();
     if(frame)video.cancelVideoFrameCallback?.(frame);
     video.removeEventListener('timeupdate',progress);
@@ -51,6 +63,7 @@ export function createRetryActions({visual,show,hold,assets=retryActionAssets,on
      frame=video.requestVideoFrameCallback(nextFrame);
    };
    active={video,cancel:()=>finish('cancelled')};
+   video.addEventListener('playing',started);
    video.addEventListener('ended',ended);
    video.addEventListener('error',error);
    video.addEventListener('timeupdate',progress);
@@ -60,14 +73,14 @@ export function createRetryActions({visual,show,hold,assets=retryActionAssets,on
    delete video.dataset.heldFrame;
    if(held&&held!==video)visual.insertBefore(video,held);
    else visual.append(video);
-   video.currentTime=0;
+   try{video.currentTime=0;}catch{error();return;}
    if(video.error){error();return;}
    const handoff=()=>{
     if(finished)return;
     if(held&&held!==video){held.remove();held=null;}
    };
    video.play().then(()=>{
-    if(finished)return;
+    if(finished){video.pause();return;}
     if(video.requestVideoFrameCallback)video.requestVideoFrameCallback(handoff);
     else handoff();
    }).catch(error);
