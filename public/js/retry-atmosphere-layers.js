@@ -12,10 +12,17 @@ export function sample(source,points,{cream=false}={}){
 }
 // A shared period and evenly distributed phases keep buildings visible forever,
 // rather than allowing independent periods to drift into one empty skyline.
-export const withdrawFrames=height=>[
- {offset:0,transform:'translateY(0px)'},{offset:.12,transform:'translateY(0px)',easing:'cubic-bezier(.45,0,.25,1)'},
- {offset:.32,transform:`translateY(${height+16}px)`},{offset:.43,transform:`translateY(${height+16}px)`,easing:'cubic-bezier(.45,0,.25,1)'},
- {offset:.64,transform:'translateY(0px)'},{offset:1,transform:'translateY(0px)'}
+// Roof-to-foot direction follows the leaning walls in the illustration.
+export function buildingAxis(points){
+ const top=Math.min(...points.map(p=>p[1])),bottom=Math.max(...points.map(p=>p[1])),height=bottom-top;
+ const middle=list=>{const sorted=list.map(p=>p[0]).sort((a,b)=>a-b);return sorted[Math.floor(sorted.length/2)];};
+ const roof=middle(points.filter(p=>p[1]<top+height*.28)),foot=middle(points.filter(p=>p[1]>bottom-height*.28));
+ return{x:Math.max(-height*.75,Math.min(height*.75,(foot-roof)/.65)),y:height+16};
+}
+export const withdrawFrames=(height,x=0)=>[
+ {offset:0,transform:'translate(0px,0px)'},{offset:.12,transform:'translate(0px,0px)',easing:'cubic-bezier(.45,0,.25,1)'},
+ {offset:.32,transform:`translate(${x}px,${height+16}px)`},{offset:.43,transform:`translate(${x}px,${height+16}px)`,easing:'cubic-bezier(.45,0,.25,1)'},
+ {offset:.64,transform:'translate(0px,0px)'},{offset:1,transform:'translate(0px,0px)'}
 ];
 export function addBuildings(root,source,background,art,animate){
  const active=art.towers.map((_,i)=>i).filter(i=>!art.stillTowers.includes(i));
@@ -25,7 +32,8 @@ export function addBuildings(root,source,background,art,animate){
   const viewport=document.createElement('div');viewport.className='retry-building-slot';viewport.dataset.building=String(index);place(viewport,box);
   Object.assign(c.style,{width:'100%',height:'100%',display:'block'});viewport.append(c);root.append(viewport);
   if(art.stillTowers.includes(index)){c.dataset.atmosphereKind='building-static';return;}
-  animate(c,'building-withdraw',withdrawFrames(box[3]),{duration:10500,delay:-10500*active.indexOf(index)/active.length,easing:'linear'});
+  const axis=buildingAxis(points);c.dataset.withdrawX=String(axis.x);c.dataset.withdrawY=String(axis.y);
+  animate(c,'building-withdraw',withdrawFrames(box[3],axis.x),{duration:10500,delay:-10500*active.indexOf(index)/active.length,easing:'linear'});
  });
 }
 export function addSkyBands(root,source,bands,animate){
@@ -48,28 +56,20 @@ function matteMessage(c){
  for(let p=0;p<n;p++){const i=p*4,x=p%c.width;const avatar=x<74&&Math.max(data.data[i],data.data[i+1],data.data[i+2])<112;data.data[i+3]*=(!outside[p]||avatar)?1:0;}
  ctx.putImageData(data,0,0);
 }
-// Only the ink moves. The message paper, avatars and phone are static.
+// A repeating strip scrolls along the phone's own tilted vertical axis.
 export function addMessages(root,source,art,animate,background){
- // The opaque empty phone screen occludes buildings sliding behind the phone.
  const panel=sample(background,art.phone);place(panel.c,panel.box);root.append(panel.c);
  const screen=document.createElement('div');screen.className='retry-message-screen';screen.style.clipPath='polygon('+art.phone.map(([x,y])=>`${x/WIDTH*100}% ${y/HEIGHT*100}%`).join(',')+')';root.append(screen);
- art.messages.forEach((points,index)=>{
-  const {c,box}=sample(source,points);matteMessage(c);place(c,box);c.dataset.message=String(index);screen.append(c);
-  if(index!==0&&index!==2)return;
-  const ctx=c.getContext('2d',{willReadFrequently:true}),data=ctx.getImageData(0,0,c.width,c.height),ink=canvas(c.width,c.height),inkCtx=ink.getContext('2d'),marks=inkCtx.createImageData(c.width,c.height);
-  // Paper grain comes from the blank second message, not a flat painted fill.
-  const markMask=canvas(c.width,c.height),maskCtx=markMask.getContext('2d');maskCtx.translate(-box[0],-box[1]);polygon(maskCtx,art.messageInk[index/2]);maskCtx.fill();const mask=maskCtx.getImageData(0,0,c.width,c.height).data;
-  const blank=art.messages[1],paperX=blank[2][0]+25,paperY=blank[2][1]+20;
-  const texture=canvas(c.width,c.height),tc=texture.getContext('2d');tc.drawImage(source,paperX,paperY,85,24,0,0,c.width,c.height);const paper=tc.getImageData(0,0,c.width,c.height);
-  for(let y=0;y<c.height;y++)for(let x=90;x<c.width-12;x++){
-   const i=(y*c.width+x)*4;if(!data.data[i+3]||!mask[i+3])continue;
-   const alpha=Math.max(0,Math.min(1,(160-Math.max(data.data[i],data.data[i+1],data.data[i+2]))/38));
-   if(!alpha)continue;for(let k=0;k<3;k++){marks.data[i+k]=data.data[i+k];data.data[i+k]=Math.round(data.data[i+k]*(1-alpha)+paper.data[i+k]*alpha);}marks.data[i+3]=Math.round(data.data[i+3]*alpha);
-  }
-  ctx.putImageData(data,0,0);inkCtx.putImageData(marks,0,0);place(ink,box);ink.dataset.messageInk=String(index);screen.append(ink);
-  animate(ink,'message-ink',[{transform:'none'},{offset:.19,transform:'translate(1px,-1px) skewX(1deg) scaleY(1.025)'},{offset:.37,transform:'translate(-1px,1px) skewX(-1.4deg) scaleX(.985)'},{offset:.56,transform:'translate(1px,0px) skewX(.8deg)'},{offset:.78,transform:'translate(0px,-1px) scaleY(.98)'},{transform:'none'}],{duration:2600+index*310,delay:-index*430,easing:'steps(5,end)'});
- });
+ const tape=document.createElement('div');Object.assign(tape.style,{position:'absolute',inset:0});screen.append(tape);
+ const rows=art.messages.length,first=art.messages[0][0],last=art.messages.at(-1)[0],dx=(first[0]-last[0])*rows/(rows-1),dy=(first[1]-last[1])*rows/(rows-1);
+ tape.dataset.scrollX=String(dx);tape.dataset.scrollY=String(dy);
+ for(const copy of [-1,0,1]){
+  const group=document.createElement('div');Object.assign(group.style,{position:'absolute',inset:0,transform:`translate(${-dx*copy}px,${-dy*copy}px)`});group.dataset.messageCopy=String(copy);tape.append(group);
+  art.messages.forEach((points,index)=>{const {c,box}=sample(source,points);matteMessage(c);place(c,box);c.dataset.message=String(index);group.append(c);});
+ }
+ animate(tape,'message-scroll',[{transform:'translate(0px,0px)'},{transform:`translate(${dx}px,${dy}px)`}],{duration:10500,easing:'linear'});
 }
+
 export function nativePaper(source,points){
  const {c,box}=sample(source,points),ctx=c.getContext('2d',{willReadFrequently:true}),pixels=ctx.getImageData(0,0,c.width,c.height);
  for(let i=0;i<pixels.data.length;i+=4){const r=pixels.data[i],g=pixels.data[i+1],b=pixels.data[i+2];const paper=Math.max(0,Math.min(1,(Math.min(r,g,b)-95)/55));const red=r>g*1.3&&r>b*1.3&&r>125;pixels.data[i+3]*=red?1:paper;}ctx.putImageData(pixels,0,0);return{c,box};
@@ -83,7 +83,7 @@ export function addCalendar(root,source,art,animate){
 export function addFlags(root,source,art,animate){
  art.flags.forEach((points,i)=>{const {c,box}=sample(source,points),ctx=c.getContext('2d',{willReadFrequently:true}),pixels=ctx.getImageData(0,0,c.width,c.height);
   for(let k=0;k<pixels.data.length;k+=4)pixels.data[k+3]*=pixels.data[k]>pixels.data[k+1]*1.5&&pixels.data[k]>pixels.data[k+2]*1.5?1:0;ctx.putImageData(pixels,0,0);place(c,box);c.style.transformOrigin='0 50%';root.append(c);
-  animate(c,'red-flag',[{transform:'none'},{offset:.24,transform:'skewY(-7deg) scaleX(.9)'},{offset:.51,transform:'skewY(5deg) scaleX(.98)'},{offset:.77,transform:'skewY(-3deg) scaleX(.94)'},{transform:'none'}],{duration:2100+i*390,delay:-i*650,easing:'ease-in-out'});
+  animate(c,'red-flag',[{transform:'none'},{offset:.24,transform:'skewY(-7deg) scaleX(.9)'},{offset:.51,transform:'skewY(5deg) scaleX(.98)'},{offset:.77,transform:'skewY(-3deg) scaleX(.94)'},{transform:'none'}],{duration:900+i*130,delay:-i*310,easing:'ease-in-out'});
  });
 }
 // Hair tips are cut from the original cream silhouettes. Their roots stay
@@ -92,6 +92,23 @@ export function addHair(root,source,art,animate){
  (art.hair||[]).forEach((points,i)=>{const {c,box}=sample(source,points),ctx=c.getContext('2d',{willReadFrequently:true}),pixels=ctx.getImageData(0,0,c.width,c.height);for(let k=0;k<pixels.data.length;k+=4)pixels.data[k+3]*=Math.max(0,Math.min(1,(Math.min(pixels.data[k],pixels.data[k+1],pixels.data[k+2])-165)/30));ctx.putImageData(keepPaperComponents(pixels,400),0,0);place(c,box);c.dataset.playerHair=String(i+1);c.style.transformOrigin='100% 50%';root.append(c);
   animate(c,'player-hair',[{transform:'none'},{offset:.27,transform:'skewY(1.6deg) scaleY(.985)'},{offset:.56,transform:'skewY(-1.3deg) scaleY(1.015)'},{offset:.79,transform:'skewY(.7deg) scaleY(.995)'},{transform:'none'}],{duration:3400+i*850,delay:-i*1100,easing:'ease-in-out'});
  });
+}
+// Only coat/chest paper rises; feet, heads, weapons and the ground stay fixed.
+export function addBreathing(root,source,art,animate){
+ for(const [i,points]of (art.breathing||[]).entries()){
+  const {c,box}=sample(source,points,{cream:true});place(c,box);c.dataset.playerBreath=String(i+1);c.style.transformOrigin='50% 100%';root.append(c);
+  animate(c,'player-breath',[{transform:'scale(1,1)'},{transform:'scale(1.007,1.025)',offset:.48},{transform:'scale(1,1)'}],{duration:3700+i*950,delay:-i*1400,easing:'ease-in-out'});
+ }
+}
+export function addBossInk(root,art,animate){
+ const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox',`0 0 ${WIDTH} ${HEIGHT}`);Object.assign(svg.style,{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none'});svg.dataset.bossInk='emitting';root.append(svg);
+ const [cx,cy]=art.boss.origin,ns='http://www.w3.org/2000/svg',id=`retry-boss-ink-${cx}-${cy}`,defs=document.createElementNS(ns,'defs'),clip=document.createElementNS(ns,'clipPath'),area=document.createElementNS(ns,'polygon'),field=document.createElementNS(ns,'g');clip.id=id;clip.setAttribute('clipPathUnits','userSpaceOnUse');area.setAttribute('points',art.safeSky.map(p=>p.join(',')).join(' '));clip.append(area);defs.append(clip);svg.append(defs);field.setAttribute('clip-path',`url(#${id})`);svg.append(field);
+ for(let i=0;i<20;i++){
+  const angle=-Math.PI+i/19*Math.PI*2,rx=250+(i*43%180),ry=90+(i*29%75),points=[];
+  for(let n=0;n<14;n++){const t=n/13,r=.25+t*.95,wave=Math.sin(n*2.4+i)*(5+8*t);points.push([cx+Math.cos(angle)*rx*r+Math.sin(angle)*wave,cy+Math.sin(angle)*ry*r-Math.cos(angle)*wave]);}
+  const path=document.createElementNS('http://www.w3.org/2000/svg','path');let d='M'+points[0].join(',');for(let j=1;j<points.length-1;j++)d+=' Q'+points[j].join(',')+' '+[(points[j][0]+points[j+1][0])/2,(points[j][1]+points[j+1][1])/2].join(',');d+=' L'+points.at(-1).join(',');path.setAttribute('d',d);path.setAttribute('fill','none');path.setAttribute('stroke','#171615');path.setAttribute('stroke-width',String(.8+(i%4)*.35));path.setAttribute('stroke-linecap','square');path.setAttribute('stroke-linejoin','bevel');path.setAttribute('pathLength','100');path.style.strokeDasharray='100';field.append(path);
+  animate(path,'boss-ink',[{strokeDashoffset:100,opacity:0},{strokeDashoffset:90,opacity:.8,offset:.12},{strokeDashoffset:0,opacity:.72,offset:.66},{strokeDashoffset:-20,opacity:0}],{duration:2100+i%5*270,delay:-i*317,easing:'linear'});
+ }
 }
 // Keep the connected paper sheets and player silhouettes, without accidentally
 // restoring small white window marks on a building hidden behind them.

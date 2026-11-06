@@ -1,6 +1,6 @@
 import {prepareImage} from './image-cache.js';
 import {RETRY_ATMOSPHERE_ART} from './retry-atmosphere-art.js';
-import {addBuildings,addSkyBands,addMessages,addCalendar,addFlags,addHair,keepPaperComponents} from './retry-atmosphere-layers.js';
+import {addBuildings,addSkyBands,addMessages,addCalendar,addFlags,addHair,addBreathing,addBossInk,keepPaperComponents} from './retry-atmosphere-layers.js';
 export {retryAtmosphereAssets} from './retry-atmosphere-art.js';
 const W=1672,H=941,NS='http://www.w3.org/2000/svg';
 const makeCanvas=(w=W,h=H)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c;};
@@ -55,6 +55,7 @@ export function createRetryAtmosphere(visual){
   rc.drawImage(plate,0,0,W,H);rc.drawImage(motionBacking,0,0);
   if(hairPlate){const backing=makeCanvas(),bc=backing.getContext('2d');bc.drawImage(hairPlate,0,0,W,H);bc.globalCompositeOperation='destination-in';bc.drawImage(hairMask,0,0);rc.drawImage(backing,0,0);}
   rc.globalCompositeOperation='destination-out';rc.drawImage(protect,0,0);repair.className='retry-atmosphere-repair';root.append(repair);
+  addBossInk(root,art,animate);
   // Arms are independent native ink, pivoted at their shoulders. The torso
   // covers the joints; the foreground ridge is explicitly outside the mask.
   for(const [name,x,w,pivot,frames,duration]of [
@@ -75,6 +76,7 @@ export function createRetryAtmosphere(visual){
   const foreground=makeCanvas(),fg=foreground.getContext('2d');fg.drawImage(source,0,0);fg.globalCompositeOperation='destination-in';fg.drawImage(protect,0,0);foreground.className='retry-atmosphere-foreground';root.append(foreground);
   addCalendar(root,source,art,animate);
   addFlags(root,source,art,animate);
+  addBreathing(root,source,art,animate);
   addHair(root,source,art,animate);
   const cloudSource=makeCanvas(),clc=cloudSource.getContext('2d');clc.drawImage(structures,0,0);clc.globalCompositeOperation='destination-out';clc.lineWidth=4;for(const points of art.towers){polygon(clc,points);clc.fill();clc.stroke();}
   const sky=document.createElement('div');sky.className='retry-sky-paper';addSkyBands(sky,cloudSource,art.skyBands,animate);root.insertBefore(sky,root.children[1]);root.insertBefore(svg,root.children[1]);visual.append(root);sync();return true;
