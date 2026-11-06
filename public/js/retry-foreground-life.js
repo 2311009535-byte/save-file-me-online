@@ -5,7 +5,7 @@ export function swordLift(art,x,y){
  const {grip:g,tip:t,radius,hand:[hx,hy,rx,ry]}=art.sword,vx=t[0]-g[0],vy=t[1]-g[1],length=vx*vx+vy*vy;
  const along=Math.max(0,Math.min(1,((x-g[0])*vx+(y-g[1])*vy)/length)),dx=x-g[0]-along*vx,dy=y-g[1]-along*vy;
  const blade=Math.max(0,1-(dx*dx+dy*dy)/(radius*radius))**2,hand=Math.max(0,1-((x-hx)/rx)**2-((y-hy)/ry)**2)**2;
- const amount=Math.max(blade,hand);return amount?-3.2*amount:0;
+ const amount=Math.max(blade,hand);return amount?-5.8*amount:0;
 }
 export function addSwordBreathing(root,source,art,animate){
  if(!art.sword)return;

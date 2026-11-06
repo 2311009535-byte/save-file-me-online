@@ -1,3 +1,4 @@
+import {addBossBackdrop,prepareRopes,addRopes} from './retry-boss-rope.js';
 import {addSwordBreathing,addLoadingDots} from './retry-foreground-life.js';
 import {prepareImage} from './image-cache.js';
 import {RETRY_ATMOSPHERE_ART} from './retry-atmosphere-art.js';
@@ -53,9 +54,12 @@ export function createRetryAtmosphere(visual){
   const motionBacking=makeCanvas(),mb=motionBacking.getContext('2d');mb.drawImage(motionPlate,0,0,W,H);mb.globalCompositeOperation='destination-in';mb.drawImage(patches,0,0);
   const hairMask=makeCanvas(),hc=hairMask.getContext('2d');for(const points of art.hair||[]){polygon(hc,points);hc.fill();}
   pc.drawImage(hairMask,0,0);
-  rc.drawImage(plate,0,0,W,H);rc.drawImage(motionBacking,0,0);
+  const ropeBase=makeCanvas();ropeBase.getContext('2d').drawImage(plate,0,0,W,H);
+  const ropeArt=prepareRopes(source,ropeBase,art);
+  rc.drawImage(ropeArt.cleaned,0,0);rc.drawImage(motionBacking,0,0);
   if(hairPlate){const backing=makeCanvas(),bc=backing.getContext('2d');bc.drawImage(hairPlate,0,0,W,H);bc.globalCompositeOperation='destination-in';bc.drawImage(hairMask,0,0);rc.drawImage(backing,0,0);}
   rc.globalCompositeOperation='destination-out';rc.drawImage(protect,0,0);repair.className='retry-atmosphere-repair';root.append(repair);
+  addBossBackdrop(root,source,ropeArt.cleaned,art,animate);
   addBossInk(root,art,animate);
   // Arms are independent native ink, pivoted at their shoulders. The torso
   // covers the joints; the foreground ridge is explicitly outside the mask.
@@ -71,6 +75,7 @@ export function createRetryAtmosphere(visual){
   const backdrop=makeCanvas(),backdropCtx=backdrop.getContext('2d');backdropCtx.drawImage(plate,0,0,W,H);
   addBuildings(root,structures,backdrop,art,animate);
   addMessages(root,moving,art,animate,backdrop);
+  addRopes(root,ropeArt.ropes,animate);
   const svg=svgElement('svg',{viewBox:`0 0 ${W} ${H}`,preserveAspectRatio:'none'});svg.classList.add('retry-atmosphere-paper');
   const wash=svgElement('polygon',{points:art.safeSky.map(p=>p.join(',')).join(' '),fill:'#f4e4d1'});svg.append(wash);animate(wash,'sky-light',[{offset:0,opacity:0},{offset:.11,opacity:0},{offset:.15,opacity:.06},{offset:.27,opacity:0},{offset:1,opacity:0}],{duration:7900});
   art.cracks.forEach((coords,i)=>{const d=coords.map((v,j)=>j%2?' '+v:(j?' L':'M')+v).join(''),path=svgElement('path',{d,fill:'none',stroke:'#53473e','stroke-width':2-i*.4,'stroke-linejoin':'bevel'});svg.append(path);animate(path,'ground-seam',[{opacity:.03},{opacity:.28,offset:.18},{opacity:.06,offset:.36},{opacity:.03}],{duration:7900+i*1700});});

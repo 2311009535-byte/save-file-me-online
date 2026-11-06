@@ -10,14 +10,17 @@ export function sample(source,points,{cream=false}={}){
  if(cream){const pixels=ctx.getImageData(0,0,w,h);for(let i=0;i<pixels.data.length;i+=4)pixels.data[i+3]*=Math.max(0,Math.min(1,(Math.min(pixels.data[i],pixels.data[i+1],pixels.data[i+2])-100)/45));ctx.putImageData(pixels,0,0);}
  return{c,box};
 }
-// Buildings retain their native silhouette and fixed registration.
+// Native perspective is unchanged: clipped paper buildings translate only on screen Y.
+export function buildingFrames(height){
+ const down=`translateY(${height+16}px)`;return[{offset:0,transform:'translateY(0px)'},{offset:.12,transform:'translateY(0px)',easing:'ease-in-out'},{offset:.32,transform:down},{offset:.43,transform:down,easing:'ease-in-out'},{offset:.64,transform:'translateY(0px)'},{offset:1,transform:'translateY(0px)'}];
+}
 export function addBuildings(root,source,background,art,animate){
  art.towers.forEach((points,index)=>{
   const {c,box}=sample(source,points),ctx=c.getContext('2d',{willReadFrequently:true}),pixels=ctx.getImageData(0,0,c.width,c.height),base=background.getContext('2d',{willReadFrequently:true}).getImageData(...box);
   for(let i=0;i<pixels.data.length;i+=4){const delta=Math.max(Math.abs(pixels.data[i]-base.data[i]),Math.abs(pixels.data[i+1]-base.data[i+1]),Math.abs(pixels.data[i+2]-base.data[i+2]));const red=pixels.data[i]>120&&pixels.data[i]>pixels.data[i+1]*1.5&&pixels.data[i]>pixels.data[i+2]*1.5;pixels.data[i+3]*=red?0:Math.max(0,Math.min(1,(delta-16)/12));}ctx.putImageData(pixels,0,0);
   const viewport=document.createElement('div');viewport.className='retry-building-slot';viewport.dataset.building=String(index);place(viewport,box);
   Object.assign(c.style,{width:'100%',height:'100%',display:'block'});viewport.append(c);root.append(viewport);
-  c.dataset.atmosphereKind='building-static';
+  animate(c,'building-withdraw',buildingFrames(box[3]),{duration:10500,delay:-index*10500/art.towers.length,easing:'linear'});
  });
 }
 export function addSkyBands(root,source,bands,animate){
@@ -64,11 +67,11 @@ export function calendarFallFrames(box,drift,index){
 }
 export function addCalendar(root,source,art,animate){
  const field=document.createElement('div');field.className='retry-calendar-flutter';root.append(field);
- const selected=art.calendarPages||[0,1],centres=selected.map(i=>{const [x,y,w,h]=bounds(art.loosePages[i]);return[x+w/2,y+h/2];}),slope=(centres[1][0]-centres[0][0])/Math.max(1,centres[1][1]-centres[0][1]);
+ const selected=art.calendarPages||[0,1,2],centres=selected.map(i=>{const [x,y,w,h]=bounds(art.loosePages[i]);return[x+w/2,y+h/2];}),slope=(centres[1][0]-centres[0][0])/Math.max(1,centres[1][1]-centres[0][1]);
  art.loosePages.forEach((points,i)=>{const {c,box}=nativePaper(source,points);place(c,box);c.style.transformOrigin='50% 40%';field.append(c);
   const order=selected.indexOf(i);if(order<0){c.dataset.atmosphereKind='calendar-static';return;}
   c.dataset.calendarPage=String(i);const fall=HEIGHT-box[1]+box[3]+24;
-  animate(c,'calendar-paper',calendarFallFrames(box,slope*fall*.45,order),{duration:7200,delay:-order*3600,easing:'linear'});
+  animate(c,'calendar-paper',calendarFallFrames(box,slope*fall*.45,order),{duration:7200,delay:-order*7200/selected.length,easing:'linear'});
  });
 }
 
@@ -89,7 +92,7 @@ export function addHair(root,source,art,animate){
 export function addBreathing(root,source,art,animate){
  for(const [i,points]of (art.breathing||[]).entries()){
   const {c,box}=sample(source,points,{cream:true});place(c,box);c.dataset.playerBreath=String(i+1);c.style.transformOrigin='50% 100%';root.append(c);
-  animate(c,'player-breath',[{transform:'scale(1,1)'},{transform:'scale(1.007,1.025)',offset:.48},{transform:'scale(1,1)'}],{duration:3700+i*950,delay:-i*1400,easing:'ease-in-out'});
+  animate(c,'player-breath',[{transform:'scale(1,1)'},{transform:'scale(1.012,1.045)',offset:.48},{transform:'scale(1,1)'}],{duration:3700+i*950,delay:-i*1400,easing:'ease-in-out'});
  }
 }
 export function addBossInk(root,art,animate){
