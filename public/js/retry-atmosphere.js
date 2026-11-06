@@ -1,3 +1,4 @@
+import {addSwordBreathing,addLoadingDots} from './retry-foreground-life.js';
 import {prepareImage} from './image-cache.js';
 import {RETRY_ATMOSPHERE_ART} from './retry-atmosphere-art.js';
 import {addBuildings,addSkyBands,addMessages,addCalendar,addFlags,addHair,addBreathing,addBossInk,keepPaperComponents} from './retry-atmosphere-layers.js';
@@ -74,6 +75,8 @@ export function createRetryAtmosphere(visual){
   const wash=svgElement('polygon',{points:art.safeSky.map(p=>p.join(',')).join(' '),fill:'#f4e4d1'});svg.append(wash);animate(wash,'sky-light',[{offset:0,opacity:0},{offset:.11,opacity:0},{offset:.15,opacity:.06},{offset:.27,opacity:0},{offset:1,opacity:0}],{duration:7900});
   art.cracks.forEach((coords,i)=>{const d=coords.map((v,j)=>j%2?' '+v:(j?' L':'M')+v).join(''),path=svgElement('path',{d,fill:'none',stroke:'#53473e','stroke-width':2-i*.4,'stroke-linejoin':'bevel'});svg.append(path);animate(path,'ground-seam',[{opacity:.03},{opacity:.28,offset:.18},{opacity:.06,offset:.36},{opacity:.03}],{duration:7900+i*1700});});
   const foreground=makeCanvas(),fg=foreground.getContext('2d');fg.drawImage(source,0,0);fg.globalCompositeOperation='destination-in';fg.drawImage(protect,0,0);foreground.className='retry-atmosphere-foreground';root.append(foreground);
+  addSwordBreathing(root,source,art,animate);
+  addLoadingDots(root,source,art,animate);
   addCalendar(root,source,art,animate);
   addFlags(root,source,art,animate);
   addBreathing(root,source,art,animate);

@@ -10,30 +10,14 @@ export function sample(source,points,{cream=false}={}){
  if(cream){const pixels=ctx.getImageData(0,0,w,h);for(let i=0;i<pixels.data.length;i+=4)pixels.data[i+3]*=Math.max(0,Math.min(1,(Math.min(pixels.data[i],pixels.data[i+1],pixels.data[i+2])-100)/45));ctx.putImageData(pixels,0,0);}
  return{c,box};
 }
-// A shared period and evenly distributed phases keep buildings visible forever,
-// rather than allowing independent periods to drift into one empty skyline.
-// Roof-to-foot direction follows the leaning walls in the illustration.
-export function buildingAxis(points){
- const top=Math.min(...points.map(p=>p[1])),bottom=Math.max(...points.map(p=>p[1])),height=bottom-top;
- const middle=list=>{const sorted=list.map(p=>p[0]).sort((a,b)=>a-b);return sorted[Math.floor(sorted.length/2)];};
- const roof=middle(points.filter(p=>p[1]<top+height*.28)),foot=middle(points.filter(p=>p[1]>bottom-height*.28));
- return{x:Math.max(-height*.75,Math.min(height*.75,(foot-roof)/.65)),y:height+16};
-}
-export const withdrawFrames=(height,x=0)=>[
- {offset:0,transform:'translate(0px,0px)'},{offset:.12,transform:'translate(0px,0px)',easing:'cubic-bezier(.45,0,.25,1)'},
- {offset:.32,transform:`translate(${x}px,${height+16}px)`},{offset:.43,transform:`translate(${x}px,${height+16}px)`,easing:'cubic-bezier(.45,0,.25,1)'},
- {offset:.64,transform:'translate(0px,0px)'},{offset:1,transform:'translate(0px,0px)'}
-];
+// Buildings retain their native silhouette and fixed registration.
 export function addBuildings(root,source,background,art,animate){
- const active=art.towers.map((_,i)=>i).filter(i=>!art.stillTowers.includes(i));
  art.towers.forEach((points,index)=>{
   const {c,box}=sample(source,points),ctx=c.getContext('2d',{willReadFrequently:true}),pixels=ctx.getImageData(0,0,c.width,c.height),base=background.getContext('2d',{willReadFrequently:true}).getImageData(...box);
   for(let i=0;i<pixels.data.length;i+=4){const delta=Math.max(Math.abs(pixels.data[i]-base.data[i]),Math.abs(pixels.data[i+1]-base.data[i+1]),Math.abs(pixels.data[i+2]-base.data[i+2]));const red=pixels.data[i]>120&&pixels.data[i]>pixels.data[i+1]*1.5&&pixels.data[i]>pixels.data[i+2]*1.5;pixels.data[i+3]*=red?0:Math.max(0,Math.min(1,(delta-16)/12));}ctx.putImageData(pixels,0,0);
   const viewport=document.createElement('div');viewport.className='retry-building-slot';viewport.dataset.building=String(index);place(viewport,box);
   Object.assign(c.style,{width:'100%',height:'100%',display:'block'});viewport.append(c);root.append(viewport);
-  if(art.stillTowers.includes(index)){c.dataset.atmosphereKind='building-static';return;}
-  const axis=buildingAxis(points);c.dataset.withdrawX=String(axis.x);c.dataset.withdrawY=String(axis.y);
-  animate(c,'building-withdraw',withdrawFrames(box[3],axis.x),{duration:10500,delay:-10500*active.indexOf(index)/active.length,easing:'linear'});
+  c.dataset.atmosphereKind='building-static';
  });
 }
 export function addSkyBands(root,source,bands,animate){
@@ -74,12 +58,20 @@ export function nativePaper(source,points){
  const {c,box}=sample(source,points),ctx=c.getContext('2d',{willReadFrequently:true}),pixels=ctx.getImageData(0,0,c.width,c.height);
  for(let i=0;i<pixels.data.length;i+=4){const r=pixels.data[i],g=pixels.data[i+1],b=pixels.data[i+2];const paper=Math.max(0,Math.min(1,(Math.min(r,g,b)-95)/55));const red=r>g*1.3&&r>b*1.3&&r>125;pixels.data[i+3]*=red?1:paper;}ctx.putImageData(pixels,0,0);return{c,box};
 }
+export function calendarFallFrames(box,drift,index){
+ const fall=HEIGHT-box[1]+box[3]+24,dx=Math.max(25,Math.min(150,drift)),sign=index%2?1:-1;
+ return[{offset:0,opacity:0,transform:'translate(0px,0px) rotate(0deg)'},{offset:.08,opacity:1,transform:'translate(0px,0px) rotate(0deg)'},{offset:.28,opacity:1,transform:`translate(${dx*.25}px,${fall*.14}px) rotate(${sign*4}deg)`},{offset:.55,opacity:1,transform:`translate(${dx*.72}px,${fall*.48}px) rotate(${-sign*5}deg)`},{offset:.86,opacity:1,transform:`translate(${dx}px,${fall*.92}px) rotate(${sign*4}deg)`},{offset:.96,opacity:0,transform:`translate(${dx+5}px,${fall}px) rotate(${-sign*2}deg)`},{offset:1,opacity:0,transform:`translate(${dx+5}px,${fall}px) rotate(${-sign*2}deg)`}];
+}
 export function addCalendar(root,source,art,animate){
  const field=document.createElement('div');field.className='retry-calendar-flutter';root.append(field);
- art.loosePages.forEach((points,i)=>{const {c,box}=nativePaper(source,points);place(c,box);c.style.transformOrigin='50% 40%';field.append(c);const sign=i%2?1:-1;
-  animate(c,'calendar-paper',[{transform:'none'},{offset:.26,transform:`translate(${sign*5}px,-7px) rotate(${sign*2.2}deg) scaleX(.97)`},{offset:.57,transform:`translate(${-sign*4}px,5px) rotate(${-sign*1.8}deg) scaleX(.92)`},{offset:.81,transform:`translate(${sign*3}px,2px) rotate(${sign*.8}deg) scaleX(.98)`},{transform:'none'}],{duration:4600+i*530,delay:-i*870,easing:'ease-in-out'});
+ const selected=art.calendarPages||[0,1],centres=selected.map(i=>{const [x,y,w,h]=bounds(art.loosePages[i]);return[x+w/2,y+h/2];}),slope=(centres[1][0]-centres[0][0])/Math.max(1,centres[1][1]-centres[0][1]);
+ art.loosePages.forEach((points,i)=>{const {c,box}=nativePaper(source,points);place(c,box);c.style.transformOrigin='50% 40%';field.append(c);
+  const order=selected.indexOf(i);if(order<0){c.dataset.atmosphereKind='calendar-static';return;}
+  c.dataset.calendarPage=String(i);const fall=HEIGHT-box[1]+box[3]+24;
+  animate(c,'calendar-paper',calendarFallFrames(box,slope*fall*.45,order),{duration:7200,delay:-order*3600,easing:'linear'});
  });
 }
+
 export function addFlags(root,source,art,animate){
  art.flags.forEach((points,i)=>{const {c,box}=sample(source,points),ctx=c.getContext('2d',{willReadFrequently:true}),pixels=ctx.getImageData(0,0,c.width,c.height);
   for(let k=0;k<pixels.data.length;k+=4)pixels.data[k+3]*=pixels.data[k]>pixels.data[k+1]*1.5&&pixels.data[k]>pixels.data[k+2]*1.5?1:0;ctx.putImageData(pixels,0,0);place(c,box);c.style.transformOrigin='0 50%';root.append(c);
