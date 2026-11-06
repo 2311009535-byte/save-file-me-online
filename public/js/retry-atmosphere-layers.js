@@ -14,13 +14,42 @@ export function sample(source,points,{cream=false}={}){
 export function buildingFrames(height){
  const down=`translateY(${height+16}px)`;return[{offset:0,transform:'translateY(0px)'},{offset:.12,transform:'translateY(0px)',easing:'ease-in-out'},{offset:.32,transform:down},{offset:.43,transform:down,easing:'ease-in-out'},{offset:.64,transform:'translateY(0px)'},{offset:1,transform:'translateY(0px)'}];
 }
+// The stationary lower edge is the foreground roof/cliff, not the bottom of
+// the sprite rectangle. It stays fixed while only the native building moves.
+export function buildingSillY(edge,x){
+ if(x<=edge[0][0])return edge[0][1];
+ for(let i=1;i<edge.length;i++){const [ax,ay]=edge[i-1],[bx,by]=edge[i];if(x<=bx)return ay+(by-ay)*(x-ax)/(bx-ax);}
+ return edge.at(-1)[1];
+}
+export function buildingClip(box,edge){
+ const [x,y,w,h]=box,base=[[x,buildingSillY(edge,x)],...edge.filter(p=>p[0]>x&&p[0]<x+w),[x+w,buildingSillY(edge,x+w)]];
+ return [[x,y],[x+w,y],...base.toReversed()].map(([px,py])=>`${(px-x)/w*100}% ${(py-y)/h*100}%`).join(',');
+}
+export function buildingLayers(art){
+ const order=art.towers.map((points,index)=>({points,index,box:bounds(points),edge:art.towerSills[index],depth:art.towerSills[index].reduce((n,p)=>n+p[1],0)/art.towerSills[index].length})).sort((a,b)=>a.depth-b.depth);
+ for(let i=0;i<order.length;i++){
+  const item=order[i],[x,y,w,h]=item.box;
+  item.front=order.slice(i+1).filter(other=>other.box[0]<x+w&&other.box[0]+other.box[2]>x&&other.box[1]<y+h&&other.box[1]+other.box[3]>y);
+  // A moving front tower supplies its own occlusion. The stationary mask is
+  // only the ground behind it, so no invisible barrier remains at its old roof.
+  const xs=new Set([x,x+w,...item.edge.map(p=>p[0])]);for(const other of item.front)for(const px of [other.box[0],other.box[0]+other.box[2],...other.edge.map(p=>p[0])])if(px>x&&px<x+w){xs.add(px);xs.add(Math.max(x,px-.01));xs.add(Math.min(x+w,px+.01));}
+  item.ground=[...xs].filter(px=>px>=x&&px<=x+w).sort((a,b)=>a-b).map(px=>[px,Math.max(buildingSillY(item.edge,px),...item.front.filter(o=>px>=o.box[0]&&px<=o.box[0]+o.box[2]).map(o=>buildingSillY(o.edge,px)))]);
+  item.slot=[x,y,w,Math.max(h,Math.ceil(Math.max(...item.ground.map(p=>p[1]))-y))];
+ }
+ return order;
+}
 export function addBuildings(root,source,background,art,animate){
- art.towers.forEach((points,index)=>{
+ buildingLayers(art).forEach(({points,index,front,ground,slot})=>{
   const {c,box}=sample(source,points),ctx=c.getContext('2d',{willReadFrequently:true}),pixels=ctx.getImageData(0,0,c.width,c.height),base=background.getContext('2d',{willReadFrequently:true}).getImageData(...box);
-  for(let i=0;i<pixels.data.length;i+=4){const delta=Math.max(Math.abs(pixels.data[i]-base.data[i]),Math.abs(pixels.data[i+1]-base.data[i+1]),Math.abs(pixels.data[i+2]-base.data[i+2]));const red=pixels.data[i]>120&&pixels.data[i]>pixels.data[i+1]*1.5&&pixels.data[i]>pixels.data[i+2]*1.5;pixels.data[i+3]*=red?0:Math.max(0,Math.min(1,(delta-16)/12));}ctx.putImageData(pixels,0,0);
-  const viewport=document.createElement('div');viewport.className='retry-building-slot';viewport.dataset.building=String(index);place(viewport,box);
-  Object.assign(c.style,{width:'100%',height:'100%',display:'block'});viewport.append(c);root.append(viewport);
-  animate(c,'building-withdraw',buildingFrames(box[3]),{duration:10500,delay:-index*10500/art.towers.length,easing:'linear'});
+  const rim=canvas(c.width,c.height),rimCtx=rim.getContext('2d');rimCtx.translate(-box[0],-box[1]);polygon(rimCtx,points);rimCtx.lineWidth=6;rimCtx.stroke();const border=rimCtx.getImageData(0,0,c.width,c.height).data;
+  // Use colour differences only to soften the hand-traced cutout rim. The
+  // interior stays opaque even when its ink matches the wall behind it.
+  for(let i=0;i<pixels.data.length;i+=4){const delta=Math.max(Math.abs(pixels.data[i]-base.data[i]),Math.abs(pixels.data[i+1]-base.data[i+1]),Math.abs(pixels.data[i+2]-base.data[i+2])),edge=border[i+3]/255;const red=pixels.data[i]>120&&pixels.data[i]>pixels.data[i+1]*1.5&&pixels.data[i]>pixels.data[i+2]*1.5;pixels.data[i+3]*=red?0:1-edge+edge*Math.max(0,Math.min(1,(delta-16)/12));}ctx.putImageData(pixels,0,0);
+  // Never carry a piece of a nearer building along with this sprite.
+  ctx.save();ctx.globalCompositeOperation='destination-out';for(const other of front){polygon(ctx,other.points);ctx.fill();}ctx.restore();
+  const viewport=document.createElement('div');viewport.className='retry-building-slot';viewport.dataset.building=String(index);place(viewport,slot);viewport.style.clipPath=`polygon(${buildingClip(slot,ground)})`;viewport.dataset.occlusion='foreground-contour';
+  Object.assign(c.style,{width:'100%',height:box[3]+'px',display:'block'});viewport.append(c);root.append(viewport);
+  animate(c,'building-withdraw',buildingFrames(slot[3]),{duration:10500,delay:-index*10500/art.towers.length,easing:'linear'});
  });
 }
 export function addSkyBands(root,source,bands,animate){

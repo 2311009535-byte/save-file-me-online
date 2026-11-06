@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {calendarFallFrames,buildingFrames} from '../public/js/retry-atmosphere-layers.js';
+import {calendarFallFrames,buildingFrames,buildingSillY,buildingLayers} from '../public/js/retry-atmosphere-layers.js';
 import {swordLift} from '../public/js/retry-foreground-life.js';
 import {RETRY_ATMOSPHERE_ART} from '../public/js/retry-atmosphere-art.js';
 test('All towers withdraw vertically, without changing perspective, and three native sheets fall',()=>{
@@ -12,4 +12,11 @@ test('Calendar pages travel downward and reset only while invisible',()=>{
 });
 test('Sword breathing includes each grip but leaves cards and faces stable',()=>{
  for(const art of Object.values(RETRY_ATMOSPHERE_ART)){const [x,y]=art.sword.grip;assert(swordLift(art,x,y)<-3);for(const point of [[1200,800],[1100,100],[500,540],[100,100]])assert.equal(swordLift(art,...point),0);}
+});
+
+test('Every tower has a foreground roof or cliff edge, separate from its crop rectangle',()=>{
+ for(const art of Object.values(RETRY_ATMOSPHERE_ART)){assert.equal(art.towerSills.length,art.towers.length);for(const edge of art.towerSills){assert(edge.length>=3);assert(edge.every((p,i)=>!i||p[0]>edge[i-1][0]));}}
+ const solo=RETRY_ATMOSPHERE_ART['3_1.png'],duo=RETRY_ATMOSPHERE_ART['3_9.JPG'];
+ assert(buildingSillY(solo.towerSills[1],620)<485);assert(buildingSillY(duo.towerSills[4],690)<445);assert(buildingSillY(duo.towerSills[2],420)>620);
+ const layers=buildingLayers(duo),rear=layers.find(t=>t.index===2),front=layers.find(t=>t.index===1);assert(layers.indexOf(rear)<layers.indexOf(front));assert(rear.slot[3]>200);assert(buildingSillY(rear.ground,370)>640);
 });
