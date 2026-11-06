@@ -34,3 +34,11 @@ body[data-observation]:not([data-observation=none]) footer{visibility:hidden}
 .forest-rest-grass img{position:absolute;bottom:-11vh;left:-7vw;width:27vw;height:43vh;object-fit:contain;image-rendering:pixelated;transform:rotate(24deg);transform-origin:50% 100%}
 .forest-rest-grass img+img{left:auto;right:-7vw;transform:scaleX(-1) rotate(24deg)}
 @media(max-width:700px){.forest-rest-grass img{width:42vw;height:34vh;left:-10vw;bottom:-6vh}.forest-rest-grass img+img{left:auto;right:-10vw}}
+
+/* The opening guide lives at eye level; no duplicate hints remain below. */
+.forest-walk-guide{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(1050px,92vw);z-index:9;pointer-events:none;text-align:center;color:#fff0d5;font:clamp(18px,2.2vw,27px)/1.85 monospace;text-shadow:0 2px 7px #172023,0 0 3px #172023;opacity:1;visibility:visible;transition:opacity .5s ease,visibility 0s}
+.forest-walk-guide.is-dismissed{opacity:0;visibility:hidden;transition:opacity .5s ease,visibility 0s .5s}
+.forest-walk-guide .forest-walk-hint{font:inherit;color:inherit;margin:0}
+html[data-forest-study] footer{display:none}
+@media(pointer:coarse),(max-width:700px){.forest-walk-guide{font-size:clamp(17px,4.5vw,22px);width:88vw;line-height:1.8}.forest-walk-guide .forest-touch-hint{font:inherit}.forest-walk-guide .forest-walk-hint{display:none}}
+@media(prefers-reduced-motion:reduce){.forest-walk-guide,.forest-walk-guide.is-dismissed{transition:none}}

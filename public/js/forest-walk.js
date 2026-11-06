@@ -32,6 +32,9 @@ export function mountForestWalk({canvas,scroller,model,cameraAt}){
  const hud=document.createElement('nav');hud.className='forest-walk-controls';hud.setAttribute('aria-label','Forest exploration controls');
  hud.innerHTML='<div class="forest-look"><button data-look="sky" aria-label="Look at the sky"><span class="forest-full-label">Look at the sky</span><span class="forest-short-label" aria-hidden="true">Sky</span></button><button data-look="path" aria-label="Back to the path"><span class="forest-full-label">Back to the path</span><span class="forest-short-label" aria-hidden="true">Path</span></button></div><p class="forest-walk-hint">Hold W / ↑ to walk · S / ↓ to step back · A / D to sidestep<br>Drag / ← → to look · I / K to look up / down · R to face the path</p><span class="forest-touch-hint">Drag to look around</span><div class="forest-touch-walk" aria-label="Hold to move"><button data-move="left" aria-label="Step left">‹</button><button data-move="forward" aria-label="Walk forward">↑</button><button data-move="back" aria-label="Step backward">↓</button><button data-move="right" aria-label="Step right">›</button></div>';
  document.body.append(hud);
+ const guide=document.createElement('section');guide.className='forest-walk-guide';guide.setAttribute('role','status');guide.setAttribute('aria-label','How to explore the forest');guide.append(hud.querySelector('.forest-walk-hint'),hud.querySelector('.forest-touch-hint'));guide.querySelector('.forest-touch-hint').innerHTML='Hold ↑ / ↓ to walk · ‹ / › to sidestep<br>Drag to look around · Sky / Path to change your view';document.body.append(guide);
+ const dismissGuide=()=>{guide.classList.add('is-dismissed');guide.setAttribute('aria-hidden','true');};
+
  const moment=document.createElement('aside');moment.className='forest-observation';moment.hidden=true;moment.setAttribute('aria-live','polite');
  moment.innerHTML='<p></p><button aria-label="Return to the path">Continue · Esc</button>';document.body.append(moment);
  const grass=document.createElement('div');grass.className='forest-rest-grass';grass.hidden=true;grass.setAttribute('aria-hidden','true');grass.innerHTML='<img src="/assets/escape/parallax/flowers/grass-sparse.png" alt=""><img src="/assets/escape/parallax/flowers/grass-sparse.png" alt="">';document.body.append(grass);
@@ -58,13 +61,14 @@ export function mountForestWalk({canvas,scroller,model,cameraAt}){
   on(button,'pointerup',release);on(button,'pointercancel',release);on(button,'lostpointercapture',release);
  }
  canvas.tabIndex=0;canvas.setAttribute('aria-label','Sunset forest. Hold W or Up to walk; S or Down to step back. Drag to look around. R faces the path.');
- return {view:state,reset(){clear();observations.reset();state.focus=null;state.gaitMix=0;state.gaitPhase=0;cued=null;state.sky=0;moment.hidden=true;grass.hidden=true;state.progress=model.progress=0;state.offset=0;choose('path');},update(dt){
+ return {view:state,reset(){clear();observations.reset();state.focus=null;state.gaitMix=0;state.gaitPhase=0;cued=null;state.sky=0;moment.hidden=true;grass.hidden=true;state.progress=model.progress=0;state.offset=0;guide.classList.remove('is-dismissed');guide.removeAttribute('aria-hidden');choose('path');},update(dt){
   if(disposed)return;
   const before=JSON.stringify(state),paused=document.hidden||!document.querySelector('#original-view').hidden||document.body.dataset.door==='opening';
   if(paused){clear();return false;}
   const down=(...codes)=>codes.some(c=>keys.has(c));
-  const previous=state.progress;
+  const previous=state.progress,previousOffset=state.offset;
   if(!observations.active&&!targetSky&&state.sky<.02)advanceWalk(state,Number(down('KeyW','ArrowUp')||held.has('forward'))-Number(down('KeyS','ArrowDown')||held.has('back')),Number(down('KeyD')||held.has('right'))-Number(down('KeyA')||held.has('left')),dt);
+  if(state.progress!==previous||state.offset!==previousOffset)dismissGuide();
   const beat=observations.update(previous,state.progress,dt,reduced.matches);
   state.progress=beat.progress;state.focus=beat.focus;
   const walking=!beat.focus&&Math.abs(state.progress-previous)>1e-8&&!reduced.matches;state.gaitMix+=(Number(walking)-state.gaitMix)*(1-Math.exp(-dt*7));if(walking)state.gaitPhase+=Math.abs(state.progress-previous)*ROUTE_LENGTH*.045;
@@ -77,5 +81,5 @@ export function mountForestWalk({canvas,scroller,model,cameraAt}){
   const blend=reduced.matches?1:1-Math.exp(-dt*11);
   state.sky+=(targetSky-state.sky)*blend;state.yaw+=(targetYaw-state.yaw)*blend;state.pitch+=(targetPitch-state.pitch)*blend;
   model.progress=state.progress;return before!==JSON.stringify(state);
- },dispose(){disposed=true;clear();listeners.forEach(remove=>remove());observations.reset();moment.remove();grass.remove();hud.remove();canvas.removeAttribute('tabindex');}};
+ },dispose(){disposed=true;clear();listeners.forEach(remove=>remove());observations.reset();moment.remove();grass.remove();guide.remove();hud.remove();canvas.removeAttribute('tabindex');}};
 }

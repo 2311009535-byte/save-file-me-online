@@ -20,7 +20,7 @@ export function mountEscapeParallax({host,complete}){
   if(e.data.type==='forest-audio-unlock')gameAudio.unlock();
   if(e.data.type==='forest-audio-position'&&ready)gameAudio.forestPosition(Number(e.data.z));
   if(e.data.type==='forest-error'){root.dataset.error='assets';}
-  if(e.data.type==='forest-complete'&&ready&&!finished){finished=true;complete();}
+  if(e.data.type==='forest-complete'&&ready&&!finished){finished=true;const cover=document.createElement('div');cover.className='forest-return-flash';cover.setAttribute('aria-hidden','true');Object.assign(cover.style,{position:'fixed',inset:0,zIndex:10040,background:'#fff',pointerEvents:'none'});document.body.append(cover);try{complete();}catch(error){cover.remove();throw error;}requestAnimationFrame(()=>{const fade=cover.animate([{opacity:1},{opacity:0}],{duration:matchMedia('(prefers-reduced-motion:reduce)').matches?120:700,easing:'ease-out',fill:'forwards'});fade.finished.catch(()=>{}).finally(()=>cover.remove());});}
  }
  window.addEventListener('message',message);
  return()=>{if(!alive)return;alive=false;observer.disconnect();window.removeEventListener('resize',resize);window.removeEventListener('message',message);frame.src='about:blank';root.remove();if(gameAudio.snapshot().scene==='forest')gameAudio.setScene('chapter2');};

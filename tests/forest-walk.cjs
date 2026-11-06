@@ -49,8 +49,8 @@ const base=process.env.TEST_BASE_URL||'http://127.0.0.1:3005';
  const projected=await frame.evaluate(async()=>{const {projectForestPoint}=await import('/js/forest-walk.js');const d=document.body.dataset;const c={x:+d.cameraX,y:105,z:+d.cameraZ,yaw:+d.cameraYaw,pitch:+d.cameraPitch};const p=projectForestPoint(c,-680,80,6500),r=document.querySelector('canvas').getBoundingClientRect();return{x:r.left+p.x*r.width/1672,y:r.top+p.y*r.width/1672};});
  await frame.waitForFunction(({x,y})=>document.elementFromPoint(x,y)?.id==='forest-door-enter',projected);
  await page.screenshot({path:'/tmp/forest-walk-game-door.png'});
- await frame.locator('#forest-door-enter').click();await page.waitForFunction(()=>JSON.parse(localStorage.getItem('save-file-me:v1')).completed>=2,null,{timeout:20000});
- assert.equal(await page.locator('.escape-parallax').count(),0,'Completion disposes the forest iframe');
+ await page.emulateMedia({reducedMotion:'no-preference'});const beforeDoor=await value('cameraZ');await frame.locator('#forest-door-enter').click();await frame.waitForFunction(z=>Number(document.body.dataset.cameraZ)>z+40,beforeDoor);await page.screenshot({path:'/tmp/forest-door-push-transition.png'});await page.waitForFunction(()=>JSON.parse(localStorage.getItem('save-file-me:v1')).completed>=2,null,{timeout:20000});
+ assert.equal(await page.locator('.escape-parallax').count(),0,'Completion disposes the forest iframe');await page.waitForSelector('.forest-return-flash',{state:'detached'});
  assert.equal(await page.locator('.forest-walk-controls').count(),0);// Ordinary motion eases the look; restarting and the reference overlay do not auto-walk.
  await page.emulateMedia({reducedMotion:'no-preference'});await page.goto(base+'/forest-bridge-study.html');await page.waitForFunction(()=>document.body.dataset.ready==='true',null,{timeout:60000});
  await page.locator('[data-look=sky]').click();await page.waitForFunction(()=>Number(document.body.dataset.cameraPitch)>.21);assert.equal(await page.evaluate(()=>Number(document.body.dataset.cameraZ)),300);
