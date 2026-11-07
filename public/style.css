@@ -414,3 +414,5 @@
 .retry-diary-daylight{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}.retry-diary-daylight>canvas{position:absolute;inset:0}.retry-diary-cloud{mix-blend-mode:normal}.retry-diary-sun{mix-blend-mode:soft-light}
 
 .retry-diary-daylight>canvas{width:100%;height:100%}.retry-victory-weather{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+
+.retry-scene[data-retry-book=closed] .retry-diary-glow path{stroke:#e1cda8;stroke-width:2.5;filter:none;animation:retry-closed-hint 3.8s ease-in-out infinite}@keyframes retry-closed-hint{0%,100%{opacity:.07}50%{opacity:.24}}@media(prefers-reduced-motion:reduce){.retry-scene[data-retry-book=closed] .retry-diary-glow path{animation:none;opacity:.15}}

@@ -42,5 +42,5 @@ export function createVideoTransitions(transitions=videoTransitions,overlayClass
    video.play().catch(failed);
   });
  }
- return {play,cancel,layer:()=>overlay,dispose(){disposed=true;cancel();prepared.forEach(({video})=>{video.pause();video.removeAttribute('src');video.load();});prepared.clear();}};
+ return {play,cancel,prepare(view,back=false){return preload(transitions[view][back?'return':'enter'])?.ready||Promise.resolve(false);},layer:()=>overlay,dispose(){disposed=true;cancel();prepared.forEach(({video})=>{video.pause();video.removeAttribute('src');video.load();});prepared.clear();}};
 }

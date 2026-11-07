@@ -1,9 +1,8 @@
-import {createClosedBook} from './retry-closed-book.js';
+import {createClosedBook} from './retry-closed-book.js?v=closed4';
 import {victoryWeather} from './retry-victory-weather.js';
 import {createRetryCardMotion} from './retry-card-motion.js';
 import {createRetryAtmosphere,retryAtmosphereAssets} from './retry-atmosphere.js';
 import {createDiaryTurn} from './retry-page-turn.js?v=diary-paper3';
-import {createSwitchBook} from './retry-switch-book.js?v=closed3';
 import {gameAudio} from './game-audio.js';
 import {createChapterLoading} from './chapter-loading.js';
 import {createChapterIntro} from './chapter-intro.js';
@@ -11,8 +10,8 @@ import {createVictoryFrame} from './retry-victory-frame.js?v=duo8';
 import {deskDiary,warningPaper,diaryDrag,bossPaper} from './retry-paper.js?v=diary2';
 import {prepareImage,warmImages} from './image-cache.js';
 import {RETRY_KEY,normalizeRetry,settleRetryRound,retryRound,joinPartner,resetRetry} from './retry-state.js';
-import {createRetryVideo} from './retry-video.js';
-import {createVideoTransitions} from './wonder-videos.js';
+import {createRetryVideo} from './retry-video.js?v=closed4';
+import {createVideoTransitions} from './wonder-videos.js?v=diary-direct4';
 import {createRetryActions} from './retry-actions.js?v=weather3';
 export {resetRetry};
 const files=['3_1.png','3_2.png','3_3.png','3_4.png','3_5.png','3_6.png','3_7.JPG','3_8.png','3_9.JPG','3_10.png','3_11.png','3_12.png','3_13.jpg','3_14.png','3_15.png','3_16.PNG','3_17.PNG','3_18.PNG'];
@@ -23,16 +22,16 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
  const partnerVideo=createVideoTransitions({partner:{enter:{src:'/assets/retry/videos/player2-join.mp4',available:true},return:{available:false}}},'retry-partner-overlay');
  const diaryVideo=createVideoTransitions({diary:{enter:{src:'/assets/retry/videos/diary-enter.mp4',available:true},return:{available:false}}},'retry-diary-video');
  let defeatFrame=null;
- let alive=true,busy=true,generation=0,viewGeneration=0,loadingFrame=0,diaryTurn=null,switchBook=null,closedBook=null;const timers=new Map(),animations=new Set(),cardMotions=new Map();
+ let alive=true,busy=true,generation=0,viewGeneration=0,loadingFrame=0,diaryTurn=null,closedBook=null;const timers=new Map(),animations=new Set(),cardMotions=new Map();
  const persist=()=>{gameAudio.setRetry({joined:data.joined,view:data.view,won:data.won});try{localStorage.setItem(RETRY_KEY,JSON.stringify(data));}catch{}$('retry-progress').textContent=`第三章：失败 ${data.failures}/3 · player2 ${data.joined?'已加入':'未加入'} · ${data.won?'已获胜':'未获胜'} · 日记 ${data.page+1}/4`;stage.dataset.retryFailures=String(data.failures);stage.dataset.retryJoined=String(data.joined);stage.dataset.retryWon=String(data.won);};
  function pause(ms){return new Promise(resolve=>{const timer=setTimeout(()=>{timers.delete(timer);resolve(alive);},ms);timers.set(timer,resolve);});}
  const actions=createRetryActions({visual,show,onCue:name=>name==='stopCombat'?gameAudio.stopCombat():gameAudio.effect(name),hold:ms=>animate(visual.querySelector('.scene-image'),[{opacity:1},{opacity:1}],{duration:ms})});
- function cancel(){defeatFrame=null;cardMotions.forEach(m=>m.dispose());cardMotions.clear();atmosphere.dispose();loader.dispose();intro.dispose();diaryTurn?.dispose();diaryTurn=null;switchBook?.dispose();switchBook=null;closedBook?.dispose();closedBook=null;generation++;actions.dispose();victoryFrame.dispose();partnerVideo.dispose();diaryVideo.dispose();for(const [timer,resolve] of timers){clearTimeout(timer);resolve(false);}timers.clear();cancelAnimationFrame(loadingFrame);animations.forEach(a=>a.cancel());animations.clear();videos.dispose();}
+ function cancel(){defeatFrame=null;cardMotions.forEach(m=>m.dispose());cardMotions.clear();atmosphere.dispose();loader.dispose();intro.dispose();diaryTurn?.dispose();diaryTurn=null;closedBook?.dispose();closedBook=null;generation++;actions.dispose();victoryFrame.dispose();partnerVideo.dispose();diaryVideo.dispose();for(const [timer,resolve] of timers){clearTimeout(timer);resolve(false);}timers.clear();cancelAnimationFrame(loadingFrame);animations.forEach(a=>a.cancel());animations.clear();videos.dispose();}
  async function animate(element,frames,options){if(!alive)return false;const a=element.animate(frames,options);animations.add(a);try{await a.finished;return alive;}catch{return false;}finally{animations.delete(a);}}
  function lock(){busy=true;$('hotspots').querySelectorAll('button').forEach(b=>b.disabled=true);visual.querySelectorAll('.retry-card-art').forEach(c=>c.classList.remove('is-selected'));}
  function corner(){const diary=data.view==='diary';$('back').textContent=diary?'BACK':'SAVE ROOM';$('back').setAttribute('aria-label',diary?'BACK':'SAVE ROOM');$('back').hidden=!diary;$('back').onclick=()=>{if(diary&&!busy){gameAudio.effect('page');data.view='switch';persist();draw();}};}
  function button(id,rect,label,callback,disabled=false){hotspot(id,rect,label,disabled,()=>{if(!alive||busy||disabled)return;callback();});}
- async function show(f){atmosphere.clear();const version=++viewGeneration;if(f==='3_14.png'){const frame=await videos.finalFrame();if(!alive||version!==viewGeneration)return false;if(!frame){overlayText('桌面动画未能加载，请重新进入第三章。');return false;}imageScene('retry/'+f,f,1672,941);const im=visual.querySelector('.scene-image');im.src=frame;await im.decode();if(!alive||version!==viewGeneration)return false;stage.dataset.retryFrame='switch-blank';return true;}if(f==='3_12.png'){const frame=await victoryFrame.get(visual);if(!alive||version!==viewGeneration)return false;if(frame){imageScene('retry/'+f,f,1672,941);visual.replaceChildren(frame);stage.dataset.retryFrame=f;return true;}}await prepareImage(url(f));if(!alive||version!==viewGeneration)return false;imageScene('retry/'+f,f,1672,941);stage.dataset.retryFrame=f;await atmosphere.show(f);return alive&&version===viewGeneration;}
+ async function show(f){atmosphere.clear();const version=++viewGeneration;if(f==='3_14.png'){const frame=await videos.finalFrame();if(!alive||version!==viewGeneration)return false;if(!frame){overlayText('桌面动画未能加载，请重新进入第三章。');return false;}imageScene('retry/'+f,f,1672,941);const im=visual.querySelector('.scene-image');im.src=frame;await im.decode();if(!alive||version!==viewGeneration)return false;stage.dataset.retryFrame='switch-closed';return true;}if(f==='3_12.png'){const frame=await victoryFrame.get(visual);if(!alive||version!==viewGeneration)return false;if(frame){imageScene('retry/'+f,f,1672,941);visual.replaceChildren(frame);stage.dataset.retryFrame=f;return true;}}await prepareImage(url(f));if(!alive||version!==viewGeneration)return false;imageScene('retry/'+f,f,1672,941);stage.dataset.retryFrame=f;await atmosphere.show(f);return alive&&version===viewGeneration;}
  function overlayText(text,cls='retry-action'){const div=document.createElement('div');div.className=cls;div.textContent=text;visual.append(div);return div;}
  function drawHP(value){const bar=document.createElement('div');bar.className='retry-hp';bar.style.setProperty('--hp',value);bar.append(document.createElement('i'));visual.append(bar);return bar;}
  function patchAttempt(switchScreen=false){// Only the printed attempt label is patched; originals stay intact.
@@ -40,7 +39,7 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
  }
  function retryButton(rect,id,callback){button(id,rect,'RETRY',callback);const b=$(id);b.classList.add('retry-paper-button');b.textContent='RETRY';}
  async function draw(){
- if(!alive)return;cardMotions.forEach(m=>m.dispose());cardMotions.clear();diaryTurn?.dispose();diaryTurn=null;switchBook?.dispose();switchBook=null;closedBook?.dispose();closedBook=null;delete stage.dataset.retryBook;lock();const version=++generation;stage.dataset.retryView=data.view;delete stage.dataset.retryAction;delete stage.dataset.retryActionEnded;$('hotspots').replaceChildren();corner();persist();
+ if(!alive)return;cardMotions.forEach(m=>m.dispose());cardMotions.clear();diaryTurn?.dispose();diaryTurn=null;closedBook?.dispose();closedBook=null;delete stage.dataset.retryBook;lock();const version=++generation;stage.dataset.retryView=data.view;delete stage.dataset.retryAction;delete stage.dataset.retryActionEnded;$('hotspots').replaceChildren();corner();persist();
  let f=data.view==='battle'?(data.joined?'3_9.JPG':'3_1.png'):data.view==='defeat'?'3_6.png':data.view==='discovered'?'3_6.png':data.view==='invite'?'3_8.png':data.view==='victory'?'3_12.png':data.view==='switch'?'3_14.png':['3_15.png','3_16.PNG','3_17.PNG','3_18.PNG'][data.page];
  const nativeDefeat=Boolean(defeatFrame&&['defeat','discovered'].includes(data.view));
  if(nativeDefeat){
@@ -82,9 +81,9 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
  else if(data.view==='victory'){button('retry-continue',[40.5,48.5,16.5,6.5],'CONTINUE',()=>toSwitch());}
  else if(data.view==='switch'){
   patchAttempt(true);
-  switchBook=createSwitchBook(visual);closedBook=await createClosedBook(visual);if(!alive||version!==generation){closedBook?.dispose();closedBook=null;return;}stage.dataset.retryBook='closed';
-  button('retry-diary',[51,46,32,46],'OPEN DIARY',()=>openDiary());
-  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 1672 941');svg.classList.add('retry-diary-glow');svg.innerHTML='<path d="M1026 446 L1360 492 L1285 840 L868 768 Z"/>';visual.append(svg);
+  closedBook=await createClosedBook(visual);if(!alive||version!==generation){closedBook?.dispose();closedBook=null;return;}stage.dataset.retryBook='closed';diaryVideo.prepare('diary',false);
+  button('retry-diary',[49,45,31,42],'OPEN DIARY',()=>openDiary());$('retry-diary').style.clipPath='polygon(29% 0,99% 11%,90% 96%,0 82%)';
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 1672 941');svg.classList.add('retry-diary-glow');svg.innerHTML='<path d="M979 443 L1292 470 L1243 787 L835 732 Z"/>';visual.append(svg);
  }else if(data.view==='diary'){diaryTurn=createDiaryTurn(visual,delta=>{if(busy||!alive)return;data.page+=delta;persist();draw();},data.page);
   button('retry-prev',[5.5,89,10,6],'PREV',()=>{gameAudio.effect('page');diaryTurn?.turn(-1);},data.page===0);
   button('retry-next',[84,89,10,6],'NEXT',()=>{gameAudio.effect('page');diaryTurn?.turn(1);},data.page===3);
@@ -101,9 +100,8 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
  async function openDiary(){
   if(busy||!alive||data.view!=='switch')return;gameAudio.effect('page');
   lock();const token=++generation;stage.dataset.retryView='diary-transition';$('hotspots').replaceChildren();visual.querySelector('.retry-diary-glow')?.remove();
-  stage.dataset.retryBook='opening';if(!closedBook||!await closedBook.open()||!alive||token!==generation)return;closedBook.dispose();closedBook=null;
-  stage.dataset.retryBook='turning';if(!switchBook||!await switchBook.play()||!alive||token!==generation)return;switchBook.dispose();switchBook=null;
-  const result=await diaryVideo.play('diary',false,stage);
+  stage.dataset.retryBook='opening';if(!closedBook||!await closedBook.open()||!alive||token!==generation)return;closedBook.dispose();closedBook=null;stage.dataset.retryFrame='switch-open';
+  const result=await diaryVideo.play('diary',false,stage,{effect:(_video,layer)=>{const fade=layer.animate([{opacity:0},{opacity:1}],{duration:350,fill:'forwards'});return()=>fade.cancel();}});
   if(!alive||token!==generation||result==='cancelled')return;
   if(result==='ended'){data.view='diary';data.page=1;persist();}
   await draw();diaryVideo.cancel();
@@ -175,7 +173,7 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
  stage.classList.add('retry-scene');stage.dataset.retryView='loading';persist();corner();
  if(!alive)return;imageScene('retry/3_1.png','Retry loading',1672,941);
  const critical=[...files];
- if(!await loader.play(3,[...critical.map(url),...retryAtmosphereAssets,'/assets/retry/ambient/defeat-blank.png','/assets/retry/ambient/diary-closed.png'])||!alive)return;
+ if(!await loader.play(3,[...critical.map(url),...retryAtmosphereAssets,'/assets/retry/ambient/defeat-blank.png','/assets/retry/ambient/diary-closed.png','/assets/retry/ambient/diary-open-base.jpg'])||!alive)return;
  await intro.play(3,()=>draw());
  }
  function suspend(){cancel();}window.addEventListener('pagehide',suspend);if(data.won)onVictory();load();
