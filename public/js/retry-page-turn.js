@@ -1,4 +1,4 @@
-import {createDiaryLight} from './retry-diary-light.js';
+import {createDiaryLight} from './retry-diary-light.js?v=cloud2';
 import {prepareImage} from './image-cache.js';
 const files=['3_15.png','3_16.PNG','3_17.PNG','3_18.PNG'];
 // A sheet bends around the spine. Its front and back use the supplied page art.

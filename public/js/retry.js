@@ -1,6 +1,6 @@
 import {createRetryCardMotion} from './retry-card-motion.js';
 import {createRetryAtmosphere,retryAtmosphereAssets} from './retry-atmosphere.js';
-import {createDiaryTurn} from './retry-page-turn.js?v=diary3';
+import {createDiaryTurn} from './retry-page-turn.js?v=diary-cloud2';
 import {createSwitchBook} from './retry-switch-book.js';
 import {gameAudio} from './game-audio.js';
 import {createChapterLoading} from './chapter-loading.js';
