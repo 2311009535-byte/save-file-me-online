@@ -2,6 +2,8 @@
 export const forestMusicUrl='/assets/audio/forest-music.m4a';
 const nature='/assets/audio/forest-environment.m4a';
 export const recordedSounds={
+ phoneVibration:{url:'/assets/audio/escape-phone-vibration.m4a'},
+ carPass:{url:'/assets/audio/escape-car-pass.m4a'},
  pencil:{url:'/assets/audio/pencil.m4a',start:.6,end:7.8,seam:.08},
  wind:{url:nature,start:.4,end:2.5,seam:.2},
  grass:{url:nature,start:3.2,end:5.2,seam:.2},
@@ -12,8 +14,9 @@ export const chapterMusic={
  'chapter1':{url:'/assets/audio/chapter1.m4a',gain:.48473},
  'chapter1-game':{url:'/assets/audio/chapter1-game.m4a',start:1.87,gain:.380189},
  'chapter2':{url:'/assets/audio/chapter2.m4a',gain:.474242},
- 'retry-alone':{url:'/assets/audio/retry-alone.m4a',gain:.367705},
- 'retry-together':{url:'/assets/audio/retry-together.m4a',start:2.55,gain:.460257},
+ 'retry-alone':{url:'/assets/audio/retry-before-v3.m4a',gain:.32},
+ 'retry-together':{url:'/assets/audio/retry-before-v3.m4a',gain:.32},
+ 'retry-diary':{url:'/assets/audio/retry-after-v3.m4a',gain:.34},
  'chapter4':{url:'/assets/audio/chapter4.m4a',gain:.257929}
 };
 

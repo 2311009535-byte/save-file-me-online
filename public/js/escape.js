@@ -104,11 +104,11 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
   card.onpointercancel=()=>{gesture=null;phoneGesture=false;set(openMessages[index]?-reveal:0);schedulePhoneHints();};card.onlostpointercapture=()=>{if(gesture){gesture=null;phoneGesture=false;set(openMessages[index]?-reveal:0);schedulePhoneHints();}};
  }
  function roomInputLocked(locked){$('visual').querySelectorAll('.escape-paper').forEach(p=>p.disabled=locked||!floorUnlocked());}
- function cancelMotion(){hints.hide();computerFlow.cancel();story.clear();roomInputLocked(false);videos.cancel();motionToken++;motions.forEach(a=>a.cancel());motions.clear();overlay?.remove();overlay=null;$('visual').style.transformOrigin='';delete $('stage').dataset.motion;}
+ function cancelMotion(){gameAudio.stopEscapeEffects();hints.hide();computerFlow.cancel();story.clear();roomInputLocked(false);videos.cancel();motionToken++;motions.forEach(a=>a.cancel());motions.clear();overlay?.remove();overlay=null;$('visual').style.transformOrigin='';delete $('stage').dataset.motion;}
  async function animate(el,frames,token){const a=el.animate(frames,{duration:950,easing:'cubic-bezier(.45,0,.2,1)',fill:'forwards'});motions.add(a);try{await a.finished;return alive&&token===motionToken;}catch{return false;}finally{a.cancel();motions.delete(a);}}
  async function transition(view,back=false){
   if(busy||!alive||(!back&&view==='phone'&&!data.exam)||(!back&&view==='computer'&&!ready()))return;
-  story.clear();hints.hide();
+  gameAudio.stopEscapeEffects();story.clear();hints.hide();
   if(!back&&['exam','phone'].includes(view))$('back').hidden=true;
   drawEpoch++;busy=true;roomInputLocked(true);stopDragTutorial();stopPhoneHints();examInk?.cancel();cancelDrag();const token=++motionToken;$('stage').dataset.motion=back?'return':'push';
   const file=back?'room-clean.png':view==='phone'?'phone-clean.jpg':view==='exam'?'exam.png':computerEndingAsset.split('/assets/escape/')[1];
@@ -132,7 +132,7 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
   old.remove();overlay=null;incoming.style.transformOrigin='';busy=false;roomInputLocked(false);delete $('stage').dataset.motion;persist();if(data.view==='phone')hintLastActivity=performance.now();schedulePhoneHints();scheduleDragTutorial();
  }
  async function draw(animatePressure=false){
-  const version=++drawEpoch;disposeFatigue?.();disposeFatigue=null;disposeWindowTraffic?.();disposeWindowTraffic=null;disposeWallPressure?.();disposeWallPressure=null;$('visual').style.filter='';
+  gameAudio.stopEscapeEffects();const version=++drawEpoch;disposeFatigue?.();disposeFatigue=null;disposeWindowTraffic?.();disposeWindowTraffic=null;disposeWallPressure?.();disposeWallPressure=null;$('visual').style.filter='';
   const wasRoom=$('stage').dataset.escapeView==='room';if(!wasRoom)roomDragStarted=false;stopDragTutorial();
   disposePhoneList?.();disposePhoneList=null;phoneSettled=false;stopPhoneHints();phoneGesture=false;examInk?.dispose();examInk=null;gameController?.dispose();gameController=null;cancelDrag();$('hotspots').replaceChildren();$('stage').classList.add('escape-scene');$('stage').dataset.escapeView=data.view;
   updateProgress();
@@ -145,13 +145,13 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
    if(data.exam)mountCrumpledExam($('visual'));
    const count=data.papers.filter(Boolean).length,darkness=ROOM_DARKNESS;
    disposeFatigue=mountFatigue($('visual'),count,{animate:animatePressure,canAnimate:()=>alive&&!busy&&!$('stage').dataset.motion});
-   const phonePosition={left:'28.85%',top:'33.24%',width:'11.51%',height:'18.89%'};const phone=img('phone-item.png','escape-phone-item');Object.assign(phone.style,phonePosition);phone.classList.toggle('is-notifying',data.exam&&!data.messages.every(Boolean));
+   const phonePosition={left:'28.85%',top:'33.24%',width:'11.51%',height:'18.89%'};const phone=img('phone-item.png','escape-phone-item');Object.assign(phone.style,phonePosition);phone.classList.toggle('is-notifying',data.exam&&!data.messages.every(Boolean));const buzz=()=>{if(alive&&!busy&&data.view==='room'&&!$('stage').dataset.motion)gameAudio.effect('phoneVibration');};phone.addEventListener('animationstart',buzz);phone.addEventListener('animationiteration',buzz);
    const dim=add('div','escape-room-dim');dim.setAttribute('aria-hidden','true');dim.style.opacity=String(darkness);
    if(data.exam&&!data.messages.every(Boolean))mist('phone-item.png',$('visual'),phonePosition,-.35);
    hotspot('escape-phone',[28.85,33.24,11.51,18.89],'PHONE',!data.exam,()=>transition('phone'));
    hotspot('escape-exam',[41.5,25,5.5,7],'EXAM',false,()=>transition('exam'));
    $('stage').dataset.escapePaperCount=String(count);
-   disposeWindowTraffic=mountWindowTraffic($('visual'),{canPlay:()=>alive&&!busy&&!$('stage').dataset.motion});
+   disposeWindowTraffic=mountWindowTraffic($('visual'),{canPlay:()=>alive&&!busy&&!$('stage').dataset.motion,onPass:({phase})=>gameAudio.effect('carPass',{offset:phase*4})});
    disposeWallPressure=mountWallPressure($('visual'),count,{animate:animatePressure,safePapers:floorItems.filter((_,i)=>!data.papers[i])});
    // Wall ink and the child’s tired posture accumulate with received homework.
    if(!data.exam){const light=add('div','escape-exam-mist');light.innerHTML='<svg viewBox="0 0 100 100" preserveAspectRatio="none"><polygon filter="url(#escape-exam-mist)" points="42.2,28.8 44.4,26.2 46.5,28.2 44.1,30.6"/></svg>';}
@@ -186,7 +186,7 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
   syncStory();
  }
  const wheel=e=>{if(data.view!=='game'||busy||!$('dev-panel').hidden)return;e.preventDefault();gameController?.handleInput({kind:'wheel',point:scenePoint(e.clientX,e.clientY),deltaY:e.deltaY,deltaMode:e.deltaMode,direction:e.deltaY>0?'forward':e.deltaY<0?'backward':'none'});};
- const hide=()=>{disposeFatigue?.();disposeFatigue=null;disposeWindowTraffic?.();disposeWindowTraffic=null;disposeWallPressure?.();disposeWallPressure=null;story.dispose();hints.dispose();disposePhoneList?.();disposePhoneList=null;stopDragTutorial();stopPhoneHints();examInk?.dispose();examInk=null;gameController?.dispose();gameController=null;cancelDrag();cancelMotion();cancelAnimationFrame(loadingFrame);loadingFrame=0;loadingMotion?.dispose();loadingMotion=null;clearTimeout(timer);};window.addEventListener('pagehide',hide);$('stage').addEventListener('wheel',wheel,{passive:false});
+ const hide=()=>{gameAudio.stopEscapeEffects();disposeFatigue?.();disposeFatigue=null;disposeWindowTraffic?.();disposeWindowTraffic=null;disposeWallPressure?.();disposeWallPressure=null;story.dispose();hints.dispose();disposePhoneList?.();disposePhoneList=null;stopDragTutorial();stopPhoneHints();examInk?.dispose();examInk=null;gameController?.dispose();gameController=null;cancelDrag();cancelMotion();cancelAnimationFrame(loadingFrame);loadingFrame=0;loadingMotion?.dispose();loadingMotion=null;clearTimeout(timer);};window.addEventListener('pagehide',hide);$('stage').addEventListener('wheel',wheel,{passive:false});
  async function loading(){
   loadingMotion?.dispose();loadingMotion=null;
   const token=++loadToken;$('stage').classList.add('escape-scene');$('stage').dataset.escapeView='loading';$('hotspots').replaceChildren();

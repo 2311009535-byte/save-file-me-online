@@ -1,0 +1,6 @@
+{
+  "retry-before-v3.m4a": {"archive":"第三章新增bgm.zip","source":"第三章胜利前bgm.mp4","use":"All chapter-three scenes before victory, including player2; full original audio stream"},
+  "retry-after-v3.m4a": {"archive":"第三章新增bgm.zip","source":"第三章胜利加回归现实后bgm.mp4","use":"Victory, return to the desk, and diary; full original audio stream"},
+  "escape-phone-vibration.m4a": {"archive":"第二章手机震动.zip","source":"c7b2ecbddf6c6ce872e68c7f09e30ef9.mp4","sourceStartSeconds":1.17,"durationSeconds":0.48,"use":"One vibration burst per existing phone shake cycle; short edge fades"},
+  "escape-car-pass.m4a": {"archive":"第二章汽车驶过.zip","source":"f500f18e14fa1753f12e56ccb52b77c2.mp4","sourceStartSeconds":27.5,"durationSeconds":4,"use":"One passing-car section per four-second wall-light sweep; approach/departure fades"}
+}

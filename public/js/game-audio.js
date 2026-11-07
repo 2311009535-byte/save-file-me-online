@@ -8,11 +8,11 @@ export function createGameAudio(){
  let forestFile=null,forestSource=null,customForestPlaying=false,forestBuffer=null,forestOffset=0,forestStarted=0,forestRequest=0;
  let trackEpoch=0,forestOverride=forestMusicUrl;
  let wonderGame=false;
- const recordedKey=name=>name==='chapter1'&&wonderGame?'chapter1-game':name==='retry-diary'?'retry-together':name;
+ const recordedKey=name=>name==='chapter1'&&wonderGame?'chapter1-game':name==='retry-together'?'retry-alone':name;
  const videoRoutes=new Map();
  const decoded=new Map();
  const samples=new Map(),sampleRequests=new Set(),combatSources=new Set();
- const typingSources=new Set();
+ const typingSources=new Set(),escapeEffectSources=new Set();
  const tracks=new Set(),sources=new Set(),cooldowns=new Map(),stats={effects:{},transitions:0};
  const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(prefs));}catch{}};
  const ramp=(param,value,seconds=.25)=>{if(!ctx)return;param.cancelScheduledValues(ctx.currentTime);param.setTargetAtTime(value,ctx.currentTime,Math.max(.01,seconds/3));};
@@ -104,7 +104,7 @@ export function createGameAudio(){
   });
  }
  function stopTrack(tr){for(const s of tr.voices)try{s.stop();}catch{}tr.bus.disconnect();tr.filter?.disconnect();tracks.delete(tr);}
- function playSample(name,bus,amp=1,loop=false){const buffer=samples.get(name);if(!ctx||!buffer)return null;const source=ctx.createBufferSource(),gain=ctx.createGain();source.buffer=buffer;source.loop=loop;gain.gain.value=amp;source.connect(gain).connect(bus);register(source,[gain]);source.start();let stopped=false;return{gain:gain.gain,stop(){if(stopped)return;stopped=true;ramp(gain.gain,0,.06);try{source.stop(ctx.currentTime+.12);}catch{}}};}
+ function playSample(name,bus,amp=1,loop=false,group=null,offset=0){const buffer=samples.get(name);if(!ctx||!buffer)return null;const source=ctx.createBufferSource(),gain=ctx.createGain();source.buffer=buffer;source.loop=loop;gain.gain.value=amp;source.connect(gain).connect(bus);register(source,[gain],group);source.start(0,Math.max(0,Math.min(buffer.duration-.001,offset)));let stopped=false;return{gain:gain.gain,stop(){if(stopped)return;stopped=true;ramp(gain.gain,0,.06);try{source.stop(ctx.currentTime+.12);}catch{}}};}
  function decodeUrl(url){let parsed;try{parsed=new URL(url,location.href);}catch{return Promise.reject(Error('Invalid audio URL'));}if(parsed.origin!==location.origin)return Promise.reject(Error('External audio URL'));if(!decoded.has(parsed.href))decoded.set(parsed.href,fetch(parsed.href).then(r=>{if(!r.ok)throw Error('Audio unavailable');return r.arrayBuffer();}).then(b=>ctx.decodeAudioData(b)));return decoded.get(parsed.href);}
  function audioClip(buffer,spec={}){const rate=buffer.sampleRate,start=Math.max(0,Math.floor((spec.start||0)*rate)),end=Math.min(buffer.length,Math.floor((spec.end||buffer.duration)*rate)),length=end-start;if(length<rate*.02)throw Error('Audio clip too short');const overlap=Math.min(Math.floor((spec.seam||0)*rate),Math.floor(length/4)),out=ctx.createBuffer(buffer.numberOfChannels,length-overlap,rate);for(let ch=0;ch<buffer.numberOfChannels;ch++){const src=buffer.getChannelData(ch),dst=out.getChannelData(ch);dst.set(src.subarray(start+overlap,end));for(let i=0;i<overlap;i++){const t=i/Math.max(1,overlap-1),at=dst.length-overlap+i;dst[at]=src[end-overlap+i]*(1-t)+src[start+i]*t;}}return out;}
  function balanceSample(buffer){let sum=0,peak=0,count=0;for(let c=0;c<buffer.numberOfChannels;c++)for(const v of buffer.getChannelData(c)){sum+=v*v;peak=Math.max(peak,Math.abs(v));count++;}const rms=Math.sqrt(sum/Math.max(1,count)),gain=Math.min(.1/Math.max(rms,.00001),.55/Math.max(peak,.00001),8);for(let c=0;c<buffer.numberOfChannels;c++){const d=buffer.getChannelData(c);for(let i=0;i<d.length;i++)d[i]*=gain;}return buffer;}
@@ -121,11 +121,16 @@ export function createGameAudio(){
   forestOverride=parsed.href;
   if(ctx&&scene==='forest')startTrack('forest');
  }
- function setScene(value,progress={}){const nextProfile=sceneProfile(value,progress);if(scene===value&&(value!=='prologue'||profile===nextProfile))return;stopCombat();forestFile?.pause();customForestPlaying=false;scene=value;if(scene!=='chapter1')wonderGame=false;profile=nextProfile;pencil?.stop();pencil=null;duckUntil=0;mix();cooldowns.clear();stopAmbience();if(ctx){startTrack(profile);ambience();if(scene==='forest')playForestFile();}updateButton();}
+ function setScene(value,progress={}){if(value!=='chapter2')stopEscapeEffects();const nextProfile=sceneProfile(value,progress);if(scene===value&&(value!=='prologue'||profile===nextProfile))return;stopCombat();forestFile?.pause();customForestPlaying=false;scene=value;if(scene!=='chapter1')wonderGame=false;profile=nextProfile;pencil?.stop();pencil=null;duckUntil=0;mix();cooldowns.clear();stopAmbience();if(ctx){startTrack(profile);ambience();if(scene==='forest')playForestFile();}updateButton();}
  function setWonderGame(active){if(scene!=='chapter1')return;const next=Boolean(active);if(next===wonderGame)return;wonderGame=next;if(ctx)startTrack(profile);}
  function setRetry({joined,view,won}){if(scene!=='chapter3')return;const next=won||['diary','switch','victory'].includes(view)?'retry-diary':joined?'retry-together':'retry-alone';if(next===profile)return;profile=next;if(ctx)startTrack(profile);}
+ function stopEscapeEffects(){for(const source of escapeEffectSources)try{source.stop();}catch{}escapeEffectSources.clear();}
  function stopTyping(){for(const source of typingSources)try{source.stop();}catch{}typingSources.clear();}
- function effect(name,{chapter=1,delay=0}={}){
+ function effect(name,{chapter=1,delay=0,offset=0}={}){
+  if(name==='phoneVibration'||name==='carPass'){
+   if(scene!=='chapter2'||!ctx||ctx.state!=='running'||prefs.muted||prefs.effects===0||document.hidden)return;
+   if(playSample(name,fx,name==='carPass'?.7:1,false,escapeEffectSources,offset))stats.effects[name]=(stats.effects[name]||0)+1;return;
+  }
   if(name==='typing'){
    if(scene!=='prologue'||!ctx||ctx.state!=='running'||prefs.muted||prefs.effects===0||document.hidden)return;
    const t=ctx.currentTime;if(t-(cooldowns.get(name)??-10)<.035)return;cooldowns.set(name,t);stats.effects.typing=(stats.effects.typing||0)+1;
@@ -182,18 +187,18 @@ export function createGameAudio(){
  function stopCombat(){for(const source of combatSources)try{source.stop();}catch{}combatSources.clear();}
  function setPencil(active){if(!active){pencil?.stop();pencil=null;mix();return;}if(pencil||!ctx||ctx.state!=='running'||prefs.muted)return;pencil=playSample('pencil',fx,1.1,true);if(pencil)stats.effects.pencil=(stats.effects.pencil||0)+1;mix();}
  function forestPosition(z){if(!Number.isFinite(z)||scene!=='forest')return;forestZ=clamp(z,-10000,100000);if(ambient?.river)ramp(ambient.river.gain,riverLevel(forestZ),.8);}
- function setPreferences(update){for(const k of ['music','effects','ambience'])if(Number.isFinite(update[k]))prefs[k]=clamp(update[k]);if(typeof update.muted==='boolean')prefs.muted=update.muted;if(prefs.muted){stopTyping();stopCombat();setPencil(false);}persist();mix();updateButton();if(ctx&&prefs.muted)ctx.suspend().catch(()=>{});else unlock();}
+ function setPreferences(update){for(const k of ['music','effects','ambience'])if(Number.isFinite(update[k]))prefs[k]=clamp(update[k]);if(typeof update.muted==='boolean')prefs.muted=update.muted;if(prefs.muted){stopEscapeEffects();stopTyping();stopCombat();setPencil(false);}persist();mix();updateButton();if(ctx&&prefs.muted)ctx.suspend().catch(()=>{});else unlock();}
  function setReading(value){reading=Boolean(value);mix();}
  function videoMix(){videoActive=[...document.querySelectorAll('video')].some(v=>!v.paused&&!v.ended&&!v.muted&&v.volume>0&&!v.hidden);mix();}
  function gesture(e){if(!e.isTrusted)return;unlock();}
- function visibility(){if(!ctx)return;if(document.hidden){stopTyping();ctx.suspend().catch(()=>{});}else if(!prefs.muted)unlock();}
+ function visibility(){if(!ctx)return;if(document.hidden){stopEscapeEffects();stopTyping();ctx.suspend().catch(()=>{});}else if(!prefs.muted)unlock();}
  function updateButton(){if(!button)return;button.textContent=prefs.muted?'声音：关':'声音：开';button.setAttribute('aria-pressed',String(!prefs.muted));}
  function init(){if(initialized||disposed)return;initialized=true;if(forestMusicUrl)setForestMusic(forestMusicUrl);document.addEventListener('pointerdown',gesture,true);document.addEventListener('keydown',gesture,true);document.addEventListener('visibilitychange',visibility);for(const name of ['playing','pause','ended','volumechange'])document.addEventListener(name,videoMix,true);window.addEventListener('pagehide',suspend);window.addEventListener('pageshow',visibility);
   controls=document.createElement('aside');controls.className='game-audio-controls';controls.setAttribute('aria-label','声音设置');const style=document.createElement('style');style.textContent='.game-audio-controls{position:fixed;right:12px;bottom:10px;z-index:10020;color:#eee6d5;font:12px monospace}.game-audio-controls button{padding:7px 10px;color:inherit;background:#101817dd;border:1px solid #ddd5;cursor:pointer}.game-audio-settings{position:absolute;right:0;bottom:38px;width:210px;padding:14px;background:#101817f5;border:1px solid #ddd5}.game-audio-settings label{display:grid;grid-template-columns:55px 1fr;gap:8px;align-items:center;margin:8px 0}.game-audio-settings input{width:140px;accent-color:#d5c494}.game-audio-controls [hidden]{display:none!important}';controls.append(style);button=document.createElement('button');button.type='button';button.onclick=()=>setPreferences({muted:!prefs.muted});controls.append(button);const more=document.createElement('button');more.type='button';more.textContent='音量';more.setAttribute('aria-expanded','false');const panel=document.createElement('div');panel.className='game-audio-settings';panel.hidden=true;more.onclick=()=>{panel.hidden=!panel.hidden;more.setAttribute('aria-expanded',String(!panel.hidden));};controls.append(more,panel);for(const [key,label]of [['music','音乐'],['effects','音效'],['ambience','环境']]){const row=document.createElement('label');row.textContent=label;const input=document.createElement('input');input.type='range';input.min=0;input.max=100;input.value=String(prefs[key]*100);input.setAttribute('aria-label',label+'音量');input.oninput=()=>setPreferences({[key]:Number(input.value)/100});row.append(input);panel.append(row);}document.body.append(controls);updateButton();
  }
- function suspend(){stopTyping();stopCombat();forestFile?.pause();customForestPlaying=false;setPencil(false);ctx?.suspend().catch(()=>{});}
+ function suspend(){stopEscapeEffects();stopTyping();stopCombat();forestFile?.pause();customForestPlaying=false;setPencil(false);ctx?.suspend().catch(()=>{});}
  function dispose(){if(disposed)return;disposed=true;for(const[video,route]of videoRoutes){video.muted=true;route.source.disconnect();route.gain.disconnect();}videoRoutes.clear();forestFile?.pause();forestSource?.disconnect();clearInterval(clock);stopAmbience();pencil?.stop();for(const s of sources)try{s.stop();}catch{}tracks.clear();ctx?.close().catch(()=>{});controls?.remove();document.removeEventListener('pointerdown',gesture,true);document.removeEventListener('keydown',gesture,true);document.removeEventListener('visibilitychange',visibility);for(const n of ['playing','pause','ended','volumechange'])document.removeEventListener(n,videoMix,true);window.removeEventListener('pagehide',suspend);window.removeEventListener('pageshow',visibility);}
  function snapshot(){let peak=0;if(analyser&&ctx.state==='running'){const samples=new Float32Array(analyser.fftSize);analyser.getFloatTimeDomainData(samples);for(const s of samples)peak=Math.max(peak,Math.abs(s));}return{scene,profile,context:ctx?.state||'locked',preferences:{...prefs},tracks:[...tracks].filter(t=>!t.retiring).map(t=>t.name),bgm:[...tracks].filter(t=>!t.retiring&&t.recorded).map(t=>t.recorded),playingBgm:[...tracks].filter(t=>!t.retiring&&t.recordedPlaying).map(t=>t.recorded),activeSources:sources.size,river:riverLevel(forestZ),pencil:Boolean(pencil),reading,videoActive,peak,effects:{...stats.effects},transitions:stats.transitions,recordings:[...samples.keys()],forestMusic:[...tracks].some(t=>!t.retiring&&t.name==='forest'&&t.recordedPlaying)?'file':'none'};}
- return{init,unlock,setScene,setWonderGame,setRetry,setForestMusic,setReading,effect,stopTyping,bindVideoAudio,stopCombat,setPencil,forestPosition,setPreferences,suspend,dispose,snapshot,setCreation(count){built=clamp(count,0,5);}};
+ return{init,unlock,setScene,setWonderGame,setRetry,setForestMusic,setReading,effect,stopEscapeEffects,stopTyping,bindVideoAudio,stopCombat,setPencil,forestPosition,setPreferences,suspend,dispose,snapshot,setCreation(count){built=clamp(count,0,5);}};
 }
 export const gameAudio=createGameAudio();
