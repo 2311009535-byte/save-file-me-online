@@ -6,7 +6,7 @@ test('Creation counts only successful release after full lift and preserves comp
  const saved=[];const game=new CreationGame(null,s=>saved.push({...s}));
  assert.equal(game.state.phase,'room-place');assert.equal(game.choose('window'),false);assert(game.placed());game.raise(.2);assert.equal(game.release(true),false);game.raise(.2);assert(game.release());assert.equal(game.state.built,0);
  for(let i=0;i<5;i++){
-  assert.equal(game.choose(objects[(i+1)%5]),false);assert(game.choose(objects[i]));assert(game.solve());assert(game.placed());
+  assert.equal(game.choose(objects[(i+1)%5]),false);assert(game.choose(objects[i]));assert(game.solve());assert.equal(game.state.phase,'raise');assert.equal(game.placed(),false);
   game.raise(.1);assert.equal(game.release(),false);assert.equal(game.state.built,i);
   game.raise(.2);assert.equal(game.release(true),false);assert.equal(game.state.built,i);
   game.raise(.2);assert(game.release());assert.equal(game.state.built,i+1);
@@ -37,3 +37,5 @@ test('Pinch uses scale normalization, image aspect and separate close/open thres
   r.update(hand(.8),1200,16/9);assert.equal(events.filter(([type])=>type==='release').length,1);assert.equal(states.at(-1).pinching,false);
  }
 });
+
+test('Legacy placed-item saves resume directly at lift without losing built objects',()=>{for(let built=0;built<5;built++){const state=normalizeCreation({roomCreated:true,built,phase:'place'});assert.equal(state.phase,'raise');assert.equal(state.built,built);assert.equal(state.item,objects[built]);}});

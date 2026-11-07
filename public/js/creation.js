@@ -15,14 +15,20 @@ const labels=['WINDOW','FLOOR LAMP','BED','DESK + COMPUTER','DOOR'];
 export function mountCreation({root,finish}){
  const intro=createChapterIntro(document.getElementById('stage')),loader=createChapterLoading(root);
  const runVideo=createVideoTransitions({room:{enter:{src:'/assets/creation/videos/run-room.mp4',available:true},return:{available:false}}},'creation-run-video');
- let alive=true,started=false,drag=null,handSelection=null,holdFrame=null,transitionEpoch=0,settleTimer=null,plugSelected=false,inputMode='hands',runStarting=false,returning=false,returnAnimation=null;
+ let alive=true,started=false,drag=null,handSelection=null,holdFrame=null,transitionEpoch=0,settleTimer=null,plugSelected=false,inputMode='mouse',runStarting=false,returning=false,returnAnimation=null;
  let saved;try{saved=JSON.parse(localStorage.getItem(CREATION_KEY));}catch{}
  if(saved?.phase==='finished')saved={roomCreated:false,built:0,phase:'room-place'};
  const game=new CreationGame(saved,state=>{try{localStorage.setItem(CREATION_KEY,JSON.stringify(state));}catch{}render();});
  root.classList.add('creation-scene');
  root.innerHTML='<img class="creation-backdrop" src="/assets/creation/4_1.JPG" alt="Chapter 04 creation"><div class="creation-fixed-build"></div><div class="creation-fixed-code"></div><div class="creation-summary"></div><div class="creation-code"></div><div class="creation-board"></div><div class="creation-inventory"><div class="creation-inventory-art"></div></div><div class="creation-controls" hidden><button id="hand-start">ENABLE HANDS</button><button id="hand-stop">STOP CAMERA</button><button id="creation-photo">PHOTO PREVIEW</button><button id="creation-input-mode">SWITCH TO MOUSE</button><span id="creation-mode-status">HAND MODE · ENABLE HANDS TO BUILD</span><p id="creation-help" role="status"></p><p id="creation-pinch-hint" hidden role="status"><svg viewBox="0 0 64 48" aria-hidden="true"><path d="M22 40c-8-9-11-16-9-20 2-4 6-2 10 4l4 5-2-20c-1-7 7-8 8-1l3 19 3-8c2-6 8-4 7 2l-1 10c-1 6-4 10-9 13M28 3l4 3M42 4l-3 4M39 13l5-1"/><path class="pinch-arrow" d="M55 35V14m-5 5 5-5 5 5"/></svg><span>PINCH THUMB + INDEX AND PULL UP; RELEASE AT 100%  THEN RELEASE</span></p><p id="hand-status" role="status">Dwell on an item for 1.5 s to select or grab; dwell in the drop zone for 1.5 s to place; pinch to lift.</p><video id="hand-camera" muted playsinline hidden></video></div><div class="hand-cursor" hidden></div><div class="hand-dwell" hidden aria-hidden="true"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="20"/><circle class="dwell-progress" cx="24" cy="24" r="20" pathLength="100"/><text x="24" y="28" text-anchor="middle">1.5s</text></svg></div>';
  const controls=root.querySelector('.creation-controls');
- const $=s=>s==='.creation-controls'?controls:root.querySelector(s)||controls.querySelector(s),board=$('.creation-board'),cursor=$('.hand-cursor');
+ let modeChosen=false;
+ const settings=document.createElement('dialog');settings.className='creation-input-dialog';settings.setAttribute('aria-labelledby','creation-input-title');
+ settings.innerHTML='<h2 id="creation-input-title">YOUR WAY TO BUILD</h2><p>Would you like to use hand gestures?</p><p>Choose YES to enable the camera and build with your hands, or NO to use your mouse.</p><p>You can switch to mouse controls at the bottom of the screen.</p><div class="creation-input-choices"><button id="creation-hands-yes">YES · USE HANDS</button><button id="creation-hands-no">NO · USE MOUSE</button></div><details><summary>Camera &amp; avatar settings</summary><div class="creation-camera-options"></div></details><button id="creation-settings-close" hidden>CLOSE</button>';
+ const options=settings.querySelector('.creation-camera-options');['hand-start','hand-stop','creation-photo','hand-status'].forEach(id=>options.append(root.querySelector('#'+id)));
+ const settingsButton=document.createElement('button');settingsButton.id='creation-settings';settingsButton.textContent='CONTROLS';controls.append(settingsButton);document.body.append(settings);
+
+ const $=s=>s==='.creation-controls'?controls:root.querySelector(s)||controls.querySelector(s)||settings.querySelector(s),board=$('.creation-board'),cursor=$('.hand-cursor');
  const codeAnimation=createCodeAnimation($('.creation-code'));
  const renderer=createCreationRenderer(root),dwell=new DwellSelection(),dropDwell=new DwellSelection(),dwellRing=$('.hand-dwell');let hitCache=null,dropAnchor=null;
  const clearHits=()=>{hitCache=null;};window.addEventListener('resize',clearHits);const hitObserver=new MutationObserver(records=>{if(records.some(record=>[...record.addedNodes,...record.removedNodes].some(node=>node.nodeType===1&&(node.matches('button')||node.querySelector('button')))))clearHits();});hitObserver.observe(root,{childList:true,subtree:true});
@@ -61,7 +67,7 @@ export function mountCreation({root,finish}){
   else if(stage==='plug-selected')lines.push('computer.plugSelected = true;','await selectPowerStrip();','');
   else if(stage==='connected')lines.push('computer.connected = true;','await pressPowerButton();','');
   else if(stage==='place')lines.push(`await placeObject(${name});`,`${name}.placed = true;`,'');
-  else if(stage==='raise'||stage==='room-raise')lines.push(`await raiseObject(${stage==='room-raise'?'room':name});`,'await releaseToInstall();','');
+  else if(stage==='raise'||stage==='room-raise'){if(stage==='raise')lines.push(`${name}.placed = true;`);lines.push(`await raiseObject(${stage==='room-raise'?'room':name});`,'await releaseToInstall();','');}
   else if(stage==='complete')lines.push('room.objectsBuilt = 5;','room.complete = true;','// Every memory found its place.','await runRoom();');
   else if(stage==='choose')lines.push(`room.objectsBuilt = ${built};`,`memory.current = ${Math.min(5,built+1)};`,'await chooseObject();','');
   else if(stage==='room-place')lines.push('await createRoomBase();','await placeRoomBase();','');
@@ -83,7 +89,7 @@ export function mountCreation({root,finish}){
   const objective=$('#creation-objective');
   if(phase==='room-place'){objective.textContent='Dwell on the base for 1.5 s to grab; dwell in the center for 1.5 s to place, then pinch and lift.';board.innerHTML=asset(1)+'<div class="build-drop creation-drop" data-target="place">DROP ZONE</div><button class="build-item room-base-item" data-drag="place" aria-label="ROOM BASE">PLACE ROOM BASE</button>';}
   else if(phase==='room-raise'){objective.textContent='PINCH and pull the room upward; reach 100%  then release.';board.innerHTML=asset(2)+'<button class="raise-item" data-drag="raise">LIFT ROOM ↑ <span id="build-progress">0%</span></button>';}
-  else if(phase==='choose'){objective.textContent='Dwell on INSPECT  for 1.5 s to select. LOCKED items require the previous object to be placed and lifted.';}
+  else if(phase==='choose'){objective.textContent='Dwell on INSPECT  for 1.5 s to select. LOCKED items require the previous object to be lifted and built.';}
   else if(phase==='puzzle'){
    if(item==='window'){objective.textContent='Dwell on a star for 1.5 s to grab; move your index finger; dwell in the window for 1.5 s to place.';board.innerHTML=asset(6)+'<div class="creation-drop" data-target="window">WINDOW</div><button class="star star-one" data-drag="star1" aria-label="First star"><svg viewBox="910 640 260 270" aria-hidden="true"><image href="/assets/creation/4_6.JPG" width="3838" height="2160"/></svg></button><button class="star star-two" data-drag="star2" aria-label="Second star"><svg viewBox="2700 640 260 270" aria-hidden="true"><image href="/assets/creation/4_6.JPG" width="3838" height="2160"/></svg></button>';}
    if(item==='lamp'){objective.textContent='Dwell on HOLD  switch for 1.5 s to light up; in mouse mode hold for 2 s.';board.innerHTML=asset(13)+'<button class="lamp-hold" data-drag="lamp" aria-label="Lamp switch">HOLD TO LIGHT · 0%</button>';}
@@ -94,7 +100,7 @@ export function mountCreation({root,finish}){
    objective.textContent='Dwell on the inventory item for 1.5 s to grab; move to the drop zone and dwell for 1.5 s to place.';
    board.innerHTML=asset({window:8,lamp:15,bed:19,computer:25,door:31}[item])+`<div class="build-drop creation-drop" data-target="place">DROP ZONE</div><button class="build-item" data-drag="place" aria-label="PLACE ${labels[built]}">PLACE ${labels[built]}</button>`;
   }else if(phase==='raise'){
-   objective.textContent='PINCH and pull upward; reach 100%  and release to complete the build.';
+   objective.textContent=inputMode==='mouse'?'Your item is already on the floor. Drag upward to 100%, then release to build.':'Your item is already on the floor. Pinch and pull upward to 100%, then release to build.';
    board.innerHTML=asset({window:9,lamp:16,bed:22,computer:29,door:35}[item])+`<button class="raise-item" data-drag="raise">PULL UP ↑ <span id="build-progress">0%</span></button>`;
   }else if(phase==='complete'){
    objective.textContent='All five objects installed. Dwell on RUN to bring the room to life.';const b=document.createElement('button');b.className='creation-run';b.textContent='RUN';b.onclick=()=>{if(runStarting)return;runStarting=true;b.classList.add('is-selected');b.setAttribute('aria-pressed','true');b.disabled=true;settleTimer=setTimeout(()=>game.commit('transition'),600);};board.append(b);
@@ -102,7 +108,7 @@ export function mountCreation({root,finish}){
   else if(phase==='finished'){showFinalRoom();}
   if(phase==='puzzle'&&['window','lamp','bed','computer','door'].includes(item)){const hint=document.createElement('p');hint.className='creation-action-hint';hint.textContent=item==='window'?'Dwell 1.5s on a star to grab; dwell 1.5s in the window to place.':item==='lamp'?'HOLD  switch for 1.5 s to light up':item==='bed'?'Dwell on the blanket for 1.5 s to grab, then pull upward':item==='computer'?'PLUG: dwell 1.5 s to select; POWER STRIP: dwell 1.5 s to connect':'SAVE CARD: dwell 1.5 s to grab; DOOR SLOT: dwell 1.5 s to install';board.append(hint);}if(['room-place','place','choose'].includes(phase)){const hint=document.createElement('p');hint.className='creation-action-hint';hint.textContent=objective.textContent;board.append(hint);}const placeHandle=board.querySelector('[data-drag=place]');const run=board.querySelector('.creation-run');if(run)root.append(run);if(placeHandle){placeHandle.style.left=(phase==='room-place'?21.1:21.1+built*11.8)+'%';root.append(placeHandle);}
   const now=Number(root.dataset.creationFrame);renderer.warm([now+1,now+2]);if(['raise','room-raise'].includes(phase)){renderer.warm(raiseStages());renderer.raise(raiseStages(),0);}
-  const raising=['raise','room-raise'].includes(phase);if(raising){const hint=document.createElement('p');hint.className='creation-lift-hint';hint.textContent=phase==='room-raise'?'PINCH thumb + index, then lift the floor ↑':'PINCH thumb + index, then lift ↑';board.append(hint);}$('#creation-help').hidden=raising;$('#creation-pinch-hint').hidden=!raising;
+  const raising=['raise','room-raise'].includes(phase);if(raising){const hint=document.createElement('p');hint.className='creation-lift-hint';hint.textContent=inputMode==='mouse'?'DRAG UP ↑ · Release at 100%':phase==='room-raise'?'PINCH thumb + index, then lift the floor ↑':'PINCH thumb + index, then lift ↑';board.append(hint);}$('#creation-help').hidden=raising;$('#creation-pinch-hint').hidden=!raising;
   $('#creation-help').textContent=objective.textContent;debugUpdate();
  }
  function raiseStages(){return game.state.phase==='room-raise'?[2,3,4]:{window:[9,10,11],lamp:[16,17,18],bed:[22,23,23],computer:[29,29,30],door:[35,35,36]}[game.state.item];}
@@ -131,13 +137,13 @@ export function mountCreation({root,finish}){
  }
  function move(p){
   if(!drag)return;drag.point=p;
-  const r=root.getBoundingClientRect(),scale=r.width/1672;
+  const sceneWidth=root.clientWidth,sceneHeight=root.clientHeight;
   if(drag.kind==='raise'){
    game.raise(drag.start.y-p.y,game.state.phase==='raise'&&['bed','computer','door'].includes(game.state.item)?.10:.18);$('#build-progress').textContent=Math.round(game.progress*100)+'%';
    updateRaiseArt();return;
   }
   if(drag.kind==='quilt')return;
-  drag.element.style.transform=`translate(${(p.x-drag.start.x)*r.width/scale}px,${(p.y-drag.start.y)*r.height/scale}px)`;
+  drag.element.style.transform=`translate(${(p.x-drag.start.x)*sceneWidth}px,${(p.y-drag.start.y)*sceneHeight}px)`;
  }
  function end(p,cancelled=false){
   if(!drag)return;clearHits();const current=drag;drag=null;cancelAnimationFrame(holdFrame);delete current.element.dataset.handGrabbed;current.element.style.transform='';current.element.style.zIndex='';current.ghost?.remove();
@@ -179,7 +185,7 @@ export function mountCreation({root,finish}){
  }
 
  function handEvent(type,p){
-  if(!alive||!started||inputMode!=='hands'||!root.querySelector('.avatar-setup').hidden)return;lastHandPoint=p;cursor.hidden=Boolean(p.cancelled);cursor.style.left=p.x*100+'%';cursor.style.top=p.y*100+'%';
+  if(!alive||!started||settings.open||inputMode!=='hands'||!root.querySelector('.avatar-setup').hidden)return;lastHandPoint=p;cursor.hidden=Boolean(p.cancelled);cursor.style.left=p.x*100+'%';cursor.style.top=p.y*100+'%';
   if(type==='grab'){
    resetDwell();if(drag)return;
    const previous=lastOpenPoint&&Math.hypot(p.x-lastOpenPoint.x,p.y-lastOpenPoint.y)<.08?hit(lastOpenPoint):null;const el=hit(p)||previous;handSelection=null;
@@ -206,8 +212,14 @@ export function mountCreation({root,finish}){
  const pointerUp=e=>{if(drag?.owner==='mouse')end(point(e.clientX,e.clientY),e.type==='pointercancel');};
  root.addEventListener('pointerdown',pointerDown);root.addEventListener('pointermove',pointerMove);root.addEventListener('pointerup',pointerUp);root.addEventListener('pointercancel',pointerUp);
  const gateMouse=e=>{const button=e.target.closest('button');if(inputMode==='hands'&&e.isTrusted&&button&&(button.closest('.creation-board,.creation-inventory')||button.matches('[data-drag],.creation-run'))){e.preventDefault();e.stopImmediatePropagation();}};root.addEventListener('click',gateMouse,true);
- $('#creation-input-mode').onclick=()=>{if(drag)end(drag.point,true);resetDwell();handSelection=null;inputMode=inputMode==='hands'?'mouse':'hands';$('#creation-input-mode').textContent=inputMode==='hands'?'SWITCH TO MOUSE':'USE HANDS';$('#creation-mode-status').textContent=inputMode==='hands'?'HAND MODE · ENABLE HANDS TO BUILD':'MOUSE MODE';if(inputMode==='mouse'){tracker.stop(true);cursor.hidden=true;}else tracker.start();};
- $('#hand-start').onclick=()=>{inputMode='hands';$('#creation-input-mode').textContent='SWITCH TO MOUSE';$('#creation-mode-status').textContent='HAND MODE';if(tracker.running)return;tracker.start();};
+ function setInputMode(mode){if(drag)end(drag.point,true);resetDwell();handSelection=null;inputMode=mode;root.dataset.creationInput=mode;$('#creation-input-mode').textContent=mode==='hands'?'SWITCH TO MOUSE':'USE HANDS';$('#creation-mode-status').textContent=mode==='hands'?'HAND MODE':'MOUSE MODE';if(mode==='mouse'){tracker.stop(true);cursor.hidden=true;}else tracker.start();const hint=board.querySelector('.creation-lift-hint');if(hint)hint.textContent=mode==='mouse'?'DRAG UP ↑ · Release at 100%':'PINCH thumb + index, then lift ↑';}
+ function chooseInput(mode){modeChosen=true;settings.close();setInputMode(mode);}
+ $('#creation-hands-yes').onclick=()=>chooseInput('hands');$('#creation-hands-no').onclick=()=>chooseInput('mouse');
+ $('#creation-input-mode').onclick=()=>setInputMode(inputMode==='hands'?'mouse':'hands');
+ settingsButton.onclick=()=>{if(drag)end(drag.point,true);resetDwell();handSelection=null;cursor.hidden=true;settings.querySelector('#creation-settings-close').hidden=false;settings.showModal();};
+ $('#creation-settings-close').onclick=()=>settings.close();
+ settings.addEventListener('cancel',e=>{if(!modeChosen){e.preventDefault();chooseInput('mouse');}});
+ $('#hand-start').onclick=()=>{settings.close();setInputMode('hands');};
  $('#hand-stop').onclick=()=>{resetDwell();tracker.stop(true);$('#hand-camera').hidden=true;cursor.hidden=true;$('#hand-status').textContent='Camera stopped. Enable hands or switch to mouse mode.';$('#hand-start').textContent='ENABLE HANDS';debugUpdate();};
 
  async function returnToPrologue(){
@@ -228,10 +240,10 @@ export function mountCreation({root,finish}){
   if(result==='ended'){game.commit('finished');}
   else {game.commit('complete');$('#creation-objective').textContent='Animation could not play. Dwell on RUN to retry.';resume();}
  }
- const disposeAvatar=mountAvatar(root,{generationAllowed:true,onContinue:()=>{started=true;$('.creation-controls').hidden=false;render();window.dispatchEvent(new Event('resize'));if(!intro.active&&game.state.phase==='finished')returnToPrologue();}});
- $('#creation-photo').onclick=()=>{resetDwell();if(drag)end(drag.point,true);handSelection=null;cursor.hidden=true;root.querySelector('.avatar-setup').hidden=false;root.querySelector('#avatar-change').click();};
+ const disposeAvatar=mountAvatar(root,{generationAllowed:true,onContinue:()=>{started=true;$('.creation-controls').hidden=false;render();if(!modeChosen&&!settings.open)settings.showModal();window.dispatchEvent(new Event('resize'));if(!intro.active&&game.state.phase==='finished')returnToPrologue();}});
+ $('#creation-photo').onclick=()=>{settings.close();resetDwell();if(drag)end(drag.point,true);handSelection=null;cursor.hidden=true;root.querySelector('.avatar-setup').hidden=false;root.querySelector('#avatar-change').click();};
  root.querySelector('.avatar-setup').hidden=true;
  loader.play(4,['/assets/creation/4_1.JPG']).then(ok=>ok&&alive?intro.play(4,async()=>{const enabled=await disposeAvatar.availability;if(!alive)return;if(enabled!==false){root.querySelector('.avatar-setup').hidden=false;}else{root.querySelector('#avatar-default').click();root.querySelector('#avatar-continue').click();}},()=>prepareImage('/assets/creation/4_1.JPG')):false).then(ok=>{if(!ok||!alive||!started)return;if(game.state.phase==='transition')transition();else if(game.state.phase==='finished')returnToPrologue();}).catch(()=>{if(alive){root.querySelector('#avatar-default').click();root.querySelector('#avatar-continue').click();}});
  renderer.icon('build',$('.creation-fixed-build'));renderer.icon('code',$('.creation-fixed-code'));
- return ()=>{alive=false;loader.dispose();intro.dispose();returnAnimation?.cancel();runVideo.dispose();codeAnimation.stop();renderer.dispose();hitObserver.disconnect();window.removeEventListener('resize',clearHits);clearTimeout(settleTimer);transitionEpoch++;cancelAnimationFrame(holdFrame);tracker.stop();disposeAvatar();controls.remove();debugObserver.disconnect();debug.remove();window.dispatchEvent(new Event('resize'));root.classList.remove('creation-scene','creation-transition','creation-real-room','creation-door-lift','creation-easy-lift','creation-returning');root.removeEventListener('click',gateMouse,true);root.removeEventListener('pointerdown',pointerDown);root.removeEventListener('pointermove',pointerMove);root.removeEventListener('pointerup',pointerUp);root.removeEventListener('pointercancel',pointerUp);};
+ return ()=>{alive=false;loader.dispose();intro.dispose();returnAnimation?.cancel();runVideo.dispose();codeAnimation.stop();renderer.dispose();hitObserver.disconnect();window.removeEventListener('resize',clearHits);clearTimeout(settleTimer);transitionEpoch++;cancelAnimationFrame(holdFrame);tracker.stop();disposeAvatar();controls.remove();settings.remove();debugObserver.disconnect();debug.remove();window.dispatchEvent(new Event('resize'));root.classList.remove('creation-scene','creation-transition','creation-real-room','creation-door-lift','creation-easy-lift','creation-returning');root.removeEventListener('click',gateMouse,true);root.removeEventListener('pointerdown',pointerDown);root.removeEventListener('pointermove',pointerMove);root.removeEventListener('pointerup',pointerUp);root.removeEventListener('pointercancel',pointerUp);};
 }

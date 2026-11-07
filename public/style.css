@@ -416,3 +416,13 @@
 .retry-diary-daylight>canvas{width:100%;height:100%}.retry-victory-weather{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 
 .retry-scene[data-retry-book=closed] .retry-diary-glow path{stroke:#e1cda8;stroke-width:2.5;filter:none;animation:retry-closed-hint 3.8s ease-in-out infinite}@keyframes retry-closed-hint{0%,100%{opacity:.07}50%{opacity:.24}}@media(prefers-reduced-motion:reduce){.retry-scene[data-retry-book=closed] .retry-diary-glow path{animation:none;opacity:.15}}
+/* Chapter four keeps the complete blueprint and its hotspots in one full-screen transform. */
+.creation-controls{left:auto;right:12px;bottom:10px;width:auto;height:auto;max-width:calc(100vw - 24px);padding:5px 8px;gap:8px;flex-wrap:nowrap;background:#f6f2e9e8;border:1px solid #1212cf55;font:12px monospace}
+.creation-controls #creation-mode-status,.creation-controls #creation-help,.creation-controls #creation-pinch-hint{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);margin:0}
+.creation-controls button{padding:7px 10px}
+.creation-input-dialog{width:min(560px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:28px;border:2px solid #1212cf;background:#f6f2e9;color:#1212cf;font:16px/1.6 monospace;box-shadow:8px 8px 0 #1212cf30}
+.creation-input-dialog::backdrop{background:#10103370;backdrop-filter:blur(3px)}
+.creation-input-dialog h2{margin:0 0 18px;font-size:22px}.creation-input-dialog p{margin:12px 0}.creation-input-choices{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}
+.creation-input-dialog button{padding:10px 14px;border:1px solid #1212cf;color:#1212cf;background:transparent;font:inherit;cursor:pointer}.creation-input-dialog button:hover{background:#1212cf12}.creation-input-dialog button:focus-visible{outline:2px solid #1212cf}
+.creation-input-dialog summary{cursor:pointer}.creation-camera-options{display:flex;flex-wrap:wrap;gap:10px;padding:14px 0}.creation-camera-options #hand-status{width:100%;font-size:13px}.creation-input-dialog #creation-settings-close{margin-top:18px}
+.creation-controls{left:50%;right:auto;transform:translateX(-50%)}

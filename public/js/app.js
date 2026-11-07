@@ -29,7 +29,8 @@ if(new URLSearchParams(location.search).get('forestReturn')==='1'){state={...sta
 function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));$('save-status').textContent='本地进度已保存';}catch{$('save-status').textContent='存档不可用；当前进度仅保留在此页面';}}
 function commit(next){state=normalize(next);save();render();}
 function finishChapter(n){commit(complete(state,n));}
-function resize(){const rect=$('viewport').getBoundingClientRect();const creation=state?.scene==='chapter4'&&Boolean(document.querySelector('.creation-controls:not([hidden])')),usableHeight=Math.max(1,rect.height-(creation?64:0));const scale=Math.min(rect.width/width,usableHeight/height);$('stage').style.top=creation?'calc(50% - 32px)':'50%';$('stage').style.setProperty('--scene-ui',1/scale);$('stage').style.width=width+'px';$('stage').style.height=height+'px';$('stage').style.transform=`translate(-50%, -50%) scale(${scale})`;}
+function resize(){const rect=$('viewport').getBoundingClientRect(),creation=state?.scene==='chapter4';const sx=rect.width/width,sy=rect.height/height,scale=Math.min(sx,sy);$('stage').style.top='50%';$('stage').style.setProperty('--scene-ui',1/scale);$('stage').style.width=width+'px';$('stage').style.height=height+'px';$('stage').style.transform=`translate(-50%, -50%) scale(${creation?sx:scale}, ${creation?sy:scale})`;}
+
 // The whole stage (image + percentage hotspots + overlays) uses one transform.
 // Convert viewport pointer coordinates into scene coordinates for future interactions.
 export function scenePoint(clientX,clientY){const r=$('stage').getBoundingClientRect();return {x:(clientX-r.left)/r.width,y:(clientY-r.top)/r.height};}
