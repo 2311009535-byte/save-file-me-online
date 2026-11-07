@@ -27,7 +27,15 @@ export function createCreationRenderer(root){
  async function image(url){const im=new Image();im.decoding='async';im.src=url;await im.decode();return im;}
  // Remove baked blue instruction lettering only, leaving the paper and pale grid
  // visible behind the live, transparent hint. Native files remain untouched.
+ function restorePaper(canvas,box){
+  const c=canvas.getContext('2d'),sx=canvas.width/1672,sy=canvas.height/941,[left,top,right,bottom]=box;
+  // The original page margin supplies the same paper and notebook rules at
+  // each height; restore the whole printed caption/frame, including pale ink.
+  c.drawImage(canvas,10*sx,top*sy,Math.max(1,sx),(bottom-top)*sy,left*sx,top*sy,(right-left)*sx,(bottom-top)*sy);
+ }
+ const captionAreas={14:[[595,587,1110,660]],21:[[645,570,1055,660]],28:[[490,585,1210,660]],29:[[350,585,1345,660]],34:[[635,580,1060,660],[990,318,1275,372]],37:[[545,610,1160,660]]};
  function clearPrintedHint(canvas,n){
+  if(captionAreas[n]){captionAreas[n].forEach(box=>restorePaper(canvas,box));return;}
   const c=canvas.getContext('2d'),sx=canvas.width/1672,sy=canvas.height/941,left=n===7?660:n===1?580:350,top=n===7?560:n===1?570:586,right=n===7?1040:n===1?1115:1345,x=Math.ceil(left*sx),y=Math.ceil(top*sy),w=Math.floor((right-left)*sx),h=Math.floor((661-top)*sy),image=c.getImageData(x,y,w,h),data=image.data,mask=new Uint8Array(w*h),pad=Math.max(2,Math.ceil(4*sx));
   if(n===7){c.drawImage(canvas,500*sx,y,Math.max(1,sx),h,x,y,w,h);return;}
   for(let j=0;j<h;j++)for(let i=0;i<w;i++){const k=(j*w+i)*4;if(data[k+2]-data[k]>65&&data[k+1]<165){for(let dy=-pad;dy<=pad;dy++)for(let dx=-pad;dx<=pad;dx++){const xx=i+dx,yy=j+dy;if(xx>=0&&xx<w&&yy>=0&&yy<h)mask[yy*w+xx]=1;}}}
