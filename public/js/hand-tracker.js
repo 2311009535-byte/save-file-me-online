@@ -53,7 +53,7 @@ export function createHandTracker(video,onEvent,onStatus,onState=()=>{}){
     if(!running||current!==epoch)return;
     const now=performance.now();processingMs=inferenceStart?now-inferenceStart:null;if(lastResult){const rate=1000/(now-lastResult);frequency=frequency==null?rate:frequency*.8+rate*.2;}lastResult=now;
     const landmarks=results.multiHandLandmarks?.[0];recognizer.update(landmarks,performance.now(),video.videoWidth/video.videoHeight||1);
-    if(Boolean(landmarks)!==seen){seen=Boolean(landmarks);onStatus(seen?'Hand detected: move your index finger; dwell 1s to select or grab; pinch to lift.':'Place one hand in front of the camera with good lighting.');}
+    if(Boolean(landmarks)!==seen){seen=Boolean(landmarks);onStatus(seen?'Hand detected: point or pinch over an item for 1s to select or grab; pinch to lift.':'Place one hand in front of the camera with good lighting.');}
    });
    await hands.initialize();if(current!==epoch){await hands.close();return;}
    onStatus('Tracking ready. Place one hand in front of the camera.');
