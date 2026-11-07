@@ -1,7 +1,9 @@
+import {createDiaryLight} from './retry-diary-light.js';
 import {prepareImage} from './image-cache.js';
 const files=['3_15.png','3_16.PNG','3_17.PNG','3_18.PNG'];
 // A sheet bends around the spine. Its front and back use the supplied page art.
 export function createDiaryTurn(visual,change,page){
+ const daylight=createDiaryLight(visual);
  const hit=document.createElement('div');hit.className='retry-diary-drag';hit.tabIndex=0;hit.setAttribute('aria-label','Drag left for the next page; drag right for the previous page.');
  const hint=document.createElement('div');hint.className='retry-diary-hint';
  const instructions=()=>page===0?'DRAG LEFT TO TURN THE PAGE':page===3?'DRAG RIGHT TO GO BACK':'DRAG LEFT / RIGHT TO TURN THE PAGE';hint.textContent=instructions();visual.append(hint);document.getElementById('hotspots').append(hit);
@@ -48,5 +50,5 @@ export function createDiaryTurn(visual,change,page){
  hit.onpointerup=()=>{if(!drag)return;const commit=progress>=.22;drag=null;revision++;if(render)finish(commit);else hint.textContent=instructions();};
  hit.onpointercancel=()=>{drag=null;revision++;if(render)finish(false);};
  hit.onkeydown=e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();turn(e.key==='ArrowLeft'?1:-1);}};
- return {turn,dispose(){disposed=true;revision++;drag=null;cancelAnimationFrame(frame);resolveTween?.(false);resolveTween=null;clear();hit.remove();hint.remove();}};
+ return {turn,dispose(){daylight.dispose();disposed=true;revision++;drag=null;cancelAnimationFrame(frame);resolveTween?.(false);resolveTween=null;clear();hit.remove();hint.remove();}};
 }

@@ -410,3 +410,5 @@
 .retry-video-error{position:absolute;inset:35% 15% auto;z-index:5;text-align:center;color:#f8efd9;font:calc(22px * var(--scene-ui,1)) "Courier New",monospace;text-shadow:0 2px 5px #171615}.retry-video-error button{cursor:pointer;color:#f8efd9;background:#242220e8;border:1px solid #d8cbb3;padding:12px 20px;font:inherit}
 
 .retry-defeat-shade{position:absolute;inset:0;background:#000;pointer-events:none}
+
+.retry-diary-daylight{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}.retry-diary-daylight>div{position:absolute;inset:0}.retry-diary-cloud{background:linear-gradient(135deg,#26314499,#202c3dee 62%,#26314488);mix-blend-mode:multiply}.retry-diary-sun{background:radial-gradient(ellipse at 80% 0%,#ffe6b880,transparent 80%);mix-blend-mode:soft-light}
