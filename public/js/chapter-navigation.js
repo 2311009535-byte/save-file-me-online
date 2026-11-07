@@ -6,7 +6,10 @@ export function mountChapterNavigation(onNavigate){
  function close(){links.hidden=true;toggle.setAttribute('aria-expanded','false');}
  for(const[scene,label]of navigationScenes){const b=document.createElement('button');b.type='button';b.dataset.navigate=scene;b.textContent=label;b.onclick=()=>{close();toggle.focus();onNavigate(scene);};links.append(b);}
  toggle.onclick=()=>{links.hidden=!links.hidden;toggle.setAttribute('aria-expanded',String(!links.hidden));};root.append(toggle,links);document.body.append(root);
+ let frame=0;
+ function position(){cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{const back=document.querySelector('.final-film-back')||document.getElementById('back'),box=back&&!back.hidden?back.getBoundingClientRect():null;root.style.right=(box&&box.width?Math.max(10,innerWidth-box.right):18)+'px';root.style.top=(box&&box.height?Math.min(innerHeight-50,box.bottom+8):18)+'px';});}
+ const observer=new MutationObserver(position),back=document.getElementById('back');if(back)observer.observe(back,{attributes:true,childList:true});window.addEventListener('resize',position);position();
  const outside=e=>{if(!root.contains(e.target))close();},key=e=>{if(e.key==='Escape'&&!links.hidden){close();toggle.focus();e.stopImmediatePropagation();}};
  document.addEventListener('pointerdown',outside);document.addEventListener('keydown',key,true);
- return{update(scene){links.querySelectorAll('button').forEach(b=>{if(b.dataset.navigate===scene)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});},dispose(){root.remove();document.removeEventListener('pointerdown',outside);document.removeEventListener('keydown',key,true);}};
+ return{update(scene){position();links.querySelectorAll('button').forEach(b=>{if(b.dataset.navigate===scene)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});},dispose(){cancelAnimationFrame(frame);observer.disconnect();window.removeEventListener('resize',position);root.remove();document.removeEventListener('pointerdown',outside);document.removeEventListener('keydown',key,true);}};
 }

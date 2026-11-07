@@ -9,7 +9,6 @@ export function mountFinal({root,onFinished}){
  const caption=document.createElement('p');caption.className='final-subtitle';caption.setAttribute('aria-live','polite');scene.append(caption);
  const controls=document.createElement('div');controls.className='final-film-controls';
  const button=(text,parent,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=fn;parent.append(b);return b;};
- const back=button('SAVE ROOM',scene,()=>document.getElementById('back')?.click());back.className='final-film-back';Object.assign(back.style,{position:'absolute',top:'18px',right:'18px',zIndex:'1'});
  const pause=button('PAUSE',controls,()=>{if(paused||video.paused&&mode==='film')play();else pausePlayback();});
  const sound=button('SOUND: ON',controls,()=>{video.muted=!video.muted;sound.textContent=video.muted?'SOUND: OFF':'SOUND: ON';sound.setAttribute('aria-pressed',String(!video.muted));});sound.setAttribute('aria-pressed','true');scene.append(controls);
  const status=document.createElement('div');status.className='final-film-status';status.setAttribute('role','status');
