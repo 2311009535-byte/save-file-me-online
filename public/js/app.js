@@ -1,3 +1,4 @@
+import {mountChapterNavigation} from './chapter-navigation.js';
 import {mountOpening,shouldShowOpening} from './opening.js';
 import {gameAudio} from './game-audio.js';
 import {mountFinal} from './final.js';
@@ -10,7 +11,7 @@ import {mountWindowSelection} from './prologue-selection.js';
 import {mountAssembly,resetAssembly} from './prologue-assembly.js';
 import {sceneImage,warmImages,prepareImage} from './image-cache.js';
 import {mountLampGlitch} from './prologue-lamp-glitch.js';
-import {STORAGE_KEY,normalize,canEnter,enter,complete,exit} from './state.js';
+import {STORAGE_KEY,normalize,navigate,canEnter,enter,complete,exit} from './state.js';
 import {chapters} from './chapters.js';
 import {input} from './input.js';
 import {mountCreation} from './creation.js';
@@ -24,6 +25,7 @@ const $=id=>document.getElementById(id);
 gameAudio.init();
 let state,width=1536,height=1024;
 try{state=normalize(JSON.parse(localStorage.getItem(STORAGE_KEY)));}catch{state=normalize(null);}
+const chapterNavigation=mountChapterNavigation(scene=>{if(state.scene!==scene)commit(navigate(state,scene));});
 // Return from the independent forest preview without completing or resetting chapters.
 if(new URLSearchParams(location.search).get('forestReturn')==='1'){state={...state,scene:'prologue'};const url=new URL(location.href);url.searchParams.delete('forestReturn');history.replaceState(null,'',url.pathname+url.search+url.hash);}
 function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));$('save-status').textContent='本地进度已保存';}catch{$('save-status').textContent='存档不可用；当前进度仅保留在此页面';}}
@@ -37,6 +39,7 @@ export function scenePoint(clientX,clientY){const r=$('stage').getBoundingClient
 function imageScene(src,label,w=1536,h=1024){width=w;height=h;if(src instanceof HTMLCanvasElement){src.className='scene-image escape-native-phone';$('visual').replaceChildren(src);resize();return;}const im=sceneImage('/assets/'+src);im.className='scene-image';im.alt=label;$('visual').replaceChildren(im);const fit=()=>{if(!im.isConnected||$('visual').firstElementChild!==im)return;width=im.naturalWidth;height=im.naturalHeight;resize();};im.onload=fit;if(im.complete&&im.naturalWidth)fit();else resize();}
 function hotspot(id,rect,label,disabled,callback){const b=document.createElement('button');b.id=id;b.className='hotspot';b.disabled=disabled;b.setAttribute('aria-label',label);b.title=label;const [x,y,w,h]=rect;Object.assign(b.style,{left:x+'%',top:y+'%',width:w+'%',height:h+'%'});const hint=document.createElement('span');hint.className='hint';hint.textContent=label;b.append(hint);b.onclick=callback;$('hotspots').append(b);}
 function render(){
+ chapterNavigation.update(state.scene);
  disposeOpening?.();disposeOpening=null;
  disposeFinal?.();disposeFinal=null;disposeAvatar?.();disposeAvatar=null;
  const showWonderLoading=lastRenderedScene!=='chapter1';lastRenderedScene=state.scene;

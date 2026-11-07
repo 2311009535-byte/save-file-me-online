@@ -2,8 +2,8 @@
 export const forestMusicUrl='/assets/audio/forest-music.m4a';
 const nature='/assets/audio/forest-environment.m4a';
 export const recordedSounds={
- phoneVibration:{url:'/assets/audio/escape-phone-vibration.m4a'},
- carPass:{url:'/assets/audio/escape-car-pass.m4a'},
+ phoneVibration:{url:'/assets/audio/escape-phone-continuous.m4a',seam:.08},
+ carPass:{url:'/assets/audio/escape-car-ambient.m4a',seam:.25},
  pencil:{url:'/assets/audio/pencil.m4a',start:.6,end:7.8,seam:.08},
  wind:{url:nature,start:.4,end:2.5,seam:.2},
  grass:{url:nature,start:3.2,end:5.2,seam:.2},

@@ -17,7 +17,7 @@ export function createPrologueHints(visual,{eligible,box}){
    if(inside)show(formed?'click':'stay',formed?(coarse||touch?'Tap to explore':'Click to explore'):(coarse||touch?'Hold a little longer…':'Stay a little longer…'));
    else if(!seen)show('tutorial',coarse?'Touch and hold to let the room take shape.':'Move your cursor. Let the room take shape.');
    else if(idle>=12)show('idle',`Perhaps the ${eligible} holds a memory.`);
-   else show('hidden','');
+   else show('idle',`Perhaps the ${eligible} holds a memory.`);
    const phase=(idle-12)%9,pulse=!reduced&&idle>=12&&phase<2.4?Math.sin(phase/2.4*Math.PI):0;
    root.dataset.target=eligible;
    return{pulse,near};
