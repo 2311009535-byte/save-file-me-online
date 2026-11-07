@@ -26,16 +26,17 @@ export function mountWindowSelection(visual){
  const stage=visual.parentElement,canvas=document.createElement('canvas');canvas.width=1536;canvas.height=1024;canvas.className='prologue-selection';canvas.setAttribute('aria-hidden','true');visual.append(canvas);
  const ctx=canvas.getContext('2d'),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
  const src=visual.querySelector('.scene-image')?.getAttribute('src')||'',paths=src.includes('0_4.')?restored:src.includes('0_3.')?third:src.includes('0_0.')?ascii:src.includes('0_1.')?{...ascii,window:glitch.window}:glitch;
- const rings=entries.map(([name,id],index)=>{const points=paths[name],segments=points.map((a,i)=>{const b=points[(i+1)%points.length];return {a,b,length:Math.hypot(b[0]-a[0],b[1]-a[1])};});return {name,id,index,segments,total:segments.reduce((n,s)=>n+s.length,0),mix:0,phase:index*.17};});
+ const finalRoom=src.includes('0_4.');
+ const rings=entries.filter(([name])=>!finalRoom||name==='door').map(([name,id],index)=>{const points=paths[name],segments=points.map((a,i)=>{const b=points[(i+1)%points.length];return {a,b,length:Math.hypot(b[0]-a[0],b[1]-a[1])};});return {name,id,index,segments,total:segments.reduce((n,s)=>n+s.length,0),mix:0,phase:index*.17};});
  let raf=0,disposed=false,last=0;
  const point=(ring,t)=>{let distance=((t%1+1)%1)*ring.total;const seg=ring.segments.find(s=>{if(distance<=s.length)return true;distance-=s.length;return false;})||ring.segments.at(-1),f=distance/seg.length;return {x:seg.a[0]+(seg.b[0]-seg.a[0])*f,y:seg.a[1]+(seg.b[1]-seg.a[1])*f,dx:(seg.b[0]-seg.a[0])/seg.length,dy:(seg.b[1]-seg.a[1])/seg.length};};
  function frame(now){if(disposed)return;raf=requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;ctx.clearRect(0,0,1536,1024);canvas.dataset.selected='false';
   if(document.hidden)return;
   const assembly=stage.querySelector('.prologue-assembly'),enabled=[];let hovered='';
   for(const ring of rings){
-   const button=ring.name==='door'?(stage.querySelector('#entry-4')?.hidden?stage.querySelector('#exit'):stage.querySelector('#entry-4')):stage.querySelector(ring.id),visible=!assembly||assembly.dataset.assembled?.split(',').includes(ring.name);
+   const button=ring.name==='door'?(finalRoom?stage.querySelector('#exit'):stage.querySelector('#entry-4')?.hidden?stage.querySelector('#exit'):stage.querySelector('#entry-4')):stage.querySelector(ring.id),visible=!assembly||assembly.dataset.assembled?.split(',').includes(ring.name);
    if(!button||button.disabled||button.hidden||!visible){ring.mix=0;canvas.dataset[ring.name+'Count']='0';continue;}
-   const selected=button.matches(':hover')||button.matches(':focus-visible');ring.mix+=(Number(selected)-ring.mix)*(1-Math.exp(-dt*9));
+   const selected=button.matches(':hover')||button.matches(':focus-visible');ring.mix+=((finalRoom&&ring.name==='door'?1:Number(selected))-ring.mix)*(1-Math.exp(-dt*9));
    if(selected){hovered=ring.name;canvas.dataset.selected='true';}
    enabled.push(ring.name);
    if(ring.name==='window'){

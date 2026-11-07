@@ -70,9 +70,9 @@ function render(){
  const restored=state.completed===4;
  const boxes=restored?[[6,22,27,28],[34,34,8,35],[47,38,14,12],[71,24,13,46]]:state.completed===0?[[13,26,14,17],[37,27,9,33],[56,31,13,12],[80,34,14,25]]:[[5,25,27,25],[35,26,11,36],[55,29,15,14],[80,28,17,29]];
  boxes[3]=restored?[88,23,10,55]:[80,67,10,16];
- chapters.forEach((c,i)=>hotspot(`entry-${c.id}`,[boxes[i][0]-3,boxes[i][1]-4,boxes[i][2]+6,boxes[i][3]+8],`${c.name}${canEnter(state,c.id)?'':' · 尚未解锁'}`,!canEnter(state,c.id),()=>commit(enter(state,c.id))));
+ if(!restored)chapters.forEach((c,i)=>hotspot(`entry-${c.id}`,[boxes[i][0]-3,boxes[i][1]-4,boxes[i][2]+6,boxes[i][3]+8],`${c.name}${canEnter(state,c.id)?'':' · 尚未解锁'}`,!canEnter(state,c.id),()=>commit(enter(state,c.id))));
  hotspot('exit',restored?[88,23,10,55]:[80,67,10,16],'EXIT GAME',state.completed!==4,()=>commit(exit(state)));
- $('entry-4').hidden=restored;$('exit').hidden=!restored;
+ if($('entry-4'))$('entry-4').hidden=restored;$('exit').hidden=!restored;
  if(restored)disposeFinal=mountFinalPrelude($('visual'));
  disposeSelection=mountWindowSelection($('visual'));
  }else if(n){
