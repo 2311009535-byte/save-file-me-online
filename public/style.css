@@ -436,3 +436,7 @@
 .creation-board .creation-return:hover,.creation-board .creation-return:focus-visible{text-decoration:underline;outline:1px solid #1212cf}
 .creation-board .creation-return.missing-source-action{background:transparent}
 .creation-scene .creation-action-hint.creation-complete-hint{top:92%;height:8%;background:transparent}
+.creation-success{position:absolute;left:52%;top:16%;max-width:27%;display:flex;align-items:center;gap:8px;color:#b43136;background:transparent;z-index:6;pointer-events:none;transform:rotate(-7deg);font:italic calc(28px * var(--scene-ui,1))/1.15 'Bradley Hand','Segoe Print','Comic Sans MS',cursive;animation:creation-success-fade 2.8s both}
+.creation-success svg{width:calc(58px * var(--scene-ui,1));height:calc(52px * var(--scene-ui,1));flex-shrink:0;overflow:visible}.creation-success path{fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:100;animation:creation-pencil-check .55s ease-out both}.creation-success path.creation-success-echo{stroke-width:1;opacity:.4;animation-delay:.08s}.creation-success span{display:block;animation:creation-pencil-words .65s .3s both}
+@keyframes creation-pencil-check{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}@keyframes creation-pencil-words{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0)}}@keyframes creation-success-fade{0%,80%{opacity:1}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.creation-success,.creation-success path,.creation-success span{animation:none}}

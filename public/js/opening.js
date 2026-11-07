@@ -1,3 +1,4 @@
+import {gameAudio} from './game-audio.js';
 import {beginOpeningHandoff,endOpeningHandoff} from './prologue-handoff.js';
 export const OPENING_KEY='save-file-me:opening:v1';
 export const openingLines=[
@@ -23,6 +24,7 @@ export function shouldShowOpening(state){
  try{return sessionStorage.getItem(OPENING_KEY)!=='seen';}catch{return true;}
 }
 export function mountOpening({stage,onFinish=()=>{}}){
+ gameAudio.unlock();
  const root=document.createElement('section');root.className='opening';root.tabIndex=-1;root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');root.setAttribute('aria-label','Save File: Me · opening poem');
  const handoff=beginOpeningHandoff(stage);
  const frame=document.createElement('div');frame.className='opening-frame';
@@ -61,7 +63,7 @@ export function mountOpening({stage,onFinish=()=>{}}){
   ctx.globalAlpha=1;root.dataset.fragmentCount=String(fragments.length);root.dataset.particleTransfer=transfer.toFixed(3);
  }
  function resize(){const r=stage.getBoundingClientRect();Object.assign(frame.style,{left:r.left+'px',top:r.top+'px',transform:`scale(${r.width/1536})`});}
- function clean(){if(!alive)return;alive=false;endOpeningHandoff(stage,handoff);cancelAnimationFrame(raf);window.removeEventListener('resize',resize);document.removeEventListener('keydown',key,true);document.removeEventListener('visibilitychange',visibility);stage.inert=priorInert;root.remove();if(priorFocus?.isConnected&&priorFocus!==document.body)priorFocus.focus({preventScroll:true});}
+ function clean(){if(!alive)return;alive=false;gameAudio.stopTyping();endOpeningHandoff(stage,handoff);cancelAnimationFrame(raf);window.removeEventListener('resize',resize);document.removeEventListener('keydown',key,true);document.removeEventListener('visibilitychange',visibility);stage.inert=priorInert;root.remove();if(priorFocus?.isConnected&&priorFocus!==document.body)priorFocus.focus({preventScroll:true});}
  function finish(){if(!alive)return;completed=true;try{sessionStorage.setItem(OPENING_KEY,'seen');}catch{}clean();onFinish();}
  // This opening has no skip path: Escape and clicks never finish playback.
  function key(e){if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();}else if(e.key==='Tab'){e.preventDefault();root.focus();}}
@@ -75,7 +77,7 @@ export function mountOpening({stage,onFinish=()=>{}}){
    editor.style.opacity=String(Math.min(1,elapsed/450)*(1-scatter));let completedLines=0,current=-1;
    for(let i=0;i<openingLines.length;i++){
     const item=schedule[i],progress=reduced?1:item.typing?Math.max(0,Math.min(1,(elapsed-item.start)/item.typing)):Number(elapsed>=item.start);
-    const text=openingLines[i].slice(0,Math.floor(openingLines[i].length*progress));if(lineNodes[i].textContent!==text)lineNodes[i].textContent=text;
+    const text=openingLines[i].slice(0,Math.floor(openingLines[i].length*progress));if(lineNodes[i].textContent!==text){const added=text.slice(lineNodes[i].textContent.length);lineNodes[i].textContent=text;if(!reduced&&/\S/.test(added))gameAudio.effect('typing');}
     if(progress===1&&openingLines[i])completedLines++;if(openingLines[i]&&!reduced&&elapsed>=item.start&&elapsed<item.end)current=i;
     lineNodes[i].classList.toggle('is-typing',current===i&&scatter===0);
    }
