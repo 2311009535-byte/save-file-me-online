@@ -411,4 +411,6 @@
 
 .retry-defeat-shade{position:absolute;inset:0;background:#000;pointer-events:none}
 
-.retry-diary-daylight{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}.retry-diary-daylight>div{position:absolute;inset:0}.retry-diary-cloud{background:linear-gradient(135deg,#26314499,#202c3dee 62%,#26314488);mix-blend-mode:multiply}.retry-diary-sun{background:radial-gradient(ellipse at 80% 0%,#ffe6b880,transparent 80%);mix-blend-mode:soft-light}
+.retry-diary-daylight{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}.retry-diary-daylight>canvas{position:absolute;inset:0}.retry-diary-cloud{mix-blend-mode:normal}.retry-diary-sun{mix-blend-mode:soft-light}
+
+.retry-diary-daylight>canvas{width:100%;height:100%}.retry-victory-weather{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}

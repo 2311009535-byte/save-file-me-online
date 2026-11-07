@@ -18,8 +18,9 @@ export function createRetryActions({visual,show,hold,assets=retryActionAssets,on
   video.load();
   clips.set(name,video);
  }
- function playClip(video,outTime=null,audioGain=1){
+ function playClip(video,outTime=null,audioGain=1,effect=null){
   return new Promise(resolve=>{
+   let disposeEffect=null;
    let finished=false,frame=0,loading=null,lastTime=0,lastProgress=performance.now();
    const waiting=setTimeout(()=>{if(finished)return;loading=document.createElement('div');loading.className='retry-action-loading';loading.setAttribute('role','status');loading.textContent='Preparing attack…';visual.append(loading);},500);
    const startup=setTimeout(()=>finish('missing'),startupTimeout);
@@ -35,6 +36,7 @@ export function createRetryActions({visual,show,hold,assets=retryActionAssets,on
    const finish=result=>{
     if(finished)return;
     finished=true;
+    disposeEffect?.();disposeEffect=null;
     clearInterval(stalled);
     started();
     video.removeEventListener('playing',started);
@@ -73,6 +75,7 @@ export function createRetryActions({visual,show,hold,assets=retryActionAssets,on
    delete video.dataset.heldFrame;
    if(held&&held!==video)visual.insertBefore(video,held);
    else visual.append(video);
+   disposeEffect=effect?.(video,visual);
    try{video.currentTime=0;}catch{error();return;}
    if(video.error){error();return;}
    const handoff=()=>{
@@ -100,7 +103,7 @@ export function createRetryActions({visual,show,hold,assets=retryActionAssets,on
    if(!held||held.readyState<2||!held.videoWidth)return null;
    try{const frame=document.createElement('canvas');frame.width=held.videoWidth;frame.height=held.videoHeight;frame.getContext('2d').drawImage(held,0,0);return frame.toDataURL('image/png');}catch{return null;}
   },
-  async play(group,{onEnded=()=>{}}={}){
+  async play(group,{onEnded=()=>{},effect=null}={}){
    if(disposed)return 'cancelled';
    if(playing)throw new Error('Retry action playback is already active');
    const asset=assets[group];
@@ -110,14 +113,14 @@ export function createRetryActions({visual,show,hold,assets=retryActionAssets,on
    const wait=p=>Promise.race([p,cancelled]);
    try{
     let result=clips.has(group)?
-     await playClip(clips.get(group),asset.outTime,asset.audioGain):'missing';
+     await playClip(clips.get(group),asset.outTime,asset.audioGain,effect):'missing';
     if(disposed||result==='cancelled')return 'cancelled';
     // Real attack clips must play. Never replace a failed video with stills
     // or settle the round while waiting for the player's explicit retry.
     while(result==='missing'&&asset.enabled){
      if(!await retryVideo()||disposed)return 'cancelled';
      const video=clips.get(group);video.load();
-     result=await playClip(video,asset.outTime,asset.audioGain);
+     result=await playClip(video,asset.outTime,asset.audioGain,effect);
      if(disposed||result==='cancelled')return 'cancelled';
     }
     if(result==='missing'){

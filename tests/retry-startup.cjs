@@ -1,6 +1,6 @@
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs');
 (async()=>{const b=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox']});try{
- const p=await b.newPage({viewport:{width:1280,height:800}}),errors=[];p.on('pageerror',e=>errors.push(e.message));await p.route('**/js/retry-actions.js',r=>r.fulfill({contentType:'text/javascript',body:fs.readFileSync('public/js/retry-actions.js','utf8').replace('startupTimeout=30000','startupTimeout=1600')}));
+ const p=await b.newPage({viewport:{width:1280,height:800}}),errors=[];p.on('pageerror',e=>errors.push(e.message));await p.route('**/js/retry-actions.js*',r=>r.fulfill({contentType:'text/javascript',body:fs.readFileSync('public/js/retry-actions.js','utf8').replace('startupTimeout=30000','startupTimeout=1600')}));
  const block=name=>p.route(`**/assets/retry/videos/${name}-attack.mp4`,()=>{}),allow=name=>p.unroute(`**/assets/retry/videos/${name}-attack.mp4`);
  await block('player');await block('boss');await block('duo');await p.addInitScript(()=>sessionStorage.setItem('save-file-me:opening:v1','seen'));
  await p.goto(process.env.TEST_BASE_URL||'http://127.0.0.1:3006',{waitUntil:'domcontentloaded'});

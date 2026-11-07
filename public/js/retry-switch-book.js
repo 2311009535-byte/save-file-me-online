@@ -6,9 +6,9 @@ export function createSwitchBook(visual){
  leaf.className='retry-switch-page';writing.className='retry-switch-writing';writing.setAttribute('aria-label','Diary entries');shadow.className='retry-switch-shadow';visual.append(writing,shadow,leaf);
  if(!document.getElementById('retry-soft-book-hint')){const style=document.createElement('style');style.id='retry-soft-book-hint';style.textContent='.retry-scene .retry-diary-glow path{stroke:#e1cda8!important;stroke-width:2.5!important;filter:none!important;animation:retry-soft-book 3.8s ease-in-out infinite!important}@keyframes retry-soft-book{0%,100%{opacity:.07}50%{opacity:.24}}@media(prefers-reduced-motion:reduce){.retry-scene .retry-diary-glow path{animation:none!important;opacity:.15!important}}';document.head.append(style);}
  const ctx=leaf.getContext('2d'),ink=writing.getContext('2d'),sc=shadow.getContext('2d'),light=paper.getContext('2d');
- const sx=1672/1918,sy=941/1080;
- const right=[[1459,552],[1863,609],[1874,1000],[1372,909]].map(([x,y])=>[x*sx,y*sy]);
- const left=[[1125,511],[1459,552],[1372,909],[949,843]].map(([x,y])=>[x*sx,y*sy]);
+ paper.width=1800;
+ const right=[[1360,492],[1745,544],[1740,925],[1285,840]];
+ const left=[[1026,446],[1360,492],[1285,840],[868,768]];
  let disposed=false,completed=false,raf=0,resolveTurn=null,pages=null,finalArt=null;
  const point=(q,u,v)=>{const top=q[0].map((a,i)=>a+(q[1][i]-a)*u),bottom=q[3].map((a,i)=>a+(q[2][i]-a)*u);return top.map((a,i)=>a+(bottom[i]-a)*v);};
  function triangle(context,texture,src,dst,shade=0){
@@ -34,7 +34,7 @@ export function createSwitchBook(visual){
   // Writing on the next right page is exposed underneath the moving blank sheet.
   ink.save();ink.beginPath();right.forEach(([x,y],i)=>ink[i?'lineTo':'moveTo'](x,y));ink.closePath();ink.clip();ink.globalAlpha=Math.min(1,p/.12);ink.drawImage(pages,0,0);ink.restore();
   const n=36,angle=p*Math.PI,positions=[[0,0]];let x=0,z=0;
-  light.clearRect(0,0,1672,941);light.drawImage(image,0,0,1672,941);
+  light.clearRect(0,0,1800,941);light.drawImage(image,0,0,1672,941);light.drawImage(image,image.naturalWidth*1664/1672,0,image.naturalWidth*8/1672,image.naturalHeight,1672,0,128,941);
   const darkness=Math.sin(angle),gradient=light.createLinearGradient(1190,0,1660,0);
   gradient.addColorStop(0,'rgba(52,42,33,'+(.018*darkness)+')');gradient.addColorStop(.55,'rgba(52,42,33,'+(.065*darkness)+')');gradient.addColorStop(1,'rgba(52,42,33,'+(.025*darkness)+')');light.fillStyle=gradient;light.fillRect(0,0,1672,941);
   for(let i=0;i<n;i++){const u=(i+.5)/n,a=angle+.48*Math.sin(angle)*Math.sin(u*Math.PI);x+=Math.cos(a)/n;z+=Math.sin(a)/n;positions.push([x,z]);}
