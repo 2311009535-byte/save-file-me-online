@@ -1,6 +1,6 @@
 import {drawWindow} from './creation-window-drawing.js';
 export const buildSpecs={
- '2,3,4':{kind:'room',background:1},'9,10,11':{kind:'window',background:4},
+ '2,3,4':{kind:'room',background:2},'9,10,11':{kind:'window',background:4},
  '16,17,18':{kind:'lamp',background:12},'22,23,23':{kind:'bed',background:19},
  '29,29,30':{kind:'computer',background:25},'35,35,36':{kind:'door',background:32}
 };
@@ -13,8 +13,9 @@ export function drawBuild(c,kind,p){
  const grid=q=>{const at=(u,v)=>q[0].map((_,j)=>(1-v)*((1-u)*q[0][j]+u*q[1][j])+v*((1-u)*q[3][j]+u*q[2][j]));c.save();c.strokeStyle='#b0d2df';c.lineWidth=.7;for(let i=1;i<8;i++){path([at(i/8,0),at(i/8,1)]);path([at(0,i/8),at(1,i/8)]);}c.restore();};
  if(kind==='window'){drawWindow(c,p);return;}
  if(kind==='room'){
-  const floor=[[835,286],[1121,418],[835,581],[547,418]],h=192*p;
-  path(floor,true);grid(floor);
+  const h=192*p;
+  // Frame 2 already contains the placed floor and its matching perspective grid.
+  if(p===0)return;
   for(const a of [[[547,418],[835,286]],[[835,286],[1121,418]]]){const wall=[a[0],a[1],[a[1][0],a[1][1]-h],[a[0][0],a[0][1]-h]];path(wall,true);grid(wall);}
   path([[547,418],[835,581],[1121,418]]);return;
  }
