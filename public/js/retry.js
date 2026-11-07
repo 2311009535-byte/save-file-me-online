@@ -1,4 +1,3 @@
-import {createVictoryAfterglow} from './retry-victory-afterglow.js';
 import {createRetryCardMotion} from './retry-card-motion.js';
 import {createRetryAtmosphere,retryAtmosphereAssets} from './retry-atmosphere.js';
 import {createDiaryTurn} from './retry-page-turn.js?v=diary3';
@@ -17,7 +16,7 @@ export {resetRetry};
 const files=['3_1.png','3_2.png','3_3.png','3_4.png','3_5.png','3_6.png','3_7.JPG','3_8.png','3_9.JPG','3_10.png','3_11.png','3_12.png','3_13.jpg','3_14.png','3_15.png','3_16.PNG','3_17.PNG','3_18.PNG'];
 const url=f=>'/assets/retry/'+f;
 export function mountRetry({imageScene,hotspot,onExit,onVictory}){
- const $=id=>document.getElementById(id),stage=$('stage'),visual=$('visual'),videos=createRetryVideo(),victoryFrame=createVictoryFrame(),afterglow=createVictoryAfterglow(visual);let data;try{data=normalizeRetry(JSON.parse(localStorage.getItem(RETRY_KEY)));}catch{data=normalizeRetry(null);}
+ const $=id=>document.getElementById(id),stage=$('stage'),visual=$('visual'),videos=createRetryVideo(),victoryFrame=createVictoryFrame();let data;try{data=normalizeRetry(JSON.parse(localStorage.getItem(RETRY_KEY)));}catch{data=normalizeRetry(null);}
  const intro=createChapterIntro(stage),loader=createChapterLoading(stage),atmosphere=createRetryAtmosphere(visual);
  const partnerVideo=createVideoTransitions({partner:{enter:{src:'/assets/retry/videos/player2-join.mp4',available:true},return:{available:false}}},'retry-partner-overlay');
  const diaryVideo=createVideoTransitions({diary:{enter:{src:'/assets/retry/videos/diary-enter.mp4',available:true},return:{available:false}}},'retry-diary-video');
@@ -26,7 +25,7 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
  const persist=()=>{gameAudio.setRetry({joined:data.joined,view:data.view,won:data.won});try{localStorage.setItem(RETRY_KEY,JSON.stringify(data));}catch{}$('retry-progress').textContent=`第三章：失败 ${data.failures}/3 · player2 ${data.joined?'已加入':'未加入'} · ${data.won?'已获胜':'未获胜'} · 日记 ${data.page+1}/4`;stage.dataset.retryFailures=String(data.failures);stage.dataset.retryJoined=String(data.joined);stage.dataset.retryWon=String(data.won);};
  function pause(ms){return new Promise(resolve=>{const timer=setTimeout(()=>{timers.delete(timer);resolve(alive);},ms);timers.set(timer,resolve);});}
  const actions=createRetryActions({visual,show,onCue:name=>name==='stopCombat'?gameAudio.stopCombat():gameAudio.effect(name),hold:ms=>animate(visual.querySelector('.scene-image'),[{opacity:1},{opacity:1}],{duration:ms})});
- function cancel(){afterglow.dispose();defeatFrame=null;cardMotions.forEach(m=>m.dispose());cardMotions.clear();atmosphere.dispose();loader.dispose();intro.dispose();diaryTurn?.dispose();diaryTurn=null;switchBook?.dispose();switchBook=null;generation++;actions.dispose();victoryFrame.dispose();partnerVideo.dispose();diaryVideo.dispose();for(const [timer,resolve] of timers){clearTimeout(timer);resolve(false);}timers.clear();cancelAnimationFrame(loadingFrame);animations.forEach(a=>a.cancel());animations.clear();videos.dispose();}
+ function cancel(){defeatFrame=null;cardMotions.forEach(m=>m.dispose());cardMotions.clear();atmosphere.dispose();loader.dispose();intro.dispose();diaryTurn?.dispose();diaryTurn=null;switchBook?.dispose();switchBook=null;generation++;actions.dispose();victoryFrame.dispose();partnerVideo.dispose();diaryVideo.dispose();for(const [timer,resolve] of timers){clearTimeout(timer);resolve(false);}timers.clear();cancelAnimationFrame(loadingFrame);animations.forEach(a=>a.cancel());animations.clear();videos.dispose();}
  async function animate(element,frames,options){if(!alive)return false;const a=element.animate(frames,options);animations.add(a);try{await a.finished;return alive;}catch{return false;}finally{animations.delete(a);}}
  function lock(){busy=true;$('hotspots').querySelectorAll('button').forEach(b=>b.disabled=true);visual.querySelectorAll('.retry-card-art').forEach(c=>c.classList.remove('is-selected'));}
  function corner(){const diary=data.view==='diary';$('back').textContent=diary?'BACK':'SAVE ROOM';$('back').setAttribute('aria-label',diary?'BACK':'SAVE ROOM');$('back').hidden=!diary;$('back').onclick=()=>{if(diary&&!busy){gameAudio.effect('page');data.view='switch';persist();draw();}};}
@@ -134,7 +133,7 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
  stage.dataset.retryPlayerHp='1';stage.dataset.retryBossHp='1';
  const play=async(group,onEnded)=>{
   atmosphere.clear();stage.dataset.retryGroup=group;
-  return await actions.play(group,{onInterlude:()=>current()?afterglow.play():Promise.resolve(false),onEnded:async()=>{if(current()){await onEnded();if(current())stage.dataset.retryActionEnded=group;}}})==='ended'&&current();
+  return await actions.play(group,{onEnded:async()=>{if(current()){await onEnded();if(current())stage.dataset.retryActionEnded=group;}}})==='ended'&&current();
  };
  try{
   if(data.joined){

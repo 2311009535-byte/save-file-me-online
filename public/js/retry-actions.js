@@ -2,7 +2,7 @@ import {gameAudio} from './game-audio.js';
 export const retryActionAssets={
  playerAttack:{audioGain:.733669,src:'/assets/retry/videos/player-attack.mp4',enabled:true,outTime:2,frames:[['3_1.png',450],['3_2.png',1300]]},
  bossAttack:{audioGain:.640472,src:'/assets/retry/videos/boss-attack.mp4',enabled:true,frames:[['3_3.png',650],['3_4.png',1200]]},
- duoAttack:{interludeAt:5.1,audioGain:.747309,src:'/assets/retry/videos/duo-attack.mp4',enabled:true,frames:[['3_9.JPG',450],['3_10.png',1150],['3_11.png',1800]]}
+ duoAttack:{audioGain:.747309,src:'/assets/retry/videos/duo-attack.mp4',enabled:true,frames:[['3_9.JPG',450],['3_10.png',1150],['3_11.png',1800]]}
 };
 export function createRetryActions({visual,show,hold,assets=retryActionAssets,onCue=()=>{},startupTimeout=30000}){
  let disposed=false,active=null,playing=false,abortPlayback=null,held=null;
@@ -18,9 +18,9 @@ export function createRetryActions({visual,show,hold,assets=retryActionAssets,on
   video.load();
   clips.set(name,video);
  }
- function playClip(video,outTime=null,audioGain=1,interludeAt=null,onInterlude=async()=>true){
+ function playClip(video,outTime=null,audioGain=1){
   return new Promise(resolve=>{
-   let finished=false,frame=0,loading=null,interludeDone=false,lastTime=0,lastProgress=performance.now();
+   let finished=false,frame=0,loading=null,lastTime=0,lastProgress=performance.now();
    const waiting=setTimeout(()=>{if(finished)return;loading=document.createElement('div');loading.className='retry-action-loading';loading.setAttribute('role','status');loading.textContent='Preparing attack…';visual.append(loading);},500);
    const startup=setTimeout(()=>finish('missing'),startupTimeout);
    const stalled=setInterval(()=>{
@@ -54,10 +54,6 @@ export function createRetryActions({visual,show,hold,assets=retryActionAssets,on
    };
    const ended=()=>finish('ended'),error=()=>finish('missing');
    const progress=()=>{
-    if(Number.isFinite(interludeAt)&&video.currentTime>=interludeAt&&!interludeDone){
-     interludeDone=true;video.pause();
-     Promise.resolve(onInterlude()).then(ok=>{if(finished)return;if(!ok){finish('cancelled');return;}lastProgress=performance.now();video.play().catch(error);},()=>finish('missing'));
-    }
     if(Number.isFinite(outTime)&&video.currentTime>=outTime)ended();
    };
    const nextFrame=()=>{
@@ -104,7 +100,7 @@ export function createRetryActions({visual,show,hold,assets=retryActionAssets,on
    if(!held||held.readyState<2||!held.videoWidth)return null;
    try{const frame=document.createElement('canvas');frame.width=held.videoWidth;frame.height=held.videoHeight;frame.getContext('2d').drawImage(held,0,0);return frame.toDataURL('image/png');}catch{return null;}
   },
-  async play(group,{onEnded=()=>{},onInterlude=async()=>true}={}){
+  async play(group,{onEnded=()=>{}}={}){
    if(disposed)return 'cancelled';
    if(playing)throw new Error('Retry action playback is already active');
    const asset=assets[group];
@@ -114,14 +110,14 @@ export function createRetryActions({visual,show,hold,assets=retryActionAssets,on
    const wait=p=>Promise.race([p,cancelled]);
    try{
     let result=clips.has(group)?
-     await playClip(clips.get(group),asset.outTime,asset.audioGain,asset.interludeAt,onInterlude):'missing';
+     await playClip(clips.get(group),asset.outTime,asset.audioGain):'missing';
     if(disposed||result==='cancelled')return 'cancelled';
     // Real attack clips must play. Never replace a failed video with stills
     // or settle the round while waiting for the player's explicit retry.
     while(result==='missing'&&asset.enabled){
      if(!await retryVideo()||disposed)return 'cancelled';
      const video=clips.get(group);video.load();
-     result=await playClip(video,asset.outTime,asset.audioGain,asset.interludeAt,onInterlude);
+     result=await playClip(video,asset.outTime,asset.audioGain);
      if(disposed||result==='cancelled')return 'cancelled';
     }
     if(result==='missing'){
