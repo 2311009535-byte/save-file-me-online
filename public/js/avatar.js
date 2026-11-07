@@ -10,11 +10,11 @@ export function mountAvatar(root,{onContinue=null,generationAllowed=true}={}){
  <video id="avatar-camera" muted playsinline hidden></video><img id="avatar-photo" alt="Photo preview, stored temporarily on this page only" hidden>
  <p id="avatar-status" role="status" aria-live="polite">Enable the camera to take a photo, or use the default avatar.</p>
  <p id="avatar-notice" hidden>After confirmation, your photo is sent to AI to generate an avatar. Original photos are not permanently saved.</p>
- <div class="avatar-buttons"><button id="avatar-start">ENABLE CAMERA</button><button id="avatar-take" hidden>TAKE PHOTO</button><button id="avatar-retake" hidden>RETAKE</button><button id="avatar-use" hidden>USE PHOTO</button><button id="avatar-retry" hidden>RETRY</button><button id="avatar-default">USE DEFAULT AVATAR</button><button id="avatar-change" hidden>CHANGE AVATAR</button></div>
+ <div class="avatar-buttons"><button id="avatar-start">ENABLE CAMERA</button><button id="avatar-take" hidden>TAKE PHOTO</button><button id="avatar-retake" hidden>RETAKE</button><button id="avatar-use" hidden>USE PHOTO</button><button id="avatar-retry" hidden>RETRY</button><button id="avatar-check" hidden>CHECK AI SERVICE</button><button id="avatar-default">USE DEFAULT AVATAR</button><button id="avatar-change" hidden>CHANGE AVATAR</button></div>
  <p class="avatar-note">Prepare your avatar, then start building.</p>`;
  const portrait=document.createElement('div');portrait.className='creation-portrait';portrait.setAttribute('aria-label','PLAYER 01 AVATAR');
  root.append(area,portrait);
- let alive=true,photo=null,photoURL=null,requestId=null,enabled=false,cameraBusy=false,attemptsRemaining=null;let waitTimer=0,waitStarted=0;let available;const availability=new Promise(resolve=>available=resolve);
+ let alive=true,photo=null,photoURL=null,requestId=null,enabled=false,cameraBusy=false,attemptsRemaining=null;let configJob=null,configAbort=null;let waitTimer=0,waitStarted=0;let available;const availability=new Promise(resolve=>available=resolve);
  const $=id=>area.querySelector('#avatar-'+id);
  if(onContinue){const b=document.createElement('button');b.id='avatar-continue';b.textContent='START BUILDING';b.hidden=true;area.querySelector('.avatar-buttons').append(b);b.onclick=()=>{clearPhoto();area.hidden=true;onContinue();};}
  if(!generationAllowed){avatarURL=null;area.querySelector('h1+p').textContent='Preview a photo or start with the default avatar.';area.querySelector('.avatar-note').textContent='AI generation is disabled. Photos stay on this page. Use the default avatar to start.';}
@@ -22,7 +22,7 @@ export function mountAvatar(root,{onContinue=null,generationAllowed=true}={}){
  const status=text=>{$('status').textContent=text;};
  function allowance(config){if(!alive||!Number.isInteger(config?.playerTotalLimit))return;const remaining=Math.max(0,config.playerAttemptsRemaining??config.playerTotalLimit);attemptsRemaining=remaining;area.querySelector('.avatar-note').textContent=`AI avatar attempts remaining: ${remaining} / ${config.playerTotalLimit} total. Refreshing or re-entering does not reset attempts.`;$('use').disabled=!enabled||remaining===0;$('retry').disabled=remaining===0;}
  function clearPhoto(){photo=null;requestId=null;if(photoURL)URL.revokeObjectURL(photoURL);photoURL=null;$('photo').removeAttribute('src');$('photo').hidden=true;}
- function show(...ids){for(const id of buttons)$(id).hidden=!ids.includes(id);}
+ function show(...ids){for(const id of buttons)$(id).hidden=!ids.includes(id);$('check').hidden=!generationAllowed||enabled||chosen||!!inFlight;}
  function drawPortrait(){
   if(avatarURL){const im=document.createElement('img');im.src=avatarURL;im.alt='Your AI avatar';portrait.replaceChildren(im);}
   else portrait.innerHTML='<svg viewBox="65 1595 690 440" role="img" aria-label="Default PLAYER 01 avatar"><image href="/assets/creation/avatar-reference.jpg" width="3838" height="2160"/></svg>';
@@ -42,7 +42,7 @@ export function mountAvatar(root,{onContinue=null,generationAllowed=true}={}){
    canvas.width=Math.round(video.videoWidth*scale);canvas.height=Math.round(video.videoHeight*scale);canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);
    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.85));canvas.width=canvas.height=0;
    if(!alive||chosen||!blob)return;clearPhoto();photo=blob;photoURL=URL.createObjectURL(blob);requestId=crypto.randomUUID();$('photo').src=photoURL;$('photo').hidden=false;$('camera').hidden=true;$('notice').hidden=false;
-   show('retake',...(generationAllowed?['use']:[]),'default');$('use').disabled=!enabled||attemptsRemaining===0;$('notice').hidden=!generationAllowed;status(enabled?'Photo not uploaded. Select USE PHOTO to confirm generation.':generationAllowed?'Photo not uploaded. AI is unavailable; retake or use the default avatar.':'Photo preview only; nothing is uploaded. Use the default avatar to start.');
+   show('retake',...(generationAllowed?['use']:[]),'default');$('use').disabled=!enabled||attemptsRemaining===0;$('notice').hidden=!generationAllowed;if(generationAllowed&&!enabled)checkService();status(enabled?'Photo not uploaded. Select USE PHOTO to confirm generation.':generationAllowed?'Photo not uploaded. AI is unavailable; retake or use the default avatar.':'Photo preview only; nothing is uploaded. Use the default avatar to start.');
   }finally{cameraBusy=false;if(alive)$('take').disabled=false;}
  };
  async function transparentImage(data){
@@ -75,7 +75,33 @@ export function mountAvatar(root,{onContinue=null,generationAllowed=true}={}){
  drawPortrait();
  if(chosen)ready();
  if(inFlight){show();status('Your previous avatar is still generating. Please wait……');inFlight.then(()=>{if(alive)ready();},()=>{if(alive){show('start','default');status('Previous generation failed. Retake or use the default avatar.');}});}
- if(generationAllowed)fetch('/api/avatar/config',{signal:AbortSignal.timeout(8000)}).then(r=>r.ok?r.json():null).then(config=>{enabled=config?.enabled===true;available(enabled);if(!alive)return;$('use').disabled=!enabled||attemptsRemaining===0;allowance(config);if(enabled){if(!chosen&&!inFlight)status(photo?'Photo not uploaded. Select USE PHOTO to confirm generation.':`Enable the camera to take a photo. Total generation limit: ${config.playerTotalLimit??2}.`);}else if(!chosen&&!inFlight)status('AI Avatar service is not configured. Preview a photo or use the default avatar.');}).catch(()=>{available(false);if(alive&&!chosen&&!inFlight)status('AI Avatar service unavailable. Use the default avatar.');});
- else available(false);
- const dispose=()=>{alive=false;clearInterval(waitTimer);available(false);clearPhoto();area.remove();portrait.remove();root.classList.remove('creation-avatar-scene');};dispose.availability=availability;return dispose;
+ async function checkService(){
+  if(configJob)return configJob;
+  if(!alive||!generationAllowed)return false;
+  $('check').disabled=true;
+  configJob=(async()=>{
+   let config=null,error=null;
+   for(let attempt=0;attempt<3&&alive;attempt++){
+    configAbort=new AbortController();const timeout=setTimeout(()=>configAbort?.abort(),15000);
+    try{
+     const response=await fetch('/api/avatar/config',{cache:'no-store',credentials:'same-origin',signal:configAbort.signal});
+     if(!response.ok)throw Error('HTTP '+response.status);
+     config=await response.json();if(typeof config?.enabled!=='boolean')throw Error('Invalid service response');
+     break;
+    }catch(e){error=e;}finally{clearTimeout(timeout);configAbort=null;}
+   }
+   if(!alive)return false;
+   enabled=config?.enabled===true;available(config?enabled:null);allowance(config);
+   $('use').disabled=!enabled||attemptsRemaining===0;$('check').hidden=enabled||chosen||!!inFlight;
+   if(!chosen&&!inFlight){
+    if(enabled)status(attemptsRemaining===0?'Your avatar generation attempts are used up. Use the default avatar.':photo?'Photo not uploaded. Select USE PHOTO to confirm generation.':'Enable the camera to take a photo.');
+    else status(config?'AI avatar service is disabled for this deployment. Check the service or use the default avatar.':'Could not check AI service'+(error?.message?' ('+error.message+')':'')+'. Select CHECK AI SERVICE to try again. Your photo has not been uploaded.');
+   }
+   return enabled;
+  })();
+  try{return await configJob;}finally{configJob=null;if(alive)$('check').disabled=false;}
+ }
+ $('check').onclick=()=>checkService();
+ if(generationAllowed)checkService();else available(false);
+ const dispose=()=>{alive=false;configAbort?.abort();clearInterval(waitTimer);available(false);clearPhoto();area.remove();portrait.remove();root.classList.remove('creation-avatar-scene');};dispose.availability=availability;return dispose;
 }
