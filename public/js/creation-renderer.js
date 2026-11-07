@@ -25,9 +25,17 @@ export function createCreationRenderer(root){
   // A failed worker leaves the original artwork usable; do not blank the game.
  }
  async function image(url){const im=new Image();im.decoding='async';im.src=url;await im.decode();return im;}
+ // Remove baked blue instruction lettering only, leaving the paper and pale grid
+ // visible behind the live, transparent hint. Native files remain untouched.
+ function clearPrintedHint(canvas){
+  const c=canvas.getContext('2d'),sx=canvas.width/1672,sy=canvas.height/941,x=Math.ceil(350*sx),y=Math.ceil(586*sy),w=Math.floor(995*sx),h=Math.floor(75*sy),image=c.getImageData(x,y,w,h),data=image.data,mask=new Uint8Array(w*h),pad=Math.max(2,Math.ceil(4*sx));
+  for(let j=0;j<h;j++)for(let i=0;i<w;i++){const k=(j*w+i)*4;if(data[k+2]-data[k]>65&&data[k+1]<165){for(let dy=-pad;dy<=pad;dy++)for(let dx=-pad;dx<=pad;dx++){const xx=i+dx,yy=j+dy;if(xx>=0&&xx<w&&yy>=0&&yy<h)mask[yy*w+xx]=1;}}}
+  for(let i=0;i<mask.length;i++)if(mask[i]){data[i*4]=246;data[i*4+1]=242;data[i*4+2]=233;}
+  c.putImageData(image,x,y);
+ }
  function load(n){
   if(cache.has(n)){const promise=cache.get(n);cache.delete(n);cache.set(n,promise);return promise;}
-  const promise=(async()=>{const name=creationAssets[n]?.name||(n===28||n===37?`4_${n}.JPG`:`4_${n}.png`);const im=await image('/assets/creation/'+name);const canvas=document.createElement('canvas');canvas.width=Math.min(im.naturalWidth,targetWidth);canvas.height=Math.round(canvas.width*941/1672);canvas.getContext('2d').drawImage(im,0,0,canvas.width,canvas.height);await normalize(canvas);if(n===27||n===28){const reference=await load(26),width=Math.round(canvas.width*343/1672);canvas.getContext('2d').drawImage(reference,0,0,reference.width*343/1672,reference.height,0,0,width,canvas.height);}if(alive&&cache.get(n)===promise){sizes.set(n,canvas.width*canvas.height*4);cacheBytes+=sizes.get(n);trim();}return canvas;})();
+  const promise=(async()=>{const name=creationAssets[n]?.name||(n===28||n===37?`4_${n}.JPG`:`4_${n}.png`);const im=await image('/assets/creation/'+name);const canvas=document.createElement('canvas');canvas.width=Math.min(im.naturalWidth,targetWidth);canvas.height=Math.round(canvas.width*941/1672);canvas.getContext('2d').drawImage(im,0,0,canvas.width,canvas.height);await normalize(canvas);clearPrintedHint(canvas);if(n===27||n===28){const reference=await load(26),width=Math.round(canvas.width*343/1672);canvas.getContext('2d').drawImage(reference,0,0,reference.width*343/1672,reference.height,0,0,width,canvas.height);}if(alive&&cache.get(n)===promise){sizes.set(n,canvas.width*canvas.height*4);cacheBytes+=sizes.get(n);trim();}return canvas;})();
   cache.set(n,promise);promise.catch(()=>{if(cache.get(n)===promise)cache.delete(n);});
   while(cache.size>8){const key=cache.keys().next().value;cache.delete(key);cacheBytes-=sizes.get(key)||0;sizes.delete(key);}return promise;
  }

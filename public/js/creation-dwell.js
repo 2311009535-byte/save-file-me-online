@@ -1,7 +1,7 @@
 // One activation per visit. Time comes from detector results, so a stalled
 // camera cannot silently complete a dwell using an independent UI timer.
 export class DwellSelection{
- constructor(duration=1500){this.duration=duration;this.reset();}
+ constructor(duration=1000){this.duration=duration;this.reset();}
  reset(){this.target=null;this.since=0;this.last=0;this.fired=false;}
  update(target,time,allowed=true){
   if(!allowed||!target){this.reset();return {progress:0,activate:false};}

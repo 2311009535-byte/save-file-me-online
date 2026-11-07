@@ -426,3 +426,9 @@
 .creation-input-dialog button{padding:10px 14px;border:1px solid #1212cf;color:#1212cf;background:transparent;font:inherit;cursor:pointer}.creation-input-dialog button:hover{background:#1212cf12}.creation-input-dialog button:focus-visible{outline:2px solid #1212cf}
 .creation-input-dialog summary{cursor:pointer}.creation-camera-options{display:flex;flex-wrap:wrap;gap:10px;padding:14px 0}.creation-camera-options #hand-status{width:100%;font-size:13px}.creation-input-dialog #creation-settings-close{margin-top:18px}
 .creation-controls{left:50%;right:auto;transform:translateX(-50%)}
+.creation-scene .creation-action-hint,.creation-scene .creation-lift-hint{background:transparent}
+.creation-hand-notice{position:absolute;left:25%;top:39%;width:52%;margin:0;padding:18px;text-align:center;z-index:7;pointer-events:none;color:#1212cf;background:#f6f2e9ee;border:1px solid #1212cf55;font:calc(18px * var(--scene-ui,1))/1.5 monospace}
+.creation-hand-notice[data-state=loading]::before{content:'◌ ';display:inline-block;animation:avatar-wait 1.2s linear infinite}
+.creation-hand-notice[data-state=ready]{animation:creation-hand-ready 2.6s both}
+@keyframes creation-hand-ready{0%,75%{opacity:1}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.creation-hand-notice[data-state=loading]::before,.creation-hand-notice[data-state=ready]{animation:none}}
