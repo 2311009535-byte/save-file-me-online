@@ -445,4 +445,3 @@
 .chapter-navigation{left:auto;right:18px;top:62px;transform:none;text-align:right}.chapter-navigation #chapter-navigation-links{position:absolute;right:0;top:100%}
 
 #back[aria-label="SAVE ROOM"]{display:none!important}
-.wonder-narration-control{position:fixed;right:12px;bottom:51px;z-index:10019;padding:7px 10px;color:#eee6d5;background:#101817e8;border:1px solid #ddd5;font:12px monospace;cursor:pointer}.wonder-narration-control:focus-visible{outline:2px solid #e5d7b8}.wonder-narration-control:disabled{opacity:.6;cursor:default}

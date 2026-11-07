@@ -1,4 +1,3 @@
-import {createWonderNarration} from './wonder-narration.js';
 import {mountWindowDarkness} from './wonder-window-darkness.js';
 import {createWonderGameFlow} from './wonder-game-flow.js';
 import {mountWindowBackMask} from './wonder-window-ui-mask.js';
@@ -33,9 +32,9 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  let windowSky=null,disposeRoomLight=null,shownRoom=null,boxLid=null,disposeDetail=null;
  const videos=createVideoTransitions();
  const $=id=>document.getElementById(id),intro=createChapterIntro($('stage')),hints=createChapterHints($('stage'));
- const loader=createChapterLoading($('stage')),narration=createWonderNarration();
+ const loader=createChapterLoading($('stage'));
  const gameFlow=createWonderGameFlow($('stage'),$('visual'),()=>alive&&!busy&&!intro.active&&!$('stage').dataset.motion);
- const reflections=createWonderReflections($('stage'),{narration,canRead:id=>alive&&data.view===id&&!busy&&!intro.active&&!$('stage').dataset.motion,onReturn:id=>{if(!alive||data.view!==id||busy)return;if(id==='map'||id==='note')mark(id);transition(id,true);}});
+ const reflections=createWonderReflections($('stage'),{canRead:id=>alive&&data.view===id&&!busy&&!intro.active&&!$('stage').dataset.motion,onReturn:id=>{if(!alive||data.view!==id||busy)return;if(id==='map'||id==='note')mark(id);transition(id,true);}});
  const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(data));}catch{}};
  function jumpWithSound(){const was=runner?.grounded;jump(runner);}
  function clear(){windowSky?.dispose();windowSky=null;gameFlow.clearEntry();reflections.cancel();disposeDetail?.();disposeDetail=null;boxLid?.dispose();boxLid=null;disposeRoomLight?.();disposeRoomLight=null;cancelAnimationFrame(raf);$('hotspots').replaceChildren();}
@@ -154,7 +153,7 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  runner=createRunner(data.level);$('stage').dataset.level=String(data.level);
  const sprite=document.createElement('img');sprite.id='wonder-player';sprite.src='/assets/wonder/character.png';sprite.alt='自动向右前进的小人';sprite.className='wonder-player';$('visual').append(sprite);
  hotspot('wonder-jump',[40,82,20,12],'Space / 点击跳跃',false,()=>jumpWithSound());
- const story=mountGameStory($('visual'),data.level,{narration});disposeDetail=story.dispose;
+ const story=mountGameStory($('visual'),data.level);disposeDetail=story.dispose;
  last=0;const tick=time=>{if(!alive||data.view!=='game')return;const dt=last?Math.min((time-last)/1000,.035):0;last=time;
  if(!document.hidden&&!$('dev-panel').hidden){raf=requestAnimationFrame(tick);return;}
  if(jumpHeld&&runner.grounded&&!intro.active&&!busy)jumpWithSound();const outcome=document.hidden||intro.active||busy?'running':step(runner,dt);sprite.style.left=(runner.x-30)+'px';sprite.style.top=(runner.y-75)+'px';sprite.dataset.x=runner.x;sprite.dataset.y=runner.y;sprite.dataset.grounded=runner.grounded;if(!document.hidden&&!intro.active&&!busy)story.update(dt);
@@ -167,5 +166,5 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  if(data.view!=='map'){$('visual').onpointermove=null;$('visual').onpointerdown=null;}
  }
  const key=e=>{if(!busy&&!intro.active&&data.view==='game'&&e.code==='Space'&&$('dev-panel').hidden){e.preventDefault();jumpHeld=true;if(!e.repeat)jumpWithSound();}};const keyup=e=>{if(e.code==='Space')jumpHeld=false;};const blur=()=>jumpHeld=false;window.addEventListener('keyup',keyup);window.addEventListener('blur',blur);window.addEventListener('keydown',key);window.addEventListener('beforeunload',cancelMotion);window.addEventListener('pagehide',cancelMotion);persist();if(showLoading)loading();else draw();
- return ()=>{alive=false;narration.dispose();reflections.dispose();$('back').hidden=false;intro.dispose();hints.dispose();cancelMotion();videos.dispose();clear();window.removeEventListener('keydown',key);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);window.removeEventListener('beforeunload',cancelMotion);window.removeEventListener('pagehide',cancelMotion);$('visual').onpointermove=null;$('visual').onpointerdown=null;$('visual').classList.remove('wonder-window-dim');$('visual').style.filter='';$('stage').classList.remove('wonder-scene');delete $('stage').dataset.wonderView;delete $('stage').dataset.level;};
+ return ()=>{alive=false;reflections.dispose();$('back').hidden=false;intro.dispose();hints.dispose();cancelMotion();videos.dispose();clear();window.removeEventListener('keydown',key);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);window.removeEventListener('beforeunload',cancelMotion);window.removeEventListener('pagehide',cancelMotion);$('visual').onpointermove=null;$('visual').onpointerdown=null;$('visual').classList.remove('wonder-window-dim');$('visual').style.filter='';$('stage').classList.remove('wonder-scene');delete $('stage').dataset.wonderView;delete $('stage').dataset.level;};
 }
