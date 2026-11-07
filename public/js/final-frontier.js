@@ -1,6 +1,8 @@
 const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
 export function createFinalFrontier(canvas,video){
- canvas.width=1920;canvas.height=1080;const ctx=canvas.getContext('2d'),still=document.createElement('canvas');still.width=1920;still.height=1080;const sw=video.videoWidth,sh=video.videoHeight,fit=Math.min(1920/sw,1080/sh);const snapshot=still.getContext('2d');snapshot.fillStyle='#030405';snapshot.fillRect(0,0,1920,1080);snapshot.drawImage(video,(1920-sw*fit)/2,(1080-sh*fit)/2,sw*fit,sh*fit);
+ // Use the film's native aspect for both the video and its continuing frame.
+ // CSS covers the viewport identically, so the ending introduces no new bars.
+ const sw=video.videoWidth||1920,sh=video.videoHeight||1080;canvas.width=sw;canvas.height=sh;const ctx=canvas.getContext('2d'),still=document.createElement('canvas');still.width=1920;still.height=1080;ctx.setTransform(sw/1920,0,0,sh/1080,0,0);const snapshot=still.getContext('2d');snapshot.drawImage(video,0,0,1920,1080);
  let disposed=false;
  function render(seconds){
   if(disposed)return;const travel=72*seconds,edges=[];
