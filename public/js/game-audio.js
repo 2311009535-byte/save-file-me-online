@@ -1,3 +1,4 @@
+import {trafficAudioLevel} from './traffic-audio-envelope.js';
 import {musicLoop} from './audio-loop.js';
 import {forestMusicUrl,recordedSounds,chapterMusic} from './audio-config.js';
 import {profiles,sceneProfile,midiFrequency,riverLevel} from './audio-score.js';
@@ -131,7 +132,8 @@ export function createGameAudio(){
   for(const name of ['carPass','phoneVibration']){
    const wanted=allowed&&(name==='carPass'?escapeTraffic.active:escapeRoom.phone);
    if(!wanted){escapeLoops.get(name)?.stop(name==='carPass');escapeLoops.delete(name);continue;}
-   if(!escapeLoops.has(name)){const handle=playSample(name,fx,name==='carPass'?1.4:1.8,name!=='carPass',escapeEffectSources,name==='carPass'?escapeTraffic.phase*4:0);if(handle){escapeLoops.set(name,handle);stats.effects[name]=(stats.effects[name]||0)+1;}}
+   if(!escapeLoops.has(name)){const handle=playSample(name,fx,name==='carPass'?0:1.8,name!=='carPass',escapeEffectSources,name==='carPass'?escapeTraffic.phase*4:0);if(handle){escapeLoops.set(name,handle);stats.effects[name]=(stats.effects[name]||0)+1;}}
+   if(name==='carPass'&&escapeLoops.has(name))ramp(escapeLoops.get(name).gain,1.4*trafficAudioLevel(escapeTraffic.phase),.075);
   }
  }
  function setEscapeTraffic({active=false,phase=0}={}){escapeTraffic={active:Boolean(active),phase:clamp(phase)};syncEscapeLoops();}
@@ -211,7 +213,7 @@ export function createGameAudio(){
  }
  function suspend(){stopEscapeEffects(false);stopTyping();stopCombat();forestFile?.pause();customForestPlaying=false;setPencil(false);ctx?.suspend().catch(()=>{});}
  function dispose(){if(disposed)return;disposed=true;for(const[video,route]of videoRoutes){video.muted=true;route.source.disconnect();route.gain.disconnect();}videoRoutes.clear();forestFile?.pause();forestSource?.disconnect();clearInterval(clock);stopAmbience();pencil?.stop();for(const s of sources)try{s.stop();}catch{}tracks.clear();ctx?.close().catch(()=>{});controls?.remove();document.removeEventListener('pointerdown',gesture,true);document.removeEventListener('keydown',gesture,true);document.removeEventListener('visibilitychange',visibility);for(const n of ['playing','pause','ended','volumechange'])document.removeEventListener(n,videoMix,true);window.removeEventListener('pagehide',suspend);window.removeEventListener('pageshow',visibility);}
- function snapshot(){let peak=0;if(analyser&&ctx.state==='running'){const samples=new Float32Array(analyser.fftSize);analyser.getFloatTimeDomainData(samples);for(const s of samples)peak=Math.max(peak,Math.abs(s));}return{scene,profile,context:ctx?.state||'locked',preferences:{...prefs},tracks:[...tracks].filter(t=>!t.retiring).map(t=>t.name),bgm:[...tracks].filter(t=>!t.retiring&&t.recorded).map(t=>t.recorded),playingBgm:[...tracks].filter(t=>!t.retiring&&t.recordedPlaying).map(t=>t.recorded),activeSources:sources.size,escapeRoom:{...escapeRoom,traffic:{...escapeTraffic},playing:[...escapeLoops.keys()]},river:riverLevel(forestZ),pencil:Boolean(pencil),reading,videoActive,peak,effects:{...stats.effects},transitions:stats.transitions,recordings:[...samples.keys()],forestMusic:[...tracks].some(t=>!t.retiring&&t.name==='forest'&&t.recordedPlaying)?'file':'none'};}
+ function snapshot(){let peak=0;if(analyser&&ctx.state==='running'){const samples=new Float32Array(analyser.fftSize);analyser.getFloatTimeDomainData(samples);for(const s of samples)peak=Math.max(peak,Math.abs(s));}return{scene,profile,context:ctx?.state||'locked',preferences:{...prefs},tracks:[...tracks].filter(t=>!t.retiring).map(t=>t.name),bgm:[...tracks].filter(t=>!t.retiring&&t.recorded).map(t=>t.recorded),playingBgm:[...tracks].filter(t=>!t.retiring&&t.recordedPlaying).map(t=>t.recorded),activeSources:sources.size,escapeRoom:{...escapeRoom,traffic:{...escapeTraffic,level:escapeLoops.get('carPass')?.gain.value||0},playing:[...escapeLoops.keys()]},river:riverLevel(forestZ),pencil:Boolean(pencil),reading,videoActive,peak,effects:{...stats.effects},transitions:stats.transitions,recordings:[...samples.keys()],forestMusic:[...tracks].some(t=>!t.retiring&&t.name==='forest'&&t.recordedPlaying)?'file':'none'};}
  return{init,unlock,setScene,setWonderGame,setRetry,setForestMusic,setReading,effect,setEscapeRoom,setEscapeTraffic,stopEscapeEffects,stopTyping,bindVideoAudio,stopCombat,setPencil,forestPosition,setPreferences,suspend,dispose,snapshot,setCreation(count){built=clamp(count,0,5);}};
 }
 export const gameAudio=createGameAudio();
