@@ -64,7 +64,7 @@ export function mountCreation({root,finish}){
  function asset(n){frame(n);return `<span class="creation-art" aria-label="Scene ${n}" data-scene="${n}"></span>`;}
  function room(){return asset([4,12,19,25,32,37][game.state.built]);}
  function setArt(n){if(root.dataset.creationFrame===String(n))return;const art=board.querySelector('.creation-art');frame(n);if(art)art.outerHTML=asset(n);}
- function recovered(n){successNotice.show('Memory restored!');if(n===14)animateCode('recovered');resetDwell();clearHits();drag=null;handSelection=null;cancelAnimationFrame(holdFrame);board.innerHTML=asset(n)+'<button class="creation-return">RETURN TO BUILD</button>';$('.creation-return').onclick=()=>game.solve();$('#creation-objective').textContent='Memory restored. Dwell on RETURN TO BUILD for 1 s to return to build.';$('#creation-help').textContent=$('#creation-objective').textContent;}
+ function recovered(){if(!alive||game.state.phase!=='puzzle')return;successNotice.show('Memory restored!');animateCode('recovered');game.solve();}
  function animateCode(stage){
   const {built,item,roomCreated}=game.state;
   const name={window:'window',lamp:'floorLamp',bed:'bed',computer:'computer',door:'door'}[item];
@@ -74,7 +74,7 @@ export function mountCreation({root,finish}){
    for(let i=0;i<built;i++)lines.push(`// Memory ${i+1}: ${objects[i]}`,`memory.${objects[i]} = true;`,`await placeObject(${objects[i]});`,`await raiseObject(${objects[i]});`,`await releaseToInstall(${objects[i]});`,`room.objectsBuilt = ${i+1};`,'');
   }
   if(stage==='puzzle')lines.push(`// Memory ${built+1}: ${name}`,`const ${name} = selectObject("${name}");`,item==='computer'?'await selectPlug();':item==='door'?'await selectSaveFile();':`await restoreMemory(${name});`,'');
-  else if(stage==='recovered')lines.push(`memory.${name} = true;`,`unlockBuild(${name});`,'await returnToBuild();','');
+  else if(stage==='recovered')lines.push(`memory.${name} = true;`,`unlockBuild(${name});`,'returnToBuild();','');
   else if(stage==='plug-selected')lines.push('computer.plugSelected = true;','await selectPowerStrip();','');
   else if(stage==='connected')lines.push('computer.connected = true;','await pressPowerButton();','');
   else if(stage==='place')lines.push(`await placeObject(${name});`,`${name}.placed = true;`,'');
@@ -105,7 +105,7 @@ export function mountCreation({root,finish}){
    if(item==='window'){objective.textContent='Dwell on a star for 1 s to grab; move your index finger; dwell in the window for 1 s to place.';board.innerHTML=asset(6)+'<div class="creation-drop" data-target="window">WINDOW</div><button class="star star-one" data-drag="star1" aria-label="First star"><svg viewBox="910 640 260 270" aria-hidden="true"><image href="/assets/creation/4_6.JPG" width="3838" height="2160"/></svg></button><button class="star star-two" data-drag="star2" aria-label="Second star"><svg viewBox="2700 640 260 270" aria-hidden="true"><image href="/assets/creation/4_6.JPG" width="3838" height="2160"/></svg></button>';}
    if(item==='lamp'){objective.textContent='Dwell on HOLD  switch for 1 s to light up; in mouse mode hold for 2 s.';board.innerHTML=asset(13)+'<button class="lamp-hold" data-drag="lamp" aria-label="Lamp switch">HOLD TO LIGHT · 0%</button>';}
    if(item==='bed'){objective.textContent='Dwell on the blanket for 1 s to grab, then move your index finger upward.';board.innerHTML=asset(20)+'<button class="quilt-drag" data-drag="quilt" aria-label="BLANKET">GRAB BLANKET ↑</button><output class="quilt-dwell-progress" role="progressbar" aria-label="Blanket dwell progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">0%</output>';}
-   if(item==='computer'){objective.textContent='Dwell on the plug for 1 s to select; then dwell on the power strip for 1 s to connect, then dwell on POWER.';board.innerHTML=asset(26)+'<button class="plug-drag" data-drag="plug" aria-label="PLUG">PLUG</button><button class="computer-socket creation-drop socket-control" data-target="socket" aria-label="POWER STRIP" disabled>POWER STRIP</button><button class="computer-power" aria-label="Computer power" disabled>POWER</button>';$('.plug-drag').onclick=selectPlug;$('.socket-control').onclick=connectPlug;$('.computer-power').onclick=()=>{if(game.connected){animateCode('recovered');board.innerHTML=asset(28);objective.textContent='Computer memory restored.';successNotice.show('Memory restored!');const b=document.createElement('button');b.className='creation-return missing-source-action';b.setAttribute('aria-label','RETURN TO BUILD');b.textContent='RETURN TO BUILD';b.onclick=()=>game.solve();board.append(b);}};}
+   if(item==='computer'){objective.textContent='Dwell on the plug for 1 s to select; then dwell on the power strip for 1 s to connect, then dwell on POWER.';board.innerHTML=asset(26)+'<button class="plug-drag" data-drag="plug" aria-label="PLUG">PLUG</button><button class="computer-socket creation-drop socket-control" data-target="socket" aria-label="POWER STRIP" disabled>POWER STRIP</button><button class="computer-power" aria-label="Computer power" disabled>POWER</button>';$('.plug-drag').onclick=selectPlug;$('.socket-control').onclick=connectPlug;$('.computer-power').onclick=()=>{if(game.connected)recovered();};}
    if(item==='door'){objective.textContent='Dwell on the save card for 1 s to grab; move it to the door slot and dwell for 1 s to install.';board.innerHTML=asset(33)+'<button class="save-card" data-drag="save" aria-label="SAVE CARD">SAVE FILE: ME</button><div class="door-slot creation-drop" data-target="slot">SAVE SLOT</div>';}
   }else if(phase==='place'){
    objective.textContent='Dwell on the inventory item for 1 s to grab; move to the drop zone and dwell for 1 s to place.';
@@ -143,7 +143,7 @@ export function mountCreation({root,finish}){
 
   if(drag.kind==='lamp'){
    const current=drag;
-   const tick=time=>{if(drag!==current)return;const progress=Math.min(1,(time-current.time)/2000);current.element.textContent=`HOLD TO LIGHT · ${Math.round(progress*100)}%`;if(progress===1){recovered(14);return;}holdFrame=requestAnimationFrame(tick);};holdFrame=requestAnimationFrame(tick);
+   const tick=time=>{if(drag!==current)return;const progress=Math.min(1,(time-current.time)/2000);current.element.textContent=`HOLD TO LIGHT · ${Math.round(progress*100)}%`;if(progress===1){recovered();return;}holdFrame=requestAnimationFrame(tick);};holdFrame=requestAnimationFrame(tick);
   }
  }
  function move(p){
@@ -168,11 +168,11 @@ export function mountCreation({root,finish}){
   }
   if(current.kind==='plug')current.cover?.remove();
   if(cancelled){current.cover?.remove();if(current.kind==='quilt')quiltProgress(0);return;}
-  if(current.kind.startsWith('star')&&inside(p,'window')){current.element.remove();game.stars++;if(game.stars===2)recovered(7);}
+  if(current.kind.startsWith('star')&&inside(p,'window')){current.element.remove();game.stars++;if(game.stars===2)recovered();}
   if(current.kind.startsWith('star')&&current.element.isConnected)current.cover?.remove();
-  if(current.kind==='quilt'&&current.start.y-p.y>.12)recovered(21);
+  if(current.kind==='quilt'&&current.start.y-p.y>.12)recovered();
   if(current.kind==='plug'&&inside(p,'socket')){game.connected=true;animateCode('connected');board.querySelector('.creation-art').outerHTML=asset(27);current.element.remove();$('.computer-power').disabled=false;clearHits();$('#creation-objective').textContent='Power connected. Dwell on POWER for 1 s to start.';}
-  if(current.kind==='save'&&inside(p,'slot')){successNotice.show('Memory restored!');animateCode('recovered');board.innerHTML=asset(34);const b=document.createElement('button');b.className='creation-return creation-door-return';b.textContent='RETURN TO BUILD';b.onclick=()=>game.solve();board.append(b);}
+  if(current.kind==='save'&&inside(p,'slot'))recovered();
   if(current.kind==='place'&&inside(p,'place'))game.placed();
  }
  function selectPlug(){if(game.connected||plugSelected)return;plugSelected=true;$('.plug-drag').classList.add('is-flashing');$('.socket-control').disabled=false;clearHits();animateCode('plug-selected');$('#creation-help').textContent='Plug selected. Dwell on the power strip for 1 s to connect.';}
@@ -192,7 +192,7 @@ export function mountCreation({root,finish}){
   }
   const target=!drag&&!handSelection?hit(p):null,eligible=target?.classList.contains('creation-return')||target?.classList.contains('creation-run')||target?.classList.contains('computer-power')||target?.classList.contains('socket-control')||target?.dataset.drag==='plug'||['lamp','quilt','save','raise'].includes(target?.dataset.drag)||target?.dataset.object||target?.dataset.drag==='place'||target?.dataset.drag?.startsWith('star')?target:null;
   const result=dwell.update(eligible,performance.now());quiltProgress(drag?.kind==='quilt'?1:eligible?.dataset.drag==='quilt'?result.progress:0);dwellRing.hidden=!eligible;
-  if(eligible){ring(p,result.progress,'1s',eligible.dataset.object||'pickup');if(result.activate){if(eligible.dataset.drag==='raise'){resetDwell();begin(p,eligible,'hand');if(drag)drag.mode='raise-dwell';}else if(eligible.dataset.drag==='lamp'){resetDwell();recovered(14);}else if(eligible.dataset.drag==='quilt'){resetDwell();begin(p,eligible,'hand');if(drag)drag.mode='quilt-dwell';}else if(['place','save'].includes(eligible.dataset.drag)||eligible.dataset.drag?.startsWith('star')){resetDwell();begin(p,eligible,'hand');if(drag){drag.mode='dwell';drag.dropTarget=drag.kind==='save'?'slot':drag.kind.startsWith('star')?'window':'place';}}else eligible.click();}}
+  if(eligible){ring(p,result.progress,'1s',eligible.dataset.object||'pickup');if(result.activate){if(eligible.dataset.drag==='raise'){resetDwell();begin(p,eligible,'hand');if(drag)drag.mode='raise-dwell';}else if(eligible.dataset.drag==='lamp'){resetDwell();recovered();}else if(eligible.dataset.drag==='quilt'){resetDwell();begin(p,eligible,'hand');if(drag)drag.mode='quilt-dwell';}else if(['place','save'].includes(eligible.dataset.drag)||eligible.dataset.drag?.startsWith('star')){resetDwell();begin(p,eligible,'hand');if(drag){drag.mode='dwell';drag.dropTarget=drag.kind==='save'?'slot':drag.kind.startsWith('star')?'window':'place';}}else eligible.click();}}
  }
 
  function handEvent(type,p){
