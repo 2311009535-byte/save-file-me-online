@@ -1,0 +1,13 @@
+const {chromium}=require('playwright'),assert=require('node:assert/strict');
+(async()=>{const b=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox']});try{
+ const p=await b.newPage({viewport:{width:1440,height:900}}),errors=[],requests=[];p.on('pageerror',e=>errors.push(e.message));p.on('request',r=>requests.push(r.url()));
+ await p.addInitScript(()=>{sessionStorage.setItem('save-file-me:opening:v1','seen');localStorage.setItem('save-file-me:v1',JSON.stringify({completed:1,scene:'chapter2'}));});
+ await p.goto(process.env.TEST_BASE_URL||'http://127.0.0.1:3000');await p.keyboard.press('a');await p.evaluate(async()=>window.audio=(await import('/js/game-audio.js')).gameAudio);
+ await p.locator('#escape-exam').waitFor();await p.waitForFunction(()=>window.audio.snapshot().context==='running'&&window.audio.snapshot().recordings.includes('carPass'));
+ const checks=await p.evaluate(()=>new Promise(resolve=>{const seen={passing:0,quiet:0,mismatch:0},start=performance.now();function sample(){const passing=document.querySelector('.escape-window-traffic')?.dataset.passing==='true',playing=window.audio.snapshot().escapeRoom.playing.includes('carPass');seen[passing?'passing':'quiet']++;if(playing!==passing)seen.mismatch++;if(performance.now()-start<14000)requestAnimationFrame(sample);else resolve(seen);}sample();}));
+ assert(checks.passing>20&&checks.quiet>20,JSON.stringify(checks));assert.equal(checks.mismatch,0,JSON.stringify(checks));assert(requests.some(u=>u.endsWith('/escape-car-light-v2.m4a')));assert(!requests.some(u=>u.endsWith('/escape-car-ambient.m4a')));
+ await p.waitForFunction(()=>window.audio.snapshot().escapeRoom.playing.includes('carPass'));await p.locator('#escape-exam').click();assert(!await p.evaluate(()=>window.audio.snapshot().escapeRoom.playing.includes('carPass')));
+ await p.locator('.chapter-navigation-toggle').click();await p.locator('[data-navigate="prologue"]').click();assert.equal(await p.evaluate(()=>window.audio.snapshot().escapeRoom.playing.length),0);
+ await p.emulateMedia({reducedMotion:'reduce'});await p.reload();await p.keyboard.press('a');await p.evaluate(async()=>window.audio=(await import('/js/game-audio.js')).gameAudio);await p.locator('#escape-exam').waitFor();await p.waitForTimeout(1500);assert.equal(await p.locator('.escape-window-traffic').getAttribute('data-passing'),'false');assert(!await p.evaluate(()=>window.audio.snapshot().escapeRoom.playing.includes('carPass')));
+ assert.deepEqual(errors,[]);console.log('PASS supplied traffic recording, exact light/audio gating across cycles, close-up and chapter cleanup, no car audio with reduced motion',checks);
+}finally{await b.close()}})().catch(e=>{console.error(e);process.exitCode=1});

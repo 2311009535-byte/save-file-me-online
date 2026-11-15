@@ -42,7 +42,7 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
   onReturn:view=>{if(alive&&!busy&&data.view===view)transition(view,true);}
  });
  function syncStory(){
-  const key=data.view==='room'?(ready()?'computerGuide':floorUnlocked()?'papersGuide':data.exam?'phoneGuide':'examGuide'):['exam','phone','game'].includes(data.view)?data.view:null;
+  const key=data.view==='room'?(ready()?'computerGuide':floorUnlocked()?'papersGuide':data.exam?'phoneGuide':'examGuide'):['exam','phone'].includes(data.view)?data.view:null;
   story.show(key);hints.hide();if(data.view==='phone'&&!data.messages.every(Boolean))hints.show('phone');else if(data.view==='exam'&&!data.exam)hints.show('exam');else if(data.view==='room'&&floorUnlocked()&&!ready())hints.show('papers');
  }
 
@@ -152,7 +152,7 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
    hotspot('escape-phone',[28.85,33.24,11.51,18.89],'PHONE',!data.exam,()=>transition('phone'));
    hotspot('escape-exam',[41.5,25,5.5,7],'EXAM',false,()=>transition('exam'));
    $('stage').dataset.escapePaperCount=String(count);
-   disposeWindowTraffic=mountWindowTraffic($('visual'),{canPlay:()=>alive&&!busy&&!$('stage').dataset.motion});
+   disposeWindowTraffic=mountWindowTraffic($('visual'),{canPlay:()=>alive&&!busy&&!$('stage').dataset.motion,onPassing:state=>gameAudio.setEscapeTraffic(state)});
    disposeWallPressure=mountWallPressure($('visual'),count,{animate:animatePressure,safePapers:floorItems.filter((_,i)=>!data.papers[i])});
    // Wall ink and the child’s tired posture accumulate with received homework.
    if(!data.exam){const light=add('div','escape-exam-mist');light.innerHTML='<svg viewBox="0 0 100 100" preserveAspectRatio="none"><polygon filter="url(#escape-exam-mist)" points="42.2,28.8 44.4,26.2 46.5,28.2 44.1,30.6"/></svg>';}

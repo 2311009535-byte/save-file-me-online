@@ -13,7 +13,7 @@ export function createGameAudio(){
  const decoded=new Map();
  const samples=new Map(),sampleRequests=new Set(),combatSources=new Set();
  const typingSources=new Set(),escapeEffectSources=new Set();
- let escapeRoom={active:false,phone:false};const escapeLoops=new Map();
+ let escapeRoom={active:false,phone:false};let escapeTraffic={active:false,phase:0};const escapeLoops=new Map();
  const tracks=new Set(),sources=new Set(),cooldowns=new Map(),stats={effects:{},transitions:0};
  const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(prefs));}catch{}};
  const ramp=(param,value,seconds=.25)=>{if(!ctx)return;param.cancelScheduledValues(ctx.currentTime);param.setTargetAtTime(value,ctx.currentTime,Math.max(.01,seconds/3));};
@@ -105,7 +105,7 @@ export function createGameAudio(){
   });
  }
  function stopTrack(tr){for(const s of tr.voices)try{s.stop();}catch{}tr.bus.disconnect();tr.filter?.disconnect();tracks.delete(tr);}
- function playSample(name,bus,amp=1,loop=false,group=null,offset=0){const buffer=samples.get(name);if(!ctx||!buffer)return null;const source=ctx.createBufferSource(),gain=ctx.createGain();source.buffer=buffer;source.loop=loop;gain.gain.value=amp;source.connect(gain).connect(bus);register(source,[gain],group);source.start(0,Math.max(0,Math.min(buffer.duration-.001,offset)));let stopped=false;return{gain:gain.gain,stop(){if(stopped)return;stopped=true;ramp(gain.gain,0,.06);try{source.stop(ctx.currentTime+.12);}catch{}}};}
+ function playSample(name,bus,amp=1,loop=false,group=null,offset=0){const buffer=samples.get(name);if(!ctx||!buffer)return null;const source=ctx.createBufferSource(),gain=ctx.createGain();source.buffer=buffer;source.loop=loop;gain.gain.value=amp;source.connect(gain).connect(bus);register(source,[gain],group);source.start(0,Math.max(0,Math.min(buffer.duration-.001,offset)));let stopped=false;return{gain:gain.gain,stop(immediate=false){if(stopped)return;stopped=true;if(immediate)gain.gain.value=0;else ramp(gain.gain,0,.06);try{source.stop(ctx.currentTime+(immediate?0:.12));}catch{}}};}
  function decodeUrl(url){let parsed;try{parsed=new URL(url,location.href);}catch{return Promise.reject(Error('Invalid audio URL'));}if(parsed.origin!==location.origin)return Promise.reject(Error('External audio URL'));if(!decoded.has(parsed.href))decoded.set(parsed.href,fetch(parsed.href).then(r=>{if(!r.ok)throw Error('Audio unavailable');return r.arrayBuffer();}).then(b=>ctx.decodeAudioData(b)));return decoded.get(parsed.href);}
  function audioClip(buffer,spec={}){const rate=buffer.sampleRate,start=Math.max(0,Math.floor((spec.start||0)*rate)),end=Math.min(buffer.length,Math.floor((spec.end||buffer.duration)*rate)),length=end-start;if(length<rate*.02)throw Error('Audio clip too short');const overlap=Math.min(Math.floor((spec.seam||0)*rate),Math.floor(length/4)),out=ctx.createBuffer(buffer.numberOfChannels,length-overlap,rate);for(let ch=0;ch<buffer.numberOfChannels;ch++){const src=buffer.getChannelData(ch),dst=out.getChannelData(ch);dst.set(src.subarray(start+overlap,end));for(let i=0;i<overlap;i++){const t=i/Math.max(1,overlap-1),at=dst.length-overlap+i;dst[at]=src[end-overlap+i]*(1-t)+src[start+i]*t;}}return out;}
  function balanceSample(buffer){let sum=0,peak=0,count=0;for(let c=0;c<buffer.numberOfChannels;c++)for(const v of buffer.getChannelData(c)){sum+=v*v;peak=Math.max(peak,Math.abs(v));count++;}const rms=Math.sqrt(sum/Math.max(1,count)),gain=Math.min(.1/Math.max(rms,.00001),.55/Math.max(peak,.00001),8);for(let c=0;c<buffer.numberOfChannels;c++){const d=buffer.getChannelData(c);for(let i=0;i<d.length;i++)d[i]*=gain;}return buffer;}
@@ -125,20 +125,22 @@ export function createGameAudio(){
  function setScene(value,progress={}){if(value!=='chapter2')stopEscapeEffects();const nextProfile=sceneProfile(value,progress);if(scene===value&&(value!=='prologue'||profile===nextProfile))return;stopCombat();forestFile?.pause();customForestPlaying=false;scene=value;if(scene!=='chapter1')wonderGame=false;profile=nextProfile;pencil?.stop();pencil=null;duckUntil=0;mix();cooldowns.clear();stopAmbience();if(ctx){startTrack(profile);ambience();if(scene==='forest')playForestFile();}updateButton();}
  function setWonderGame(active){if(scene!=='chapter1')return;const next=Boolean(active);if(next===wonderGame)return;wonderGame=next;if(ctx)startTrack(profile);}
  function setRetry({joined,view,won}){if(scene!=='chapter3')return;const next=won||['diary','switch','victory'].includes(view)?'retry-diary':joined?'retry-together':'retry-alone';if(next===profile)return;profile=next;if(ctx)startTrack(profile);}
- function stopEscapeEffects(reset=true){if(reset)escapeRoom={active:false,phone:false};for(const handle of escapeLoops.values())handle.stop();escapeLoops.clear();for(const source of escapeEffectSources)try{source.stop();}catch{}escapeEffectSources.clear();}
+ function stopEscapeEffects(reset=true){if(reset){escapeRoom={active:false,phone:false};escapeTraffic={active:false,phase:0};}for(const [name,handle] of escapeLoops)handle.stop(name==='carPass');escapeLoops.clear();for(const source of escapeEffectSources)try{source.stop();}catch{}escapeEffectSources.clear();}
  function syncEscapeLoops(){
   const allowed=scene==='chapter2'&&escapeRoom.active&&ctx?.state==='running'&&!prefs.muted&&prefs.effects>0&&!document.hidden;
   for(const name of ['carPass','phoneVibration']){
-   const wanted=allowed&&(name==='carPass'||escapeRoom.phone);
-   if(!wanted){escapeLoops.get(name)?.stop();escapeLoops.delete(name);continue;}
-   if(!escapeLoops.has(name)){const handle=playSample(name,fx,name==='carPass'?1.4:1.8,true,escapeEffectSources);if(handle){escapeLoops.set(name,handle);stats.effects[name]=(stats.effects[name]||0)+1;}}
+   const wanted=allowed&&(name==='carPass'?escapeTraffic.active:escapeRoom.phone);
+   if(!wanted){escapeLoops.get(name)?.stop(name==='carPass');escapeLoops.delete(name);continue;}
+   if(!escapeLoops.has(name)){const handle=playSample(name,fx,name==='carPass'?1.4:1.8,name!=='carPass',escapeEffectSources,name==='carPass'?escapeTraffic.phase*4:0);if(handle){escapeLoops.set(name,handle);stats.effects[name]=(stats.effects[name]||0)+1;}}
   }
  }
+ function setEscapeTraffic({active=false,phase=0}={}){escapeTraffic={active:Boolean(active),phase:clamp(phase)};syncEscapeLoops();}
  function setEscapeRoom({active=false,phone=false}={}){escapeRoom={active:Boolean(active),phone:Boolean(phone)};syncEscapeLoops();}
 
  function stopTyping(){for(const source of typingSources)try{source.stop();}catch{}typingSources.clear();}
  function effect(name,{chapter=1,delay=0,offset=0}={}){
-  if(name==='phoneVibration'||name==='carPass'){
+  if(name==='carPass')return;
+  if(name==='phoneVibration'){
    if(scene!=='chapter2'||!ctx||ctx.state!=='running'||prefs.muted||prefs.effects===0||document.hidden)return;
    if(playSample(name,fx,name==='carPass'?.7:1,false,escapeEffectSources,offset))stats.effects[name]=(stats.effects[name]||0)+1;return;
   }
@@ -209,7 +211,7 @@ export function createGameAudio(){
  }
  function suspend(){stopEscapeEffects(false);stopTyping();stopCombat();forestFile?.pause();customForestPlaying=false;setPencil(false);ctx?.suspend().catch(()=>{});}
  function dispose(){if(disposed)return;disposed=true;for(const[video,route]of videoRoutes){video.muted=true;route.source.disconnect();route.gain.disconnect();}videoRoutes.clear();forestFile?.pause();forestSource?.disconnect();clearInterval(clock);stopAmbience();pencil?.stop();for(const s of sources)try{s.stop();}catch{}tracks.clear();ctx?.close().catch(()=>{});controls?.remove();document.removeEventListener('pointerdown',gesture,true);document.removeEventListener('keydown',gesture,true);document.removeEventListener('visibilitychange',visibility);for(const n of ['playing','pause','ended','volumechange'])document.removeEventListener(n,videoMix,true);window.removeEventListener('pagehide',suspend);window.removeEventListener('pageshow',visibility);}
- function snapshot(){let peak=0;if(analyser&&ctx.state==='running'){const samples=new Float32Array(analyser.fftSize);analyser.getFloatTimeDomainData(samples);for(const s of samples)peak=Math.max(peak,Math.abs(s));}return{scene,profile,context:ctx?.state||'locked',preferences:{...prefs},tracks:[...tracks].filter(t=>!t.retiring).map(t=>t.name),bgm:[...tracks].filter(t=>!t.retiring&&t.recorded).map(t=>t.recorded),playingBgm:[...tracks].filter(t=>!t.retiring&&t.recordedPlaying).map(t=>t.recorded),activeSources:sources.size,escapeRoom:{...escapeRoom,playing:[...escapeLoops.keys()]},river:riverLevel(forestZ),pencil:Boolean(pencil),reading,videoActive,peak,effects:{...stats.effects},transitions:stats.transitions,recordings:[...samples.keys()],forestMusic:[...tracks].some(t=>!t.retiring&&t.name==='forest'&&t.recordedPlaying)?'file':'none'};}
- return{init,unlock,setScene,setWonderGame,setRetry,setForestMusic,setReading,effect,setEscapeRoom,stopEscapeEffects,stopTyping,bindVideoAudio,stopCombat,setPencil,forestPosition,setPreferences,suspend,dispose,snapshot,setCreation(count){built=clamp(count,0,5);}};
+ function snapshot(){let peak=0;if(analyser&&ctx.state==='running'){const samples=new Float32Array(analyser.fftSize);analyser.getFloatTimeDomainData(samples);for(const s of samples)peak=Math.max(peak,Math.abs(s));}return{scene,profile,context:ctx?.state||'locked',preferences:{...prefs},tracks:[...tracks].filter(t=>!t.retiring).map(t=>t.name),bgm:[...tracks].filter(t=>!t.retiring&&t.recorded).map(t=>t.recorded),playingBgm:[...tracks].filter(t=>!t.retiring&&t.recordedPlaying).map(t=>t.recorded),activeSources:sources.size,escapeRoom:{...escapeRoom,traffic:{...escapeTraffic},playing:[...escapeLoops.keys()]},river:riverLevel(forestZ),pencil:Boolean(pencil),reading,videoActive,peak,effects:{...stats.effects},transitions:stats.transitions,recordings:[...samples.keys()],forestMusic:[...tracks].some(t=>!t.retiring&&t.name==='forest'&&t.recordedPlaying)?'file':'none'};}
+ return{init,unlock,setScene,setWonderGame,setRetry,setForestMusic,setReading,effect,setEscapeRoom,setEscapeTraffic,stopEscapeEffects,stopTyping,bindVideoAudio,stopCombat,setPencil,forestPosition,setPreferences,suspend,dispose,snapshot,setCreation(count){built=clamp(count,0,5);}};
 }
 export const gameAudio=createGameAudio();

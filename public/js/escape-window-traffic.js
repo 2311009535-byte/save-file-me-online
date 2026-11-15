@@ -23,13 +23,14 @@ function wallPaint(){
   return{alpha,travel,points};
  }).catch(error=>{paintedWall=null;throw error;});
 }
-export function mountWindowTraffic(visual,{canPlay=()=>true,onPass=()=>{}}={}){
+export function mountWindowTraffic(visual,{canPlay=()=>true,onPass=()=>{},onPassing=()=>{}}={}){
  const layer=document.createElement('canvas');layer.width=W;layer.height=H;layer.className='escape-window-traffic';layer.dataset.surface='yellow-walls';layer.setAttribute('aria-hidden','true');Object.assign(layer.style,{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none'});visual.append(layer);
  const ctx=layer.getContext('2d'),frame=ctx.createImageData(W,H),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
  let alive=true,raf=0,last=null,lastPaint=-Infinity,wall=null,lastSoundCycle=-1;
  wallPaint().then(paint=>{if(alive){wall=paint;layer.dataset.ready='true';}}).catch(()=>{});
  function paint(){
   const u=(trafficElapsed%6500-350)/4000,passing=!reduced&&wall&&u>0&&u<1;
+  onPassing({active:Boolean(passing),phase:Math.max(0,u)});
   layer.dataset.motion=reduced?'static':'running';layer.dataset.passing=String(Boolean(passing));layer.dataset.phase=u.toFixed(4);
   if(!passing){ctx.clearRect(0,0,W,H);return;}
   const cycle=Math.floor(trafficElapsed/6500);if(cycle!==lastSoundCycle){lastSoundCycle=cycle;onPass({phase:u});}
@@ -43,7 +44,7 @@ export function mountWindowTraffic(visual,{canPlay=()=>true,onPass=()=>{}}={}){
   }
   ctx.putImageData(frame,0,0);
  }
- function tick(now){if(!alive)return;const dt=last===null?0:Math.min(80,now-last);last=now;if(!document.hidden&&canPlay()){trafficElapsed+=dt;if(now-lastPaint>=40){paint();lastPaint=now;}}raf=requestAnimationFrame(tick);}
+ function tick(now){if(!alive)return;const dt=last===null?0:Math.min(80,now-last);last=now;if(!document.hidden&&canPlay()){trafficElapsed+=dt;if(now-lastPaint>=40){paint();lastPaint=now;}}else{onPassing({active:false});layer.dataset.passing='false';ctx.clearRect(0,0,W,H);}raf=requestAnimationFrame(tick);}
  const reset=()=>{last=null;};document.addEventListener('visibilitychange',reset);raf=requestAnimationFrame(tick);
- return()=>{alive=false;cancelAnimationFrame(raf);document.removeEventListener('visibilitychange',reset);layer.remove();};
+ return()=>{alive=false;onPassing({active:false});cancelAnimationFrame(raf);document.removeEventListener('visibilitychange',reset);layer.remove();};
 }
