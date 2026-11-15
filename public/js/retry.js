@@ -77,7 +77,7 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
   button('retry-again',[43.3,55.8,13.4,6.6],'RETRY',()=>retry());
  }
  else if(data.view==='discovered')button('retry-again',[43.3,55.8,13.4,6.6],'RETRY',()=>{data=retryRound(data);persist();draw();});
- else if(data.view==='invite')button('retry-invite',[43.3,55.8,13.4,6.6],'YES',()=>invitePartner());
+ else if(data.view==='invite'){partnerVideo.prepare('partner').then(ok=>{if(ok&&alive)actions.prepare('duoAttack');});button('retry-invite',[43.3,55.8,13.4,6.6],'YES',()=>invitePartner());}
  else if(data.view==='victory'){button('retry-continue',[40.5,48.5,16.5,6.5],'CONTINUE',()=>toSwitch());}
  else if(data.view==='switch'){
   patchAttempt(true);
@@ -174,6 +174,7 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
  if(!alive)return;imageScene('retry/3_1.png','Retry loading',1672,941);
  const critical=[...files];
  if(!await loader.play(3,[...critical.map(url),...retryAtmosphereAssets,'/assets/retry/ambient/defeat-blank.png','/assets/retry/ambient/diary-closed.png','/assets/retry/ambient/diary-open-base.jpg'])||!alive)return;
+ if(data.view==='battle')actions.prepare(data.joined?'duoAttack':'playerAttack').then(ok=>{if(ok&&alive)actions.prepare('bossAttack');});
  await intro.play(3,()=>draw());
  }
  function suspend(){cancel();}window.addEventListener('pagehide',suspend);if(data.won)onVictory();load();

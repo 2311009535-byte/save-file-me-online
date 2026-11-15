@@ -35,7 +35,13 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
  if((data.view==='phone'&&!data.exam)||(['computer','game'].includes(data.view)&&!ready()))data.view='room';
  let alive=true,busy=true,drag=null,loadToken=0,timer=0,motionToken=0,overlay=null,gameController=null,examInk=null,hintTimer=0,phoneGesture=false,hintLastActivity=0,dragHintTimer=0,loadingFrame=0,loadingMotion=null,roomDragStarted=false,disposePhoneList=null,disposeWallPressure=null,disposeWindowTraffic=null,disposeFatigue=null,phoneSettled=false,drawEpoch=0;const motions=new Set();const openMessages=[false,false];
  const videos=createVideoTransitions({phone:{enter:{src:phoneEntryAsset,available:true},return:{available:false}},exam:{enter:{src:'/assets/escape/videos/exam_enter.mp4',available:true},return:{available:false}},computer:{enter:{src:'/assets/escape/videos/computer-enter-pressure.mp4',available:true},return:{available:false}}},'escape-video-overlay');
- const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(data));}catch{}};
+ const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(data));}catch{}warmNextTransition();};
+ function warmNextTransition(){
+  if(!alive||data.view==='game')return;
+  const next=!data.exam?'exam':!data.messages.every(Boolean)?'phone':'computer';
+  videos.prepare(next);
+  if(next==='computer')warmImages([computerReactionAsset,reactionBlinkAsset,computerEndingAsset]);
+ }
  const story=createEscapeStory($('stage'),{
   canRead:key=>alive&&!busy&&!$('stage').dataset.motion&&$('dev-panel').hidden&&(key!=='game'||!$('visual').querySelector('.escape-parallax')||$('visual').querySelector('.escape-parallax').dataset.ready==='true'),
   isComplete:view=>view==='exam'?data.exam:data.messages.every(Boolean)&&phoneSettled,
@@ -203,12 +209,12 @@ export function mountEscape({imageScene,hotspot,scenePoint,finish,onExit,gameAda
   const progress=now=>{if(!alive||token!==loadToken)return;if(!document.hidden)elapsed+=Math.min(80,Math.max(0,now-last));last=now;const amount=Math.min(count/assets.length,elapsed/duration);$('escape-load-fill').style.width=(Math.min(.98,amount)*100)+'%';loadingMotion?.paint(elapsed);loadingFrame=requestAnimationFrame(progress);};progress(last);
   const minimum=new Promise(resolve=>{timer=setTimeout(resolve,duration);});
   try{
-   await Promise.all([minimum,Promise.all(assets.map(async file=>{await prepareImage('/assets/escape/'+file);count++;}))]);
+   await Promise.all([minimum,Promise.all(assets.map(async file=>{await prepareImage('/assets/escape/'+file);count++;})).then(()=>warmNextTransition())]);
    if(!alive||token!==loadToken)return;cancelAnimationFrame(loadingFrame);loadingFrame=0;$('escape-load-fill').style.width='100%';
    await new Promise(resolve=>{timer=setTimeout(resolve,180);});
   }catch{cancelAnimationFrame(loadingFrame);loadingFrame=0;loadingMotion?.dispose();loadingMotion=null;if(alive&&token===loadToken){cover.innerHTML='<button id="escape-retry">RETRY</button>';$('escape-retry').onclick=loading;}return;}
   if(!alive||token!==loadToken)return;loadingMotion?.dispose();loadingMotion=null;await draw();if(!alive||token!==loadToken)return;busy=false;roomInputLocked(false);schedulePhoneHints();scheduleDragTutorial();
  }
- persist();loading();
+ try{localStorage.setItem(KEY,JSON.stringify(data));}catch{}loading();
  return ()=>{alive=false;$('back').hidden=false;nativePhone.dispose();$('visual').style.filter='';loadToken++;hide();videos.dispose();$('stage').removeEventListener('wheel',wheel);window.removeEventListener('pagehide',hide);$('stage').classList.remove('escape-scene');delete $('stage').dataset.escapeView;delete $('stage').dataset.escapePaperCount;delete $('stage').dataset.escapeDistance;$('stage').classList.remove('escape-game-complete');};
 }

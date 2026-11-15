@@ -38,7 +38,7 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(data));}catch{}};
  function jumpWithSound(){const was=runner?.grounded;jump(runner);}
  function clear(){windowSky?.dispose();windowSky=null;gameFlow.clearEntry();reflections.cancel();disposeDetail?.();disposeDetail=null;boxLid?.dispose();boxLid=null;disposeRoomLight?.();disposeRoomLight=null;cancelAnimationFrame(raf);$('hotspots').replaceChildren();}
- function mark(id){data.done[id]=true;persist();if(id==='window'&&data.view==='window')reflections.start('window');}
+ function mark(id){data.done[id]=true;persist();if(id==='window'&&!data.done.box)videos.prepare('box');if(id==='window'&&data.view==='window')reflections.start('window');}
  function glow(id){$(id)?.classList.add('wonder-target');}
  function cancelMotion(){gameFlow.cancel();reflections.cancel();loader.dispose();intro.cancel();hints.hide();videos.cancel();stopMeteor();motionToken++;animations.forEach(a=>a.cancel());animations.clear();transitionOverlay?.remove();transitionOverlay=null;$('visual').style.transform='';$('visual').style.transformOrigin='';busy=false;delete $('stage').dataset.motion;}
  async function animate(element,frames,options,token){const a=element.animate(frames,options);animations.add(a);try{await a.finished;return alive&&token===motionToken;}catch{return false;}finally{a.cancel();animations.delete(a);}}
@@ -89,6 +89,7 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  busy=true;$('back').textContent='SAVE ROOM';$('back').setAttribute('aria-label','SAVE ROOM');const token=++motionToken;$('stage').classList.add('wonder-scene');$('stage').dataset.motion='loading';$('stage').dataset.wonderView='loading';imageScene('wonder/1_0.png','Wonder 加载页面',1672,941);$('hotspots').replaceChildren();$('back').onclick=()=>{cancelMotion();onExit();};
  const names=['1_1.png','extra.png','room-closed-box-user.png','box-enter-supplied-last.png','window-enter-supplied-last.png','1_5.png','1_6.png','1_3.png','1_4.png','1_7.jpg','1_13.png','1_15.png','1_8.png','1_9.png','1_10.png','1_11.png','1_12.png','character.png'];
  if(!await loader.play(1,names.map(f=>'/assets/wonder/'+f))||!alive||token!==motionToken)return;
+ const nextEntry=!data.done.window?'window':!data.done.box?'box':null;if(nextEntry)videos.prepare(nextEntry);
  if(!await intro.play(1,()=>draw())||!alive||token!==motionToken)return;busy=false;delete $('stage').dataset.motion;
  }
  function go(view){if(busy)return;stopMeteor();if(view==='window')meteorShown=false;data.view=view;persist();draw();}
@@ -124,18 +125,18 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  const powerDelay=Math.max(light.duration,$('stage').dataset.motion?(videos.layer()?160:1250):0);
  if(ready){const monitor=document.createElement('img');monitor.className='computer-light';monitor.src='/assets/wonder/1_13.png';monitor.alt='已亮起的电脑';$('visual').append(monitor);if(!monitorPowered){monitorPowered=true;gameAudio.effect('boot',{chapter:1,delay:powerDelay/1000});monitor.classList.add('is-powering-on');const power=monitor.animate([{opacity:0},{opacity:1,offset:.12},{opacity:.1,offset:.22},{opacity:1,offset:.38},{opacity:.15,offset:.48},{opacity:1,offset:.66},{opacity:.55,offset:.76},{opacity:1}],{duration:500,delay:powerDelay,easing:'steps(1,end)',fill:'both'});animations.add(power);power.finished.then(()=>{if(!alive||!monitor.isConnected)return;monitor.classList.remove('is-powering-on');const button=$('wonder-computer');if(button)button.disabled=false;}).catch(()=>{}).finally(()=>{animations.delete(power);power.cancel();});}}
  const boxes={window:[4,12,16,45],box:[86,64,14,33],map:[35,18,20,23],note:[62,34,4,8]};
- ids.forEach(id=>{hotspot('wonder-'+id,boxes[id],{window:'窗户',box:'箱子',map:'地图',note:'便签'}[id],false,()=>push(id,'wonder-'+id));shapeHotspot($('wonder-'+id),id);if(data.done[id]){$('wonder-'+id).dataset.completed='true';$('wonder-'+id).style.filter='none';}if(!data.done[id])glow('wonder-'+id);if(['box','map','note'].includes(id)){const target=$('wonder-'+id);const hint=()=>{if(!busy&&!data.done[id])hints.show(id);};target.onpointerenter=hint;target.onfocus=hint;}});
+ ids.forEach(id=>{hotspot('wonder-'+id,boxes[id],{window:'窗户',box:'箱子',map:'地图',note:'便签'}[id],false,()=>push(id,'wonder-'+id));shapeHotspot($('wonder-'+id),id);if(['window','box'].includes(id)){for(const event of ['pointerenter','focus'])$('wonder-'+id).addEventListener(event,()=>videos.prepare(id));}if(data.done[id]){$('wonder-'+id).dataset.completed='true';$('wonder-'+id).style.filter='none';}if(!data.done[id])glow('wonder-'+id);if(['box','map','note'].includes(id)){const target=$('wonder-'+id);const hint=()=>{if(!busy&&!data.done[id])hints.show(id);};target.onpointerenter=hint;target.onfocus=hint;}});
  const nextHint=ids.find(id=>!data.done[id]);if(nextHint)hints.show(nextHint);
  hotspot('wonder-computer',[54,42,9,13],ready?'电脑 · 进入游戏':'电脑 · 先探索四件物品',!ready,()=>push('computer','wonder-computer'));if(ready)glow('wonder-computer');if($('visual').querySelector('.is-powering-on'))$('wonder-computer').disabled=true;
  }else if(data.view==='window'){
- stopMeteor();
+ videos.prepare('window',true);stopMeteor();
  imageScene('wonder/window-enter-supplied-last.png','窗户特写 · 视频最后一帧',1910,1084);
  disposeDetail=mountWindowBackMask($('visual'),$('visual').querySelector('.scene-image'));
  windowSky=mountWindowDarkness($('visual').querySelector('.scene-image'),$('visual'),{kind:'detail'});
  hints.show('window');
  hotspot('wonder-meteor',[18,12,64,73],'点击窗户，寻找流星',false,()=>{if(busy)return;windowActivated=true;windowSky?.reveal();hints.hide();meteor();});if(!data.done.window)glow('wonder-meteor');
  }else if(data.view==='box'){
- imageScene('wonder/box-enter-supplied-last.png','打开的纸箱 · 箱内物品',1916,1082);
+ videos.prepare('box',true);imageScene('wonder/box-enter-supplied-last.png','打开的纸箱 · 箱内物品',1916,1082);
  mark('box');if(shownRoom)shownRoom={...shownRoom,box:true};reflections.start('box');
  }else if(data.view==='map'){
  hints.show('map');

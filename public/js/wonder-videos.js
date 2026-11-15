@@ -6,17 +6,17 @@ export const videoTransitions={
 export function createVideoTransitions(transitions=videoTransitions,overlayClass='wonder-video-overlay'){
  const prepared=new Map();let active=null,overlay=null,abort=null,disposed=false,disposeEffect=null;
  function preload(clip){
-  if(!clip.available)return null;
+  if(disposed||!clip.available)return null;
   if(prepared.has(clip.src))return prepared.get(clip.src);
   const video=document.createElement('video');video.src=clip.src;video.preload='auto';video.muted=true;video.playsInline=true;video.controls=false;
-  const ready=new Promise(resolve=>{
-   let timer;const finish=ok=>{clearTimeout(timer);video.removeEventListener('canplay',yes);video.removeEventListener('error',no);if(!ok)prepared.delete(clip.src);resolve(ok);};
-   const yes=()=>finish(true),no=()=>finish(false);video.addEventListener('canplay',yes);video.addEventListener('error',no);timer=setTimeout(no,30000);video.load();
+  let cancelReady=()=>{};const ready=new Promise(resolve=>{
+   let timer,settled=false;const finish=ok=>{if(settled)return;settled=true;clearTimeout(timer);video.removeEventListener('canplay',yes);video.removeEventListener('error',no);if(!ok)prepared.delete(clip.src);resolve(ok);};
+   cancelReady=()=>finish(false);const yes=()=>finish(true),no=()=>finish(false);video.addEventListener('canplay',yes);video.addEventListener('error',no);timer=setTimeout(no,30000);video.load();
   });
-  const entry={video,ready};prepared.set(clip.src,entry);return entry;
+  const entry={video,ready,cancelReady};prepared.set(clip.src,entry);return entry;
  }
- // Load only the selected transition. Two large eager downloads could time out
- // before the player selected an object, permanently caching a failed preload.
+ // Chapters may prepare their next transition during loading or reading.
+ // play() reuses that paused element; failed preparations remain retryable.
  function cancel(){disposeEffect?.();disposeEffect=null;abort?.();abort=null;active?.pause();active=null;overlay?.remove();overlay=null;}
  async function play(view,back,stage,{effect=null}={}){
   cancel();const entry=preload(transitions[view][back?'return':'enter']);if(!entry)return 'missing';
@@ -42,5 +42,5 @@ export function createVideoTransitions(transitions=videoTransitions,overlayClass
    video.play().catch(failed);
   });
  }
- return {play,cancel,prepare(view,back=false){return preload(transitions[view][back?'return':'enter'])?.ready||Promise.resolve(false);},layer:()=>overlay,dispose(){disposed=true;cancel();prepared.forEach(({video})=>{video.pause();video.removeAttribute('src');video.load();});prepared.clear();}};
+ return {play,cancel,prepare(view,back=false){return preload(transitions[view][back?'return':'enter'])?.ready||Promise.resolve(false);},layer:()=>overlay,dispose(){disposed=true;cancel();prepared.forEach(({video,cancelReady})=>{cancelReady();video.pause();video.removeAttribute('src');video.load();});prepared.clear();}};
 }

@@ -1,6 +1,6 @@
 import {reactionBlinkAsset,mountReactionBlink,blinkKeyframes} from './escape-reaction-blink.js';
 import {prepareImage} from './image-cache.js';
-export const computerReactionAsset='/assets/escape/computer-reaction.png';
+export const computerReactionAsset='/assets/escape/computer-reaction-resting.png';
 export const computerEndingAsset='/assets/escape/computer-ending.webp';
 
 export function createEscapeComputerFlow(stage){
@@ -14,8 +14,8 @@ export function createEscapeComputerFlow(stage){
   const token=version;let image;const closedEyes=prepareImage(reactionBlinkAsset).catch(()=>null);
   try{image=await prepareImage(computerReactionAsset);}catch{if(token!==version)return false;await onReturn();return token===version;}
   const closed=await closedEyes;if(token!==version)return false;
-  const node=document.createElement('div');node.className='escape-computer-reaction';node.dataset.phase='appearing';node.setAttribute('aria-label','A quiet moment of relief');Object.assign(node.style,{position:'absolute',inset:0,zIndex:3,background:'#000',pointerEvents:'none'});
-  const shot=image.cloneNode();shot.alt='Resting at the desk with a small, relieved smile';Object.assign(shot.style,{display:'block',width:'100%',height:'100%',objectFit:'contain'});node.append(shot);stage.append(node);reaction=node;
+  const node=document.createElement('div');node.className='escape-computer-reaction';node.dataset.phase='appearing';node.setAttribute('aria-label','A quiet, tired pause');Object.assign(node.style,{position:'absolute',inset:0,zIndex:3,background:'#000',pointerEvents:'none'});
+  const shot=image.cloneNode();shot.alt='Resting at the desk with tired eyes';Object.assign(shot.style,{display:'block',width:'100%',height:'100%',objectFit:'contain'});node.append(shot);stage.append(node);reaction=node;
   try{
    if(!await animate(node,[{opacity:0},{opacity:1}],reduced()?100:220)||token!==version)return false;
    node.style.opacity='1';node.dataset.phase='holding';
