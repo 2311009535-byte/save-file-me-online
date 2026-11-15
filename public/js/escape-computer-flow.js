@@ -1,6 +1,6 @@
 import {reactionBlinkAsset,mountReactionBlink,blinkKeyframes} from './escape-reaction-blink.js';
 import {prepareImage} from './image-cache.js';
-export const computerReactionAsset='/assets/escape/computer-reaction-resting.png';
+export const computerReactionAsset='/assets/escape/computer-reaction-resting-v2.png';
 export const computerEndingAsset='/assets/escape/computer-ending.webp';
 
 export function createEscapeComputerFlow(stage){
