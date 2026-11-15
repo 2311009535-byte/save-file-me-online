@@ -27,7 +27,7 @@ export function mountAvatar(root,{onContinue=null,generationAllowed=true}={}){
   if(avatarURL){const im=document.createElement('img');im.src=avatarURL;im.alt='Your AI avatar';portrait.replaceChildren(im);}
   else portrait.innerHTML='<svg viewBox="65 1595 690 440" role="img" aria-label="Default PLAYER 01 avatar"><image href="/assets/creation/avatar-reference.jpg" width="3838" height="2160"/></svg>';
  }
- function ready(){clearPhoto();drawPortrait();$('camera').hidden=true;$('notice').hidden=true;show('change',...(onContinue?['continue']:[]));status('Avatar ready. Photo preview and hand tracking share one camera.');}
+ function ready(){clearPhoto();drawPortrait();$('camera').hidden=true;$('notice').hidden=true;show(...(onContinue?['continue']:['change']));status('Avatar ready. Photo preview and hand tracking share one camera.');}
  async function start(){
   if(cameraBusy||inFlight)return;cameraBusy=true;$('start').disabled=true;$('retake').disabled=true;
   try{await input.startCamera($('camera'));if(!alive||chosen)return;clearPhoto();$('camera').hidden=false;$('notice').hidden=true;show('take','default');status('Get ready, then select TAKE PHOTO. No photo has been uploaded.');}
