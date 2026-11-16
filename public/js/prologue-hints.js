@@ -14,7 +14,7 @@ export function createPrologueHints(visual,{eligible,box}){
    const [x,y,w,h]=box,inside=pointer&&pointer.x>=x-48&&pointer.x<=x+w+48&&pointer.y>=y-40&&pointer.y<=y+h+40,near=Boolean(pointer&&pointer.x>=x-72&&pointer.x<=x+w+72&&pointer.y>=y-64&&pointer.y<=y+h+64);
    const reveal=idle>=10;
    if(!seen&&elapsed>=8){seen=true;try{sessionStorage.setItem(SEEN_KEY,'seen');}catch{}}
-   if(reveal)show('click',coarse||touch?'Tap to explore':'Click to explore');
+   if(reveal)show(formed?'click':'stay',formed?(coarse||touch?'Tap to explore':'Click to explore'):(coarse||touch?'Hold to reveal the object.':'Stay over the object to reveal it.'));
    else if(inside)show(formed?'click':'stay',formed?(coarse||touch?'Tap to explore':'Click to explore'):(coarse||touch?'Hold a little longer…':'Stay a little longer…'));
    else if(!seen)show('tutorial',coarse?'Touch and hold to let the room take shape.':'Move your cursor. Let the room take shape.');
    else if(idle>=12)show('idle',`Perhaps the ${eligible} holds a memory.`);
