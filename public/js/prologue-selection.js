@@ -32,11 +32,11 @@ export function mountWindowSelection(visual){
  const point=(ring,t)=>{let distance=((t%1+1)%1)*ring.total;const seg=ring.segments.find(s=>{if(distance<=s.length)return true;distance-=s.length;return false;})||ring.segments.at(-1),f=distance/seg.length;return {x:seg.a[0]+(seg.b[0]-seg.a[0])*f,y:seg.a[1]+(seg.b[1]-seg.a[1])*f,dx:(seg.b[0]-seg.a[0])/seg.length,dy:(seg.b[1]-seg.a[1])/seg.length};};
  function frame(now){if(disposed)return;raf=requestAnimationFrame(frame);const dt=Math.min((now-last)/1000,.05);last=now;ctx.clearRect(0,0,1536,1024);canvas.dataset.selected='false';canvas.dataset.idleTarget='';
   if(document.hidden)return;
-  const assembly=stage.querySelector('.prologue-assembly'),enabled=[];let hovered='';
+  const assembly=stage.querySelector('.prologue-assembly'),enabled=[];canvas.dataset.idleTarget=assembly?.dataset.hinted||'';let hovered='';
   for(const ring of rings){
-   const button=ring.name==='door'?(finalRoom?stage.querySelector('#exit'):stage.querySelector('#entry-4')?.hidden?stage.querySelector('#exit'):stage.querySelector('#entry-4')):stage.querySelector(ring.id),visible=!assembly||assembly.dataset.assembled?.split(',').includes(ring.name)||assembly.dataset.hinted===ring.name;
+   const button=ring.name==='door'?(finalRoom?stage.querySelector('#exit'):stage.querySelector('#entry-4')?.hidden?stage.querySelector('#exit'):stage.querySelector('#entry-4')):stage.querySelector(ring.id),visible=!assembly||assembly.dataset.assembled?.split(',').includes(ring.name);
    if(!button||button.disabled||button.hidden||!visible){ring.mix=0;canvas.dataset[ring.name+'Count']='0';continue;}
-   const assisted=assembly?.dataset.hinted===ring.name;if(assisted){ctx.save();ctx.strokeStyle='#fff4cf';ctx.lineWidth=2.5;ctx.shadowColor='#fff4cf';ctx.shadowBlur=7;ctx.beginPath();ring.segments.forEach(({a},i)=>i?ctx.lineTo(...a):ctx.moveTo(...a));ctx.closePath();ctx.stroke();ctx.restore();canvas.dataset.idleTarget=ring.name;}
+
    const selected=button.matches(':hover')||button.matches(':focus-visible');ring.mix+=((finalRoom&&ring.name==='door'?1:Number(selected))-ring.mix)*(1-Math.exp(-dt*9));
    if(selected){hovered=ring.name;canvas.dataset.selected='true';}
    enabled.push(ring.name);

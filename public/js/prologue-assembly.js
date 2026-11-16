@@ -70,6 +70,7 @@ export function mountAssembly(visual,{completed=0}={}){
   if(done.has(c.id)||(isActive&&hold>=1))group.progress=1;stage.style.setProperty('--assembly-'+c.id,String(group.progress));canvas.dataset[c.id+'Progress']=group.progress.toFixed(3);
   const bucket=Math.floor(group.progress*48);
   if(bucket!==group.bucket){group.bucket=bucket;const gc=group.context;gc.clearRect(0,0,group.layer.width,group.layer.height);for(const f of group.tiles)if(f.order<=bucket/48)gc.drawImage(source,f.x,f.y,f.w,f.h,f.x-c.box[0],f.y-c.box[1],f.w,f.h);}
+  group.assistOpacity??=0;const assistTarget=guidance.reveal&&c.id===eligible&&!done.has(c.id)?.20:0;group.assistOpacity=reduced?assistTarget:group.assistOpacity+(assistTarget-group.assistOpacity)*(1-Math.exp(-dt/.9));if(c.id===eligible)canvas.dataset.idleRevealAlpha=group.assistOpacity.toFixed(3);if(group.assistOpacity>.001){ctx.globalAlpha=group.assistOpacity;ctx.drawImage(source,...c.box,...c.box);}
   ctx.globalAlpha=1;if(group.progress>=.999)ctx.drawImage(source,...c.box,...c.box);else ctx.drawImage(group.layer,c.box[0],c.box[1]);
   // Object names stay hidden; accessible button labels remain in the DOM.
   const k=1-Math.exp(-dt*7),t=reduced?0:now*.001;

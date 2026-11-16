@@ -19,7 +19,7 @@ export function createPrologueHints(visual,{eligible,box}){
    else if(!seen)show('tutorial',coarse?'Touch and hold to let the room take shape.':'Move your cursor. Let the room take shape.');
    else if(idle>=12)show('idle',`Perhaps the ${eligible} holds a memory.`);
    else show('idle',`Perhaps the ${eligible} holds a memory.`);
-   const phase=(idle-12)%9,pulse=!reduced&&idle>=12&&phase<2.4?Math.sin(phase/2.4*Math.PI):0;
+   const phase=(idle-12)%9,pulse=!reveal&&!reduced&&idle>=12&&phase<2.4?Math.sin(phase/2.4*Math.PI):0;
    root.dataset.target=eligible;
    return{pulse,near,reveal};
   },dispose(){root.remove();}
