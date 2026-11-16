@@ -1,14 +1,15 @@
 // One owned preview animation also serves touch/click activation. Battle waits
 // for it and the caller locks input immediately, preventing duplicate rounds.
-export function createRetryCardMotion(card){
+export function createRetryCardMotion(card,{underlay=null}={}){
  let animation=null,pending=null,raised=false,disposed=false;
  const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
- function reset(){animation?.cancel();animation=null;pending=null;raised=false;card.classList.remove('is-selected');card.dataset.cardMotion='idle';}
+ function reset(){animation?.cancel();animation=null;pending=null;raised=false;card.classList.remove('is-selected');if(underlay)underlay.hidden=true;card.dataset.cardMotion='idle';}
  function play(){
   if(disposed)return Promise.resolve(false);
+  card.classList.add('is-selected');if(underlay)underlay.hidden=false;
   if(pending)return pending;
   if(raised)return Promise.resolve(true);
-  card.classList.add('is-selected');card.dataset.cardMotion='turning';
+  card.dataset.cardMotion='turning';
   const a=card.animate(reduced()?[{opacity:1},{opacity:1}]:[
    {opacity:1,transform:'perspective(1000px) rotateY(0deg) translateY(0) scale(1)'},
    {offset:.66,opacity:1,transform:'perspective(1000px) rotateY(360deg) translateY(0) scale(1)'},

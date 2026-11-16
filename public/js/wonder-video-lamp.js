@@ -18,11 +18,11 @@ function grayVideoMap(video,ctx,time){
  let a=keys[0],b=keys.at(-1);for(let i=1;i<keys.length;i++)if(time<=keys[i][0]){a=keys[i-1];b=keys[i];break;}const t=Math.max(0,Math.min(1,(time-a[0])/Math.max(.001,b[0]-a[0]))),q=a.slice(1).map((v,i)=>v+(b[i+1]-v)*t),x=Math.max(0,q[0]*834),y=Math.max(0,q[1]*471),w=Math.min(834,q[2]*834)-x,h=Math.min(471,q[3]*471)-y;
  if(w<=0||h<=0)return;ctx.save();ctx.filter='grayscale(1)';ctx.drawImage(video,x/834*video.videoWidth,y/471*video.videoHeight,w/834*video.videoWidth,h/471*video.videoHeight,x,y,w,h);ctx.restore();
 }
-export function mountVideoLampOff(video,host){
+export function mountVideoLampOff(video,host,{mapCompleted=false}={}){
  const c=document.createElement('canvas');c.width=834;c.height=471;c.className='wonder-video-lamp-off';c.setAttribute('aria-hidden','true');Object.assign(c.style,{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',zIndex:3});host.append(c);
  const map=document.createElement('canvas');map.width=834;map.height=471;map.className='wonder-video-map-gray';Object.assign(map.style,{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',zIndex:1});host.append(map);const mapCtx=map.getContext('2d');
  const ctx=c.getContext('2d');let alive=true,request=0,raf=0,last=-1;
- function paint(){if(!alive||video.readyState<2)return;const time=video.currentTime||0;if(time===last)return;last=time;grayVideoMap(video,mapCtx,time);ctx.clearRect(0,0,c.width,c.height);c.dataset.changedPixels='0';const pose=videoLampPose(video.currentSrc||video.src,time);if(!pose)return;
+ function paint(){if(!alive||video.readyState<2)return;const time=video.currentTime||0;if(time===last)return;last=time;if(mapCompleted)mapCtx.clearRect(0,0,834,471);else grayVideoMap(video,mapCtx,time);ctx.clearRect(0,0,c.width,c.height);c.dataset.changedPixels='0';const pose=videoLampPose(video.currentSrc||video.src,time);if(!pose)return;
   const cx=pose.x*c.width,cy=pose.y*c.height,rx=69*pose.scale,ry=73*pose.scale;
   if(cx-rx>c.width||cy-ry>c.height||cx+rx<0||cy+ry<0)return;
   ctx.save();ctx.translate(cx,cy+9*pose.scale);ctx.scale(rx,ry);

@@ -1,7 +1,7 @@
 import {prepareImage} from './image-cache.js';
 const clockEpoch=performance.now();
 
-export function mountRoomAtmosphere(visual){
+export function mountRoomAtmosphere(visual,{mapCompleted=false}={}){
  const layer=document.createElement('canvas');layer.width=1669;layer.height=942;layer.className='wonder-room-atmosphere';layer.setAttribute('aria-hidden','true');Object.assign(layer.style,{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',zIndex:1});visual.append(layer);
  const ctx=layer.getContext('2d');ctx.imageSmoothingEnabled=false;
  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -25,7 +25,7 @@ export function mountRoomAtmosphere(visual){
     for(let row=0;row<h;row+=2){const progress=row/h,shift=reduced?0:Math.sin(now/2300+phase+progress*1.4)*1.2*progress;
      ctx.drawImage(image,x,y+row,w,Math.min(2,h-row),x+shift,y+row,w-shift,Math.min(2,h-row));}
    }
-   ctx.save();ctx.filter='grayscale(1)';ctx.drawImage(image,598,193,300,178,598,193,300,178);ctx.restore();layer.dataset.wallMap='gray';
+   ctx.save();ctx.filter=mapCompleted?'none':'grayscale(1)';ctx.drawImage(image,598,193,300,178,598,193,300,178);ctx.restore();layer.dataset.wallMap=mapCompleted?'color':'gray';
    ctx.drawImage(face,1236,186);
    const seconds=reduced?0:(now-clockEpoch)/1000;
    function hand(angle,length,width,color){ctx.save();ctx.translate(1274,224);ctx.rotate(angle);ctx.fillStyle=color;ctx.fillRect(-width/2,-length,width,length+3);ctx.restore();}

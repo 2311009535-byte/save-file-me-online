@@ -29,14 +29,14 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  let alive=true,raf=0,runner=null,last=0,meteorShown=false,busy=false,motionToken=0,drawVersion=0;
  data.boxOpened=data?.boxOpened===true||data.done.box||data.view==='box';
  const animations=new Set();let transitionOverlay=null,monitorPowered=ids.every(id=>data.done[id]),jumpHeld=false;
- let windowSky=null,disposeRoomLight=null,shownRoom=null,boxLid=null,disposeDetail=null;
+ let windowSky=null,disposeRoomLight=null,shownRoom=null,boxLid=null,disposeDetail=null,jumpTutorialNeeded=true,gameReady=true;
  const videos=createVideoTransitions();
  const $=id=>document.getElementById(id),intro=createChapterIntro($('stage')),hints=createChapterHints($('stage'));
  const loader=createChapterLoading($('stage'));
  const gameFlow=createWonderGameFlow($('stage'),$('visual'),()=>alive&&!busy&&!intro.active&&!$('stage').dataset.motion);
  const reflections=createWonderReflections($('stage'),{canRead:id=>alive&&data.view===id&&!busy&&!intro.active&&!$('stage').dataset.motion,onReturn:id=>{if(!alive||data.view!==id||busy)return;if(id==='map'||id==='note')mark(id);transition(id,true);}});
  const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(data));}catch{}};
- function jumpWithSound(){const was=runner?.grounded;jump(runner);}
+ function jumpWithSound(){if(!gameReady)return;const was=runner?.grounded;jump(runner);}
  function clear(){windowSky?.dispose();windowSky=null;gameFlow.clearEntry();reflections.cancel();disposeDetail?.();disposeDetail=null;boxLid?.dispose();boxLid=null;disposeRoomLight?.();disposeRoomLight=null;cancelAnimationFrame(raf);$('hotspots').replaceChildren();}
  function mark(id){data.done[id]=true;persist();if(id==='window'&&!data.done.box)videos.prepare('box');if(id==='window'&&data.view==='window')reflections.start('window');}
  function glow(id){$(id)?.classList.add('wonder-target');}
@@ -53,7 +53,7 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  try{await prepareImage(previewSrc);}catch{cancelMotion();return;}if(!alive||token!==motionToken)return;
  // No intermediate still-image playback. Missing clips use a direct, honest fallback.
  const returnEffect=back&&view==='window'?createWindowReturnHold({visual:$('visual'),meteor:meteorLayer}):null;
- const effect=view==='window'?windowTransitionTone({back,hideSky:!back,roomBrightness:ids.every(id=>data.done[id])?1:(back ? .58 : .56),returnEffect}):boxTransitionTone({back,done:data.done});
+ const effect=view==='window'?windowTransitionTone({back,hideSky:!back,mapCompleted:data.done.map,roomBrightness:ids.every(id=>data.done[id])?1:(back ? .58 : .56),returnEffect}):boxTransitionTone({back,done:data.done});
  const result=await videos.play(view,back,$('stage'),{effect});
  if(!alive||token!==motionToken||result==='cancelled')return;
  if(back)stopMeteor();if(destination==='box')data.boxOpened=true;data.view=destination;meteorShown=false;draw();
@@ -118,15 +118,15 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  if(data.view==='room'){
  const ready=ids.every(id=>data.done[id]);imageScene('wonder/1_1.png','Wonder 房间',1669,942);
  addContourLights($('visual'),data.done,{closedBox:!data.boxOpened,movingNote:false});
- disposeDetail=mountRoomAtmosphere($('visual'));
+ disposeDetail=mountRoomAtmosphere($('visual'),{mapCompleted:data.done.map});
  if(!data.boxOpened)boxLid=mountClosedBox($('visual'));
  windowSky=hideRoomMeteor($('visual'),data.done.window);
  const light=mountRoomLighting($('visual'),data.done,shownRoom);disposeRoomLight=light;shownRoom={...data.done};
  const powerDelay=Math.max(light.duration,$('stage').dataset.motion?(videos.layer()?160:1250):0);
  if(ready){const monitor=document.createElement('img');monitor.className='computer-light';monitor.src='/assets/wonder/1_13.png';monitor.alt='已亮起的电脑';$('visual').append(monitor);if(!monitorPowered){monitorPowered=true;gameAudio.effect('boot',{chapter:1,delay:powerDelay/1000});monitor.classList.add('is-powering-on');const power=monitor.animate([{opacity:0},{opacity:1,offset:.12},{opacity:.1,offset:.22},{opacity:1,offset:.38},{opacity:.15,offset:.48},{opacity:1,offset:.66},{opacity:.55,offset:.76},{opacity:1}],{duration:500,delay:powerDelay,easing:'steps(1,end)',fill:'both'});animations.add(power);power.finished.then(()=>{if(!alive||!monitor.isConnected)return;monitor.classList.remove('is-powering-on');const button=$('wonder-computer');if(button)button.disabled=false;}).catch(()=>{}).finally(()=>{animations.delete(power);power.cancel();});}}
  const boxes={window:[4,12,16,45],box:[86,64,14,33],map:[35,18,20,23],note:[62,34,4,8]};
- ids.forEach(id=>{hotspot('wonder-'+id,boxes[id],{window:'窗户',box:'箱子',map:'地图',note:'便签'}[id],false,()=>push(id,'wonder-'+id));shapeHotspot($('wonder-'+id),id);if(['window','box'].includes(id)){for(const event of ['pointerenter','focus'])$('wonder-'+id).addEventListener(event,()=>videos.prepare(id));}if(data.done[id]){$('wonder-'+id).dataset.completed='true';$('wonder-'+id).style.filter='none';}if(!data.done[id])glow('wonder-'+id);if(['box','map','note'].includes(id)){const target=$('wonder-'+id);const hint=()=>{if(!busy&&!data.done[id])hints.show(id);};target.onpointerenter=hint;target.onfocus=hint;}});
- const nextHint=ids.find(id=>!data.done[id]);if(nextHint)hints.show(nextHint);
+ ids.forEach(id=>{hotspot('wonder-'+id,boxes[id],{window:'窗户',box:'箱子',map:'地图',note:'便签'}[id],false,()=>push(id,'wonder-'+id));shapeHotspot($('wonder-'+id),id);if(['window','box'].includes(id)){for(const event of ['pointerenter','focus'])$('wonder-'+id).addEventListener(event,()=>videos.prepare(id));}if(data.done[id]){$('wonder-'+id).dataset.completed='true';$('wonder-'+id).style.filter='none';}if(!data.done[id])glow('wonder-'+id);});
+
  hotspot('wonder-computer',[54,42,9,13],ready?'电脑 · 进入游戏':'电脑 · 先探索四件物品',!ready,()=>push('computer','wonder-computer'));if(ready)glow('wonder-computer');if($('visual').querySelector('.is-powering-on'))$('wonder-computer').disabled=true;
  }else if(data.view==='window'){
  videos.prepare('window',true);stopMeteor();
@@ -153,10 +153,13 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  imageScene(`wonder/1_${8+data.level}.png`,'平台游戏场景 '+(data.level+1),1672,941);
  runner=createRunner(data.level);$('stage').dataset.level=String(data.level);
  const sprite=document.createElement('img');sprite.id='wonder-player';sprite.src='/assets/wonder/character.png';sprite.alt='自动向右前进的小人';sprite.className='wonder-player';$('visual').append(sprite);
- hotspot('wonder-jump',[40,82,20,12],'Space / 点击跳跃',false,()=>jumpWithSound());
- const story=mountGameStory($('visual'),data.level);disposeDetail=story.dispose;
+ hotspot('wonder-jump',[40,82,20,12],'Space / 点击跳跃',false,()=>{if(gameReady)jumpWithSound();});
+ const story=mountGameStory($('visual'),data.level);let tutorial=null,tutorialElapsed=0;gameReady=!jumpTutorialNeeded;
+ if(jumpTutorialNeeded){jumpTutorialNeeded=false;tutorial=document.createElement('p');tutorial.className='wonder-jump-tutorial';tutorial.textContent='Click the SPACE button with your mouse to jump.';tutorial.setAttribute('role','status');$('visual').append(tutorial);}
+ sprite.style.left=(runner.x-30)+'px';sprite.style.top=(runner.y-75)+'px';sprite.dataset.x=runner.x;sprite.dataset.y=runner.y;sprite.dataset.grounded=runner.grounded;sprite.dataset.gameReady=String(gameReady);disposeDetail=()=>{story.dispose();tutorial?.remove();};
  last=0;const tick=time=>{if(!alive||data.view!=='game')return;const dt=last?Math.min((time-last)/1000,.035):0;last=time;
  if(!document.hidden&&!$('dev-panel').hidden){raf=requestAnimationFrame(tick);return;}
+ if(!gameReady){if(!document.hidden&&!intro.active&&!busy&&$('dev-panel').hidden)tutorialElapsed+=dt;if(tutorialElapsed>=4){gameReady=true;tutorial?.remove();tutorial=null;sprite.dataset.gameReady='true';}return void(raf=requestAnimationFrame(tick));}
  if(jumpHeld&&runner.grounded&&!intro.active&&!busy)jumpWithSound();const outcome=document.hidden||intro.active||busy?'running':step(runner,dt);sprite.style.left=(runner.x-30)+'px';sprite.style.top=(runner.y-75)+'px';sprite.dataset.x=runner.x;sprite.dataset.y=runner.y;sprite.dataset.grounded=runner.grounded;if(!document.hidden&&!intro.active&&!busy)story.update(dt);
  if(outcome==='next'){data.level++;persist();draw();return;}if(outcome==='win'){go('win');return;}raf=requestAnimationFrame(tick);};raf=requestAnimationFrame(tick);
  }else{
@@ -166,6 +169,6 @@ export function mountWonder({showLoading=false,imageScene,hotspot,scenePoint,fin
  }
  if(data.view!=='map'){$('visual').onpointermove=null;$('visual').onpointerdown=null;}
  }
- const key=e=>{if(!busy&&!intro.active&&data.view==='game'&&e.code==='Space'&&$('dev-panel').hidden){e.preventDefault();jumpHeld=true;if(!e.repeat)jumpWithSound();}};const keyup=e=>{if(e.code==='Space')jumpHeld=false;};const blur=()=>jumpHeld=false;window.addEventListener('keyup',keyup);window.addEventListener('blur',blur);window.addEventListener('keydown',key);window.addEventListener('beforeunload',cancelMotion);window.addEventListener('pagehide',cancelMotion);persist();if(showLoading)loading();else draw();
+ const key=e=>{if(gameReady&&!busy&&!intro.active&&data.view==='game'&&e.code==='Space'&&$('dev-panel').hidden){e.preventDefault();jumpHeld=true;if(!e.repeat)jumpWithSound();}};const keyup=e=>{if(e.code==='Space')jumpHeld=false;};const blur=()=>jumpHeld=false;window.addEventListener('keyup',keyup);window.addEventListener('blur',blur);window.addEventListener('keydown',key);window.addEventListener('beforeunload',cancelMotion);window.addEventListener('pagehide',cancelMotion);persist();if(showLoading)loading();else draw();
  return ()=>{alive=false;reflections.dispose();$('back').hidden=false;intro.dispose();hints.dispose();cancelMotion();videos.dispose();clear();window.removeEventListener('keydown',key);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',blur);window.removeEventListener('beforeunload',cancelMotion);window.removeEventListener('pagehide',cancelMotion);$('visual').onpointermove=null;$('visual').onpointerdown=null;$('visual').classList.remove('wonder-window-dim');$('visual').style.filter='';$('stage').classList.remove('wonder-scene');delete $('stage').dataset.wonderView;delete $('stage').dataset.level;};
 }

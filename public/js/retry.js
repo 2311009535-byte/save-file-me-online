@@ -1,5 +1,6 @@
 import {createClosedBook} from './retry-closed-book.js?v=closed4';
 import {victoryWeather} from './retry-victory-weather.js';
+import {createCardUnderlay} from './retry-card-underlay.js';
 import {createRetryCardMotion} from './retry-card-motion.js';
 import {createRetryAtmosphere,retryAtmosphereAssets} from './retry-atmosphere.js';
 import {createDiaryTurn} from './retry-page-turn.js?v=diary-paper3';
@@ -58,6 +59,7 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
    [[6,10],[23,1],[37,6],[70,3],[90,5],[96,12],[94,38],[100,87],[86,100],[32,99],[3,94],[0,85],[5,45]],
    [[6,11],[25,0],[38,6],[66,3],[85,5],[92,13],[95,42],[100,86],[89,100],[30,98],[2,94],[0,83],[5,41]]
   ];
+  const cardBackground=await prepareImage('/assets/retry/ambient/'+(data.joined?'duo':'solo')+'-card-free.png');if(!alive||version!==generation)return;
   ['ATTACK','DEFEND','HEAL'].forEach((name,i)=>{
    const rect=cards[i],outline=outlines[i],id='retry-'+name.toLowerCase();button(id,rect,name,()=>battle(name));
    const b=$(id);b.classList.add('retry-card');b.style.clipPath='polygon('+outline.map(([x,y])=>`${x}% ${y}%`).join(',')+')';
@@ -66,7 +68,8 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
    c.width=Math.round(im.naturalWidth*w/100);c.height=Math.round(im.naturalHeight*h/100);c.className='retry-card-art';c.dataset.card=name.toLowerCase();c.setAttribute('aria-hidden','true');
    Object.assign(c.style,{left:x+'%',top:y+'%',width:w+'%',height:h+'%'});
    const ctx=c.getContext('2d');ctx.beginPath();outline.forEach(([px,py],j)=>ctx[j?'lineTo':'moveTo'](px*c.width/100,py*c.height/100));ctx.closePath();ctx.clip();ctx.drawImage(im,im.naturalWidth*x/100,im.naturalHeight*y/100,im.naturalWidth*w/100,im.naturalHeight*h/100,0,0,c.width,c.height);visual.append(c);
-   const motion=createRetryCardMotion(c);cardMotions.set(name,motion);
+   const underlay=createCardUnderlay(cardBackground,rect,name.toLowerCase());visual.insertBefore(underlay,c);
+   const motion=createRetryCardMotion(c,{underlay});cardMotions.set(name,motion);
    const select=()=>{if(busy||b.disabled)return;for(const [other,m]of cardMotions)if(other!==name)m.reset();motion.play();};
    const clear=()=>{if(!busy)motion.reset();};b.onmouseenter=select;b.onmouseleave=clear;b.onfocus=select;b.onblur=clear;
   });
@@ -173,7 +176,7 @@ export function mountRetry({imageScene,hotspot,onExit,onVictory}){
  stage.classList.add('retry-scene');stage.dataset.retryView='loading';persist();corner();
  if(!alive)return;imageScene('retry/3_1.png','Retry loading',1672,941);
  const critical=[...files];
- if(!await loader.play(3,[...critical.map(url),...retryAtmosphereAssets,'/assets/retry/ambient/defeat-blank.png','/assets/retry/ambient/diary-closed.png','/assets/retry/ambient/diary-open-base.jpg'])||!alive)return;
+ if(!await loader.play(3,[...critical.map(url),...retryAtmosphereAssets,'/assets/retry/ambient/solo-card-free.png','/assets/retry/ambient/duo-card-free.png','/assets/retry/ambient/defeat-blank.png','/assets/retry/ambient/diary-closed.png','/assets/retry/ambient/diary-open-base.jpg'])||!alive)return;
  if(data.view==='battle')actions.prepare(data.joined?'duoAttack':'playerAttack').then(ok=>{if(ok&&alive)actions.prepare('bossAttack');});
  await intro.play(3,()=>draw());
  }
