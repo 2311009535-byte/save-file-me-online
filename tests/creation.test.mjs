@@ -39,3 +39,13 @@ test('Pinch uses scale normalization, image aspect and separate close/open thres
 });
 
 test('Legacy placed-item saves resume directly at lift without losing built objects',()=>{for(let built=0;built<5;built++){const state=normalizeCreation({roomCreated:true,built,phase:'place'});assert.equal(state.phase,'raise');assert.equal(state.built,built);assert.equal(state.item,objects[built]);}});
+
+
+test('Completed memories survive reload and wait for feedback before returning to lift',()=>{
+ for(let built=0;built<5;built++){
+  const game=new CreationGame({roomCreated:true,built,phase:'recovered'},()=>{});
+  assert.equal(game.state.phase,'recovered');assert.equal(game.state.built,built);
+  assert.equal(game.choose(game.state.item),false);
+  assert.equal(game.solve(),true);assert.equal(game.state.phase,'raise');assert.equal(game.state.built,built);
+ }
+});

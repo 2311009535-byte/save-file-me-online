@@ -24,6 +24,14 @@ const assert=require('node:assert/strict');
    if(item==='bed')await drag('[data-drag=quilt]',null,.18);
    if(item==='computer'){assert(await page.locator('.computer-power').isDisabled());await page.locator('[data-drag=plug]').click();await page.locator('[data-target=socket]').click();await page.locator('.computer-power').click();}
    if(item==='door')await drag('[data-drag=save]','[data-target=slot]');
+   await page.locator('.creation-success span').filter({hasText:'BUILD'}).waitFor();
+   assert.equal(await page.locator('#visual').getAttribute('data-creation-frame'),String([7,14,21,28,34][built]));
+   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('save-file-me:creation:v1')).phase),'recovered');
+   assert.equal(await page.locator('[data-drag="raise"]').count(),0);
+   await page.waitForTimeout(600);
+   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('save-file-me:creation:v1')).phase),'recovered');
+   assert.equal(await page.locator('.creation-success span').textContent(),'BUILD');
+   if(item==='window'){await page.reload();await page.locator('#creation-hands-no').click();await page.locator('.creation-success span').filter({hasText:'BUILD'}).waitFor();assert.equal(await page.locator('[data-drag="star1"]').count(),0);}
    await page.locator('[data-drag=raise]').waitFor();
    assert.equal(await page.locator('.creation-return').count(),0);
    const state=await page.evaluate(()=>JSON.parse(localStorage.getItem('save-file-me:creation:v1')));
@@ -33,7 +41,7 @@ const assert=require('node:assert/strict');
    await page.reload();await page.locator('#creation-hands-no').click();await page.locator('[data-drag=raise]').waitFor();
    assert.equal(await page.locator('.creation-return').count(),0);await drag('[data-drag=raise]',null,.23);
    assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('save-file-me:creation:v1')).built),built+1);
-   assert.deepEqual(errors,[]);console.log(`PASS ${item}: automatic return, saved lift phase, refresh and successful build`);await page.close();
+   assert.deepEqual(errors,[]);console.log(`PASS ${item}: completed-scene BUILD feedback before automatic return, saved lift phase, refresh and successful build`);await page.close();
   }
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

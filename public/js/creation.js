@@ -64,7 +64,7 @@ export function mountCreation({root,finish}){
  function asset(n){frame(n);return `<span class="creation-art" aria-label="Scene ${n}" data-scene="${n}"></span>`;}
  function room(){return asset([4,12,19,25,32,37][game.state.built]);}
  function setArt(n){if(root.dataset.creationFrame===String(n))return;const art=board.querySelector('.creation-art');frame(n);if(art)art.outerHTML=asset(n);}
- function recovered(){if(!alive||game.state.phase!=='puzzle')return;successNotice.show('Memory restored!');animateCode('recovered');game.solve();}
+ function recovered(){if(!alive||game.state.phase!=='puzzle')return;game.commit('recovered');}
  function animateCode(stage){
   const {built,item,roomCreated}=game.state;
   const name={window:'window',lamp:'floorLamp',bed:'bed',computer:'computer',door:'door'}[item];
@@ -87,7 +87,7 @@ export function mountCreation({root,finish}){
  }
  function markInventory(item){root.querySelectorAll('[data-object]').forEach(el=>{const selected=el.dataset.object===item;el.classList.toggle('is-selected',selected);el.setAttribute('aria-pressed',String(selected));});}
  function render(){
-  if(!alive||!started)return;if(!['transition','finished'].includes(game.state.phase))runVideo.cancel();clearTimeout(settleTimer);resetDwell();clearHits();renderer.stopRaise();drag=null;handSelection=null;cancelAnimationFrame(holdFrame);
+  if(!alive||!started)return;successNotice.clear();if(!['transition','finished'].includes(game.state.phase))runVideo.cancel();clearTimeout(settleTimer);resetDwell();clearHits();renderer.stopRaise();drag=null;handSelection=null;cancelAnimationFrame(holdFrame);
   plugSelected=false;runStarting=false;root.classList.remove('creation-real-room','creation-transition');
   root.querySelectorAll(':scope > [data-drag=place], :scope > .creation-run').forEach(el=>el.remove());
   const {built,phase,item}=game.state;if(built===4)runVideo.prepare('room');gameAudio.setCreation(built);if(phase!=='transition')$('#hand-start').disabled=false;root.classList.toggle('creation-door-lift',phase==='raise'&&item==='door');root.classList.toggle('creation-easy-lift',phase==='raise'&&['bed','computer','door'].includes(item));
@@ -107,6 +107,9 @@ export function mountCreation({root,finish}){
    if(item==='bed'){objective.textContent='Dwell on the blanket for 1 s to grab, then move your index finger upward.';board.innerHTML=asset(20)+'<button class="quilt-drag" data-drag="quilt" aria-label="BLANKET">GRAB BLANKET ↑</button><output class="quilt-dwell-progress" role="progressbar" aria-label="Blanket dwell progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">0%</output>';}
    if(item==='computer'){objective.textContent='Dwell on the plug for 1 s to select; then dwell on the power strip for 1 s to connect, then dwell on POWER.';board.innerHTML=asset(26)+'<button class="plug-drag" data-drag="plug" aria-label="PLUG">PLUG</button><button class="computer-socket creation-drop socket-control" data-target="socket" aria-label="POWER STRIP" disabled>POWER STRIP</button><button class="computer-power" aria-label="Computer power" disabled>POWER</button>';$('.plug-drag').onclick=selectPlug;$('.socket-control').onclick=connectPlug;$('.computer-power').onclick=()=>{if(game.connected)recovered();};}
    if(item==='door'){objective.textContent='Dwell on the save card for 1 s to grab; move it to the door slot and dwell for 1 s to install.';board.innerHTML=asset(33)+'<button class="save-card" data-drag="save" aria-label="SAVE CARD">SAVE FILE: ME</button><div class="door-slot creation-drop" data-target="slot">SAVE SLOT</div>';}
+  }else if(phase==='recovered'){
+   const completedFrame={window:7,lamp:14,bed:21,computer:28,door:34}[item];board.innerHTML=asset(completedFrame);const fallback=$('.creation-backdrop');objective.textContent='Memory restored. Returning to build…';
+   successNotice.show('BUILD',{canAdvance:()=>!settings.open&&!intro.active&&(root.dataset.renderedFrame===String(completedFrame)||!fallback.hidden&&fallback.complete&&fallback.naturalWidth>0),onComplete:()=>{if(alive&&game.state.phase==='recovered'&&game.state.item===item)game.solve();}});
   }else if(phase==='place'){
    objective.textContent='Dwell on the inventory item for 1 s to grab; move to the drop zone and dwell for 1 s to place.';
    board.innerHTML=asset({window:8,lamp:15,bed:19,computer:25,door:31}[item])+`<div class="build-drop creation-drop" data-target="place">DROP ZONE</div><button class="build-item" data-drag="place" aria-label="PLACE ${labels[built]}">PLACE ${labels[built]}</button>`;
